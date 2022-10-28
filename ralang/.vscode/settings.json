@@ -1,0 +1,11 @@
+{
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+          "match": ".*",
+          "cmd": "dune fmt"
+      },
+    ]
+  },
+  "editor.tabSize": 2
+}
