@@ -13,6 +13,8 @@
 
 (documentation https://url/to/documentation)
 
+(using menhir 2.1)
+
 (package
  (name ralang)
  (synopsis "A short synopsis")

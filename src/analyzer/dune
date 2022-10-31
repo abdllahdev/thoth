@@ -1,2 +1,7 @@
 (library
  (name analyzer))
+
+(ocamllex lexer)
+
+(menhir
+ (modules parser))

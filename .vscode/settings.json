@@ -2,10 +2,12 @@
   "emeraldwalk.runonsave": {
     "commands": [
       {
-          "match": ".*",
-          "cmd": "dune fmt"
+          "match": ".$ml",
+          "cmd": "dune build"
       },
     ]
   },
-  "editor.tabSize": 2
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "ocamllabs.ocaml-platform"
 }

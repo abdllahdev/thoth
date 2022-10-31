@@ -1,3 +1,4 @@
 (executable
  (name main)
- (public_name ralang))
+ (public_name ralang)
+ (libraries core ralang_core))
