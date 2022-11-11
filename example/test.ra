@@ -1,4 +1,0 @@
-model TestModel = Psl {
-	id        Int        @id @default(autoincrement)
-	test      String
-}

@@ -1,5 +1,6 @@
 (library
- (name analyzer))
+ (name analyzer)
+ (libraries core fmt))
 
 (ocamllex lexer)
 
