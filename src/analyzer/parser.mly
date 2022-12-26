@@ -1,19 +1,16 @@
 %{
-  open Syntax
+  open Ast
 %}
 
 %token <int>    INT
 %token <string> ID
 %token <string> STRING
-%token          MODEL_FIELD_MODIFIER_OPTIONAL
-%token          MODEL_FIELD_MODIFIER_LIST
 %token          MODEL_FIELD_ATTR_ID
 %token          MODEL_FIELD_ATTR_DEFAULT
 %token          MODEL_FIELD_ATTR_UNIQUE
 %token          MODEL_FIELD_ATTR_RELATION
 %token          MODEL_FIELD_ATTR_UPDATED_AT
 %token          MODEL_FIELD_ATTR_IGNORE
-%token          MODEL_FIELD_ATTR_FUNC_AUTOINCREMENT
 %token          MODEL_FIELD_ATTR_FUNC_NOW
 %token          TRUE
 %token          FALSE
@@ -32,16 +29,16 @@
 %start <program> program
 
 %type <Model.field> model_field
-%type <Model.body> model_body
-%type <Model.definition> model_definition
+%type <Model.fields> model_fields
+%type <Model.declaration> model_declaration
 %type <declaration> declaration
 
 %%
 
 model_field_modifier:
-  | MODEL_FIELD_MODIFIER_OPTIONAL
+  | QUESTION_MARK
     { Model.Optional }
-  | MODEL_FIELD_MODIFIER_LIST
+  | LEFT_BRACKET; RIGHT_BRACKET
     { Model.List }
   ;
 
@@ -55,12 +52,6 @@ model_field_attr_no_args:
   ;
 
 model_field_attr_default:
-  | MODEL_FIELD_ATTR_DEFAULT; LEFT_PARAN; MODEL_FIELD_ATTR_FUNC_AUTOINCREMENT; RIGHT_PARAN
-    {
-      let func = Model.AttrArgFunc(Model.Autoincrement) in
-      let arg = Model.Argument(func) in
-      Model.AttributeWithArgs(Model.Default, arg)
-    }
   | MODEL_FIELD_ATTR_DEFAULT; LEFT_PARAN; MODEL_FIELD_ATTR_FUNC_NOW; RIGHT_PARAN
     {
       let func = Model.AttrArgFunc(Model.Now) in
@@ -93,14 +84,14 @@ model_field_attr_default:
     }
   ;
 
-model_field_attr_with_arg:
+model_field_attr_with_args:
   | default = model_field_attr_default
     { default }
 
 model_field_attr:
   | attr_no_args = model_field_attr_no_args;
     { attr_no_args }
-  | attr_with_args = model_field_attr_with_arg;
+  | attr_with_args = model_field_attr_with_args;
     { attr_with_args }
   ;
 
@@ -116,19 +107,19 @@ model_field:
     {Model.FieldWithModiferWithAttrs(id, typ, modifier, attrs)}
   ;
 
-model_body:
+model_fields:
   | LEFT_BRACE; model_fields = list(model_field); RIGHT_BRACE
-    {Model.Body(model_fields)}
+    {Model.Fields(model_fields)}
   ;
 
-model_definition:
-  | MODEL; model_id = ID; EQUAL; model_body = model_body
-    {Model.Definition(model_id, model_body)}
+model_declaration:
+  | MODEL; model_id = ID; model_fields = model_fields
+    {Model.Declaration(model_id, model_fields)}
   ;
 
 declaration:
-  | model_definition = model_definition
-    { Model(model_definition) }
+  | model_declaration = model_declaration
+    { Model(model_declaration) }
   ;
 
 program:

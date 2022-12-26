@@ -44,9 +44,6 @@ rule token =
   | "@relation"            { MODEL_FIELD_ATTR_RELATION }
   | "@updatedAt"           { MODEL_FIELD_ATTR_UPDATED_AT }
   | "@ignore"              { MODEL_FIELD_ATTR_IGNORE }
-  | "optional"             { MODEL_FIELD_MODIFIER_OPTIONAL }
-  | "list"                 { MODEL_FIELD_MODIFIER_LIST }
-  | "autoincrement"        { MODEL_FIELD_ATTR_FUNC_AUTOINCREMENT }
   | "now"                  { MODEL_FIELD_ATTR_FUNC_NOW }
   | int                    { INT (int_of_string (Lexing.lexeme lexbuf))}
   | id                     { ID (Lexing.lexeme lexbuf) }

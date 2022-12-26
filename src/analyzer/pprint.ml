@@ -1,8 +1,5 @@
-open Syntax
+open Ast
 open Core
-
-let rec list_to_string (l : string list) : string =
-  match l with [] -> "" | e :: l -> Fmt.str "%s," e ^ list_to_string l
 
 module ModelPrinter = struct
   let field_attr_arg_to_string (arg : Model.field_attr_arg) : string =
@@ -11,11 +8,9 @@ module ModelPrinter = struct
         match value with
         | Model.AttrArgString str -> Fmt.str "%s" str
         | Model.AttrArgBoolean boolean -> Fmt.str "%b" boolean
-        | Model.AttrArgFieldRefList refs -> Fmt.str "[%s]" (list_to_string refs)
-        | Model.AttrArgFunc func -> (
-            match func with
-            | Autoincrement -> Fmt.str "autoincrement"
-            | Now -> Fmt.str "now")
+        | Model.AttrArgList refs ->
+            Fmt.str "[%s]" (String.concat ~sep:", " refs)
+        | Model.AttrArgFunc func -> ( match func with Now -> Fmt.str "now")
         | Model.AttrArgNumber num -> Fmt.str "%d" num)
 
   let field_attr_id_to_string (id : Model.field_attr_id) : string =
@@ -63,19 +58,19 @@ module ModelPrinter = struct
     | field :: fields ->
         Fmt.str "   %s\n" (field_to_string field) ^ fields_to_string fields
 
-  let body_to_string (body : Model.body) : string =
-    match body with
-    | Model.Body fields -> Fmt.str "\n%s" (fields_to_string fields)
+  let fields_to_string (fields : Model.fields) : string =
+    match fields with
+    | Model.Fields fields -> Fmt.str "\n%s" (fields_to_string fields)
 
-  let definition_to_string (definition : Model.definition) : string =
+  let declaration_to_string (definition : Model.declaration) : string =
     match definition with
-    | Model.Definition (id, body) ->
-        Fmt.str "model %s = {%s}\n" id (body_to_string body)
+    | Model.Declaration (id, fields) ->
+        Fmt.str "model %s = {%s}\n" id (fields_to_string fields)
 end
 
 let declaration_to_string (declaration : declaration) : string =
   match declaration with
-  | Model definition -> ModelPrinter.definition_to_string definition
+  | Model declaration -> ModelPrinter.declaration_to_string declaration
 
 let rec program_to_string (Program program) : string =
   match program with

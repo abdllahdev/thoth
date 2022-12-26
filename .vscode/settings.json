@@ -9,5 +9,9 @@
   },
   "editor.tabSize": 2,
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "ocamllabs.ocaml-platform"
+  "editor.defaultFormatter": "ocamllabs.ocaml-platform",
+  "ocaml.sandbox": {
+    "kind": "opam",
+    "switch": "default"
+  }
 }

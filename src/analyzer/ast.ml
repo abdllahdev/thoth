@@ -5,12 +5,12 @@ type id = string
 module Model = struct
   type field_type = string
   type field_type_modifier = List | Optional
-  type attr_arg_func = Autoincrement | Now
+  type attr_arg_func = Now
 
   type attr_arg_value =
     | AttrArgString of string
     | AttrArgFunc of attr_arg_func
-    | AttrArgFieldRefList of string list
+    | AttrArgList of string list
     | AttrArgBoolean of bool
     | AttrArgNumber of int
 
@@ -28,11 +28,11 @@ module Model = struct
     | FieldWithModiferWithAttrs of
         id * field_type * field_type_modifier * field_attr list
 
-  type body = Body of field list
-  type definition = Definition of id * body
+  type fields = Fields of field list
+  type declaration = Declaration of id * fields
 end
 
-type declaration = Model of Model.definition
+type declaration = Model of Model.declaration
 
 (* Program type *)
 type program = Program of declaration list
