@@ -5,21 +5,17 @@ type id = string
 module Model = struct
   type field_type = string
   type field_type_modifier = List | Optional
-  type attr_arg_func = Now
 
-  type attr_arg_value =
+  type field_attr_arg =
     | AttrArgString of string
-    | AttrArgFunc of attr_arg_func
-    | AttrArgList of string list
+    | AttrArgFunc of string
+    | AttrArgRefList of string list
     | AttrArgBoolean of bool
     | AttrArgNumber of int
 
-  type field_attr_id = Id | Unique | Ignore | UpdatedAt | Relation | Default
-  type field_attr_arg = Argument of attr_arg_value
-
   type field_attr =
-    | AttributeNoArgs of field_attr_id
-    | AttributeWithArgs of field_attr_id * field_attr_arg
+    | AttributeNoArgs of id
+    | AttributeWithArgs of id * field_attr_arg list
 
   type field =
     | FieldNoModiferNoAttrs of id * field_type

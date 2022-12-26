@@ -2,33 +2,26 @@ open Ast
 open Core
 
 module ModelPrinter = struct
-  let field_attr_arg_to_string (arg : Model.field_attr_arg) : string =
+  let field_attr_arg_to_string (arg : Model.field_attr_arg) =
     match arg with
-    | Model.Argument value -> (
-        match value with
-        | Model.AttrArgString str -> Fmt.str "%s" str
-        | Model.AttrArgBoolean boolean -> Fmt.str "%b" boolean
-        | Model.AttrArgList refs ->
-            Fmt.str "[%s]" (String.concat ~sep:", " refs)
-        | Model.AttrArgFunc func -> ( match func with Now -> Fmt.str "now")
-        | Model.AttrArgNumber num -> Fmt.str "%d" num)
+    | Model.AttrArgString str -> Fmt.str "%s" str
+    | Model.AttrArgBoolean boolean -> Fmt.str "%b" boolean
+    | Model.AttrArgRefList list -> Fmt.str "[%s]" (String.concat ~sep:", " list)
+    | Model.AttrArgFunc func -> Fmt.str "%s()" func
+    | Model.AttrArgNumber num -> Fmt.str "%d" num
 
-  let field_attr_id_to_string (id : Model.field_attr_id) : string =
-    match id with
-    | Id -> Fmt.str "@id"
-    | Unique -> Fmt.str "@unique"
-    | Ignore -> Fmt.str "@ignore"
-    | Default -> Fmt.str "@default"
-    | UpdatedAt -> Fmt.str "@updatedAt"
-    | Relation -> Fmt.str "@relation"
+  let rec field_attr_args_to_string (args : Model.field_attr_arg list) : string
+      =
+    match args with
+    | [] -> ""
+    | arg :: args ->
+        field_attr_arg_to_string arg ^ ", " ^ field_attr_args_to_string args
 
   let field_attr_to_string (attr : Model.field_attr) : string =
     match attr with
-    | Model.AttributeNoArgs id -> Fmt.str "%s, " (field_attr_id_to_string id)
-    | Model.AttributeWithArgs (id, arg) ->
-        Fmt.str "%s(%s), "
-          (field_attr_id_to_string id)
-          (field_attr_arg_to_string arg)
+    | Model.AttributeNoArgs name -> Fmt.str "%s, " name
+    | Model.AttributeWithArgs (name, args) ->
+        Fmt.str "%s(%s), " name (field_attr_args_to_string args)
 
   let rec field_attrs_to_string (attrs : Model.field_attr list) : string =
     match attrs with
@@ -65,7 +58,7 @@ module ModelPrinter = struct
   let declaration_to_string (definition : Model.declaration) : string =
     match definition with
     | Model.Declaration (id, fields) ->
-        Fmt.str "model %s = {%s}\n" id (fields_to_string fields)
+        Fmt.str "model %s {%s}\n" id (fields_to_string fields)
 end
 
 let declaration_to_string (declaration : declaration) : string =
