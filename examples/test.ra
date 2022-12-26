@@ -1,5 +1,5 @@
-model Task = {
-	id           Int      @id @default(autoincrement);
+model Task {
+	id           Int      @id;
 	title        String;
 	isDone       Boolean  @default(false);
 }
