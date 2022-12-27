@@ -13,5 +13,10 @@
   "ocaml.sandbox": {
     "kind": "opam",
     "switch": "default"
-  }
+  },
+  "cSpell.words": [
+    "cnum",
+    "concat",
+    "lnum"
+  ]
 }

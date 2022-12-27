@@ -8,7 +8,7 @@ let string_of_loc loc =
 module ModelPrinter = struct
   let string_of_field_attr_arg (arg : Model.field_attr_arg) =
     match arg with
-    | Model.AttrArgString (_, str) -> Fmt.str "%s" str
+    | Model.AttrArgString (_, str) -> Fmt.str "\"%s\"" str
     | Model.AttrArgBoolean (_, boolean) -> Fmt.str "%b" boolean
     | Model.AttrArgRefList (_, list) ->
         Fmt.str "[%s]" (String.concat ~sep:", " list)
@@ -19,23 +19,26 @@ module ModelPrinter = struct
       =
     match args with
     | [] -> ""
+    | [ arg ] -> string_of_field_attr_arg arg
     | arg :: args ->
         string_of_field_attr_arg arg ^ ", " ^ string_of_field_attr_args args
 
   let string_of_field_attr (attr : Model.field_attr) : string =
     match attr with
-    | Model.AttributeNoArgs (_, id) -> Fmt.str "%s, " id
+    | Model.AttributeNoArgs (_, id) -> Fmt.str "%s" id
     | Model.AttributeWithArgs (_, id, args) ->
-        Fmt.str "%s(%s), " id (string_of_field_attr_args args)
+        Fmt.str "%s(%s)" id (string_of_field_attr_args args)
 
   let rec string_of_field_attrs (attrs : Model.field_attr list) : string =
     match attrs with
     | [] -> ""
-    | attr :: attrs -> string_of_field_attr attr ^ string_of_field_attrs attrs
+    | [ attr ] -> string_of_field_attr attr
+    | attr :: attrs ->
+        string_of_field_attr attr ^ ", " ^ string_of_field_attrs attrs
 
   let string_of_field_type_modifier (modifier : Model.field_type_modifier) :
       string =
-    match modifier with Model.List -> "List" | Model.Optional -> "Optional"
+    match modifier with Model.List -> "[]" | Model.Optional -> "?"
 
   let string_of_field_type (field_type : Model.field_type) : string =
     match field_type with
@@ -53,17 +56,17 @@ module ModelPrinter = struct
   let string_of_field (field : Model.field) : string =
     match field with
     | Model.FieldNoModifierNoAttrs (_, id, field_type) ->
-        Fmt.str "%s(Type(%s))" id (string_of_field_type field_type)
+        Fmt.str "\"%s\", %s" id (string_of_field_type field_type)
     | Model.FieldWithModifierNoAttrs (_, id, field_type, modifier) ->
-        Fmt.str "%s(Type(%s), Modifier(%s))" id
+        Fmt.str "\"%s\", %s%s" id
           (string_of_field_type field_type)
           (string_of_field_type_modifier modifier)
     | Model.FieldNoModifierWithAttrs (_, id, field_type, attrs) ->
-        Fmt.str "%s(Type(%s), Attr(%s))" id
+        Fmt.str "\"%s\", %s, %s" id
           (string_of_field_type field_type)
           (string_of_field_attrs attrs)
     | Model.FieldWithModifierWithAttrs (_, id, field_type, modifier, attrs) ->
-        Fmt.str "%s(Type(%s), Modifier(%s), Attr(%s))" id
+        Fmt.str "\"%s\", %s%s, %s" id
           (string_of_field_type field_type)
           (string_of_field_type_modifier modifier)
           (string_of_field_attrs attrs)
@@ -71,18 +74,26 @@ module ModelPrinter = struct
   let rec string_of_fields (fields : Model.field list) : string =
     match fields with
     | [] -> ""
+    | [ field ] -> Fmt.str "\n      Field(%s)" (string_of_field field)
     | field :: fields ->
-        Fmt.str "\n  %s" (string_of_field field) ^ string_of_fields fields
+        Fmt.str "\n      Field(%s)" (string_of_field field)
+        ^ string_of_fields fields
 end
 
 let string_of_declaration (declaration : declaration) : string =
   match declaration with
   | Model (_, model_id, model_fields) ->
-      Fmt.str "model %s {%s\n}\n" model_id
+      Fmt.str "  Model(\n    \"%s\",\n    [%s\n    ]\n  )" model_id
         (ModelPrinter.string_of_fields model_fields)
 
-let rec string_of_program (Program program) : string =
-  match program with
+let rec string_of_declarations (declarations : declaration list) : string =
+  match declarations with
   | [] -> ""
-  | definition :: definitions ->
-      string_of_declaration definition ^ string_of_program (Program definitions)
+  | [ declaration ] -> string_of_declaration declaration
+  | declaration :: declarations ->
+      string_of_declaration declaration
+      ^ ",\n"
+      ^ string_of_declarations declarations
+
+let string_of_program (Program declarations) : string =
+  Fmt.str "Program(\n%s\n)" (string_of_declarations declarations)

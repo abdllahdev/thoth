@@ -23,7 +23,7 @@ let parse_file (filename : string) =
 
 let () =
   print_string "\nStarted parsing the program\n";
-  let filename = "test.ra" in
+  let filename = "./examples/test.ra" in
   match parse_file filename with
   | Ok program -> print_string (Pprint.string_of_program program)
   | Error error -> print_string (Error.to_string_hum error)
