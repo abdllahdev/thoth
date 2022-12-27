@@ -30,13 +30,14 @@ module Model = struct
     | AttributeWithArgs of loc * id * field_attr_arg list
 
   type field =
-    | FieldNoModiferNoAttrs of loc * id * field_type
+    | FieldNoModifierNoAttrs of loc * id * field_type
     | FieldWithModifierNoAttrs of loc * id * field_type * field_type_modifier
-    | FieldNoModiferWithAttrs of loc * id * field_type * field_attr list
-    | FieldWithModiferWithAttrs of
+    | FieldNoModifierWithAttrs of loc * id * field_type * field_attr list
+    | FieldWithModifierWithAttrs of
         loc * id * field_type * field_type_modifier * field_attr list
 end
 
+(* The different types of declarations in the language *)
 type declaration = Model of loc * id * Model.field list
 
 (* Program type *)

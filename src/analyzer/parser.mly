@@ -75,13 +75,13 @@ model_field_type:
 
 model_field:
   | id = ID; field_type = model_field_type; SEMICOLON
-    { Model.FieldNoModiferNoAttrs($startpos, id, field_type) }
+    { Model.FieldNoModifierNoAttrs($startpos, id, field_type) }
   | id = ID; field_type = model_field_type; modifier = model_field_modifier; SEMICOLON
     { Model.FieldWithModifierNoAttrs($startpos, id, field_type, modifier) }
   | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
-    { Model.FieldNoModiferWithAttrs($startpos, id, field_type, attrs) }
+    { Model.FieldNoModifierWithAttrs($startpos, id, field_type, attrs) }
   | id = ID; field_type = model_field_type; modifier = model_field_modifier; attrs = list(model_field_attr); SEMICOLON
-    { Model.FieldWithModiferWithAttrs($startpos, id, field_type, modifier, attrs) }
+    { Model.FieldWithModifierWithAttrs($startpos, id, field_type, modifier, attrs) }
   ;
 
 model_fields:

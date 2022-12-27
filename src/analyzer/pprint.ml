@@ -52,17 +52,17 @@ module ModelPrinter = struct
 
   let string_of_field (field : Model.field) : string =
     match field with
-    | Model.FieldNoModiferNoAttrs (_, id, field_type) ->
+    | Model.FieldNoModifierNoAttrs (_, id, field_type) ->
         Fmt.str "%s(Type(%s))" id (string_of_field_type field_type)
     | Model.FieldWithModifierNoAttrs (_, id, field_type, modifier) ->
         Fmt.str "%s(Type(%s), Modifier(%s))" id
           (string_of_field_type field_type)
           (string_of_field_type_modifier modifier)
-    | Model.FieldNoModiferWithAttrs (_, id, field_type, attrs) ->
+    | Model.FieldNoModifierWithAttrs (_, id, field_type, attrs) ->
         Fmt.str "%s(Type(%s), Attr(%s))" id
           (string_of_field_type field_type)
           (string_of_field_attrs attrs)
-    | Model.FieldWithModiferWithAttrs (_, id, field_type, modifier, attrs) ->
+    | Model.FieldWithModifierWithAttrs (_, id, field_type, modifier, attrs) ->
         Fmt.str "%s(Type(%s), Modifier(%s), Attr(%s))" id
           (string_of_field_type field_type)
           (string_of_field_type_modifier modifier)
