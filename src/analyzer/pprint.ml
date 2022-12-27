@@ -19,9 +19,9 @@ module ModelPrinter = struct
 
   let field_attr_to_string (attr : Model.field_attr) : string =
     match attr with
-    | Model.AttributeNoArgs name -> Fmt.str "%s, " name
-    | Model.AttributeWithArgs (name, args) ->
-        Fmt.str "%s(%s), " name (field_attr_args_to_string args)
+    | Model.AttributeNoArgs id -> Fmt.str "%s, " id
+    | Model.AttributeWithArgs (id, args) ->
+        Fmt.str "%s(%s), " id (field_attr_args_to_string args)
 
   let rec field_attrs_to_string (attrs : Model.field_attr list) : string =
     match attrs with
@@ -32,16 +32,34 @@ module ModelPrinter = struct
       string =
     match modifier with Model.List -> "List" | Model.Optional -> "Optional"
 
+  let field_type_to_string (field_type : Model.field_type) : string =
+    match field_type with
+    | Model.String -> "String"
+    | Model.Int -> "Int"
+    | Model.Json -> "Json"
+    | Model.Boolean -> "Boolean"
+    | Model.Float -> "Float"
+    | Model.Decimal -> "Decimal"
+    | Model.DateTime -> "DateTime"
+    | Model.BigInt -> "BigInt"
+    | Model.Bytes -> "Bytes"
+    | Model.Custom typ -> typ
+
   let field_to_string (field : Model.field) : string =
     match field with
-    | Model.FieldNoModiferNoAttrs (id, typ) -> Fmt.str "%s(Type(%s))" id typ
-    | Model.FieldWithModifierNoAttrs (id, typ, modifier) ->
-        Fmt.str "%s(Type(%s), Modifier(%s))" id typ
+    | Model.FieldNoModiferNoAttrs (id, field_type) ->
+        Fmt.str "%s(Type(%s))" id (field_type_to_string field_type)
+    | Model.FieldWithModifierNoAttrs (id, field_type, modifier) ->
+        Fmt.str "%s(Type(%s), Modifier(%s))" id
+          (field_type_to_string field_type)
           (field_type_modifier_to_string modifier)
-    | Model.FieldNoModiferWithAttrs (id, typ, attrs) ->
-        Fmt.str "%s(Type(%s), Attr(%s))" id typ (field_attrs_to_string attrs)
-    | Model.FieldWithModiferWithAttrs (id, typ, modifier, attrs) ->
-        Fmt.str "%s(Type(%s), Modifier(%s), Attr(%s))" id typ
+    | Model.FieldNoModiferWithAttrs (id, field_type, attrs) ->
+        Fmt.str "%s(Type(%s), Attr(%s))" id
+          (field_type_to_string field_type)
+          (field_attrs_to_string attrs)
+    | Model.FieldWithModiferWithAttrs (id, field_type, modifier, attrs) ->
+        Fmt.str "%s(Type(%s), Modifier(%s), Attr(%s))" id
+          (field_type_to_string field_type)
           (field_type_modifier_to_string modifier)
           (field_attrs_to_string attrs)
 

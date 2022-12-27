@@ -1,5 +1,18 @@
 %{
   open Ast
+
+  let parse_field_type field_type =
+    match field_type with
+    | "String" -> Model.String
+    | "Int" -> Model.Int
+    | "Json" -> Model.Json
+    | "Boolean" -> Model.Boolean
+    | "Float" -> Model.Float
+    | "Decimal" -> Model.Decimal
+    | "DateTime" -> Model.DateTime
+    | "BigInt" -> Model.BigInt
+    | "Bytes" -> Model.Bytes
+    | _ -> Model.Custom field_type
 %}
 
 %token <int>    INT
@@ -58,14 +71,18 @@ model_field_attr:
     { Model.AttributeWithArgs(attr, args) }
   ;
 
+model_field_type:
+  | field_type = ID
+    { parse_field_type field_type }
+
 model_field:
-  | id = ID; field_type = ID; SEMICOLON
+  | id = ID; field_type = model_field_type; SEMICOLON
     { Model.FieldNoModiferNoAttrs(id, field_type) }
-  | id = ID; field_type = ID; modifier = model_field_modifier; SEMICOLON
+  | id = ID; field_type = model_field_type; modifier = model_field_modifier; SEMICOLON
     { Model.FieldWithModifierNoAttrs(id, field_type, modifier) }
-  | id = ID; field_type = ID; attrs = list(model_field_attr); SEMICOLON
+  | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
     { Model.FieldNoModiferWithAttrs(id, field_type, attrs) }
-  | id = ID; field_type = ID; modifier = model_field_modifier; attrs = list(model_field_attr); SEMICOLON
+  | id = ID; field_type = model_field_type; modifier = model_field_modifier; attrs = list(model_field_attr); SEMICOLON
     { Model.FieldWithModiferWithAttrs(id, field_type, modifier, attrs) }
   ;
 

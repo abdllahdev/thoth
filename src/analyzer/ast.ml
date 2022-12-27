@@ -3,7 +3,18 @@ type id = string
 
 (* Model definition *)
 module Model = struct
-  type field_type = string
+  type field_type =
+    | String
+    | Int
+    | Json
+    | Boolean
+    | Float
+    | Decimal
+    | DateTime
+    | BigInt
+    | Bytes
+    | Custom of string
+
   type field_type_modifier = List | Optional
 
   type field_attr_arg =
