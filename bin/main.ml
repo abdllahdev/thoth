@@ -25,5 +25,5 @@ let () =
   print_string "\nStarted parsing the program\n";
   let filename = "test.ra" in
   match parse_file filename with
-  | Ok program -> print_string (Pprint.program_to_string program)
+  | Ok program -> print_string (Pprint.string_of_program program)
   | Error error -> print_string (Error.to_string_hum error)

@@ -1,90 +1,88 @@
 open Ast
 open Core
 
-module ModelPrinter = struct
-  let field_attr_arg_to_string (arg : Model.field_attr_arg) =
-    match arg with
-    | Model.AttrArgString str -> Fmt.str "%s" str
-    | Model.AttrArgBoolean boolean -> Fmt.str "%b" boolean
-    | Model.AttrArgRefList list -> Fmt.str "[%s]" (String.concat ~sep:", " list)
-    | Model.AttrArgFunc func -> Fmt.str "%s()" func
-    | Model.AttrArgNumber num -> Fmt.str "%d" num
+let string_of_loc loc =
+  Fmt.str "Line:%d Position:%d" loc.Lexing.pos_lnum
+    (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1)
 
-  let rec field_attr_args_to_string (args : Model.field_attr_arg list) : string
+module ModelPrinter = struct
+  let string_of_field_attr_arg (arg : Model.field_attr_arg) =
+    match arg with
+    | Model.AttrArgString (_, str) -> Fmt.str "%s" str
+    | Model.AttrArgBoolean (_, boolean) -> Fmt.str "%b" boolean
+    | Model.AttrArgRefList (_, list) ->
+        Fmt.str "[%s]" (String.concat ~sep:", " list)
+    | Model.AttrArgFunc (_, func) -> Fmt.str "%s()" func
+    | Model.AttrArgNumber (_, num) -> Fmt.str "%d" num
+
+  let rec string_of_field_attr_args (args : Model.field_attr_arg list) : string
       =
     match args with
     | [] -> ""
     | arg :: args ->
-        field_attr_arg_to_string arg ^ ", " ^ field_attr_args_to_string args
+        string_of_field_attr_arg arg ^ ", " ^ string_of_field_attr_args args
 
-  let field_attr_to_string (attr : Model.field_attr) : string =
+  let string_of_field_attr (attr : Model.field_attr) : string =
     match attr with
-    | Model.AttributeNoArgs id -> Fmt.str "%s, " id
-    | Model.AttributeWithArgs (id, args) ->
-        Fmt.str "%s(%s), " id (field_attr_args_to_string args)
+    | Model.AttributeNoArgs (_, id) -> Fmt.str "%s, " id
+    | Model.AttributeWithArgs (_, id, args) ->
+        Fmt.str "%s(%s), " id (string_of_field_attr_args args)
 
-  let rec field_attrs_to_string (attrs : Model.field_attr list) : string =
+  let rec string_of_field_attrs (attrs : Model.field_attr list) : string =
     match attrs with
     | [] -> ""
-    | attr :: attrs -> field_attr_to_string attr ^ field_attrs_to_string attrs
+    | attr :: attrs -> string_of_field_attr attr ^ string_of_field_attrs attrs
 
-  let field_type_modifier_to_string (modifier : Model.field_type_modifier) :
+  let string_of_field_type_modifier (modifier : Model.field_type_modifier) :
       string =
     match modifier with Model.List -> "List" | Model.Optional -> "Optional"
 
-  let field_type_to_string (field_type : Model.field_type) : string =
+  let string_of_field_type (field_type : Model.field_type) : string =
     match field_type with
-    | Model.String -> "String"
-    | Model.Int -> "Int"
-    | Model.Json -> "Json"
-    | Model.Boolean -> "Boolean"
-    | Model.Float -> "Float"
-    | Model.Decimal -> "Decimal"
-    | Model.DateTime -> "DateTime"
-    | Model.BigInt -> "BigInt"
-    | Model.Bytes -> "Bytes"
-    | Model.Custom typ -> typ
+    | Model.String _ -> "String"
+    | Model.Int _ -> "Int"
+    | Model.Json _ -> "Json"
+    | Model.Boolean _ -> "Boolean"
+    | Model.Float _ -> "Float"
+    | Model.Decimal _ -> "Decimal"
+    | Model.DateTime _ -> "DateTime"
+    | Model.BigInt _ -> "BigInt"
+    | Model.Bytes _ -> "Bytes"
+    | Model.Custom (_, typ) -> typ
 
-  let field_to_string (field : Model.field) : string =
+  let string_of_field (field : Model.field) : string =
     match field with
-    | Model.FieldNoModiferNoAttrs (id, field_type) ->
-        Fmt.str "%s(Type(%s))" id (field_type_to_string field_type)
-    | Model.FieldWithModifierNoAttrs (id, field_type, modifier) ->
+    | Model.FieldNoModiferNoAttrs (_, id, field_type) ->
+        Fmt.str "%s(Type(%s))" id (string_of_field_type field_type)
+    | Model.FieldWithModifierNoAttrs (_, id, field_type, modifier) ->
         Fmt.str "%s(Type(%s), Modifier(%s))" id
-          (field_type_to_string field_type)
-          (field_type_modifier_to_string modifier)
-    | Model.FieldNoModiferWithAttrs (id, field_type, attrs) ->
+          (string_of_field_type field_type)
+          (string_of_field_type_modifier modifier)
+    | Model.FieldNoModiferWithAttrs (_, id, field_type, attrs) ->
         Fmt.str "%s(Type(%s), Attr(%s))" id
-          (field_type_to_string field_type)
-          (field_attrs_to_string attrs)
-    | Model.FieldWithModiferWithAttrs (id, field_type, modifier, attrs) ->
+          (string_of_field_type field_type)
+          (string_of_field_attrs attrs)
+    | Model.FieldWithModiferWithAttrs (_, id, field_type, modifier, attrs) ->
         Fmt.str "%s(Type(%s), Modifier(%s), Attr(%s))" id
-          (field_type_to_string field_type)
-          (field_type_modifier_to_string modifier)
-          (field_attrs_to_string attrs)
+          (string_of_field_type field_type)
+          (string_of_field_type_modifier modifier)
+          (string_of_field_attrs attrs)
 
-  let rec fields_to_string (fields : Model.field list) : string =
+  let rec string_of_fields (fields : Model.field list) : string =
     match fields with
     | [] -> ""
     | field :: fields ->
-        Fmt.str "   %s\n" (field_to_string field) ^ fields_to_string fields
-
-  let fields_to_string (fields : Model.fields) : string =
-    match fields with
-    | Model.Fields fields -> Fmt.str "\n%s" (fields_to_string fields)
-
-  let declaration_to_string (definition : Model.declaration) : string =
-    match definition with
-    | Model.Declaration (id, fields) ->
-        Fmt.str "model %s {%s}\n" id (fields_to_string fields)
+        Fmt.str "\n  %s" (string_of_field field) ^ string_of_fields fields
 end
 
-let declaration_to_string (declaration : declaration) : string =
+let string_of_declaration (declaration : declaration) : string =
   match declaration with
-  | Model declaration -> ModelPrinter.declaration_to_string declaration
+  | Model (_, model_id, model_fields) ->
+      Fmt.str "model %s {%s\n}\n" model_id
+        (ModelPrinter.string_of_fields model_fields)
 
-let rec program_to_string (Program program) : string =
+let rec string_of_program (Program program) : string =
   match program with
   | [] -> ""
   | definition :: definitions ->
-      declaration_to_string definition ^ program_to_string (Program definitions)
+      string_of_declaration definition ^ string_of_program (Program definitions)
