@@ -33,7 +33,7 @@
 %token          SEMICOLON
 %token          EOF
 
-%start <program> program
+%start <ast> ast
 
 %type <Model.field> model_field
 %type <declaration> declaration
@@ -94,7 +94,7 @@ declaration:
     { Model($startpos, model_id, model_fields) }
   ;
 
-program:
+ast:
   | declarations = list(declaration); EOF
-    { Program(declarations) }
+    { Ast(declarations) }
   ;

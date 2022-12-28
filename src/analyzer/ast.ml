@@ -40,5 +40,5 @@ end
 (* The different types of declarations in the language *)
 type declaration = Model of loc * id * Model.field list
 
-(* Program type *)
-type program = Program of declaration list
+(* Ast type *)
+type ast = Ast of declaration list

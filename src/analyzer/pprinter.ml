@@ -95,5 +95,5 @@ let rec string_of_declarations (declarations : declaration list) : string =
       ^ ",\n"
       ^ string_of_declarations declarations
 
-let string_of_program (Program declarations) : string =
-  Fmt.str "Program(\n%s\n)" (string_of_declarations declarations)
+let string_of_ast (Ast declarations) : string =
+  Fmt.str "Ast(\n%s\n)" (string_of_declarations declarations)
