@@ -4,7 +4,7 @@
       {
           "match": ".$ml",
           "cmd": "dune build"
-      },
+      }
     ]
   },
   "editor.tabSize": 2,
@@ -17,6 +17,10 @@
   "cSpell.words": [
     "cnum",
     "concat",
+    "Hashtbl",
     "lnum"
+  ],
+  "cSpell.enableFiletypes": [
+    "ocaml.menhir"
   ]
 }

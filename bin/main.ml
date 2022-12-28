@@ -1,5 +1,5 @@
-open Analyzer
 open Core
+open Analyzer
 
 let print_error_position (lexbuf : Lexing.lexbuf) =
   let pos = lexbuf.lex_curr_p in
@@ -7,14 +7,14 @@ let print_error_position (lexbuf : Lexing.lexbuf) =
 
 let parse_with_error (lexbuf : Lexing.lexbuf) =
   try Ok (Parser.ast Lexer.token lexbuf) with
-  | Lexer.SyntaxError msg ->
+  | Error.SyntaxError msg ->
       let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in
-      Error (Error.of_string error_msg)
+      Error (Core.Error.of_string error_msg)
   | Parser.Error ->
       let error_msg =
         Fmt.str "%s: Syntax error@." (print_error_position lexbuf)
       in
-      Error (Error.of_string error_msg)
+      Error (Core.Error.of_string error_msg)
 
 let parse_file (filename : string) =
   let file_content = In_channel.read_all filename in
@@ -26,4 +26,4 @@ let () =
   print_string (Fmt.str "Parsing %s\n" filename);
   match parse_file filename with
   | Ok ast -> print_string (Pprinter.string_of_ast ast)
-  | Error error -> print_string (Error.to_string_hum error)
+  | Error error -> print_string (Core.Error.to_string_hum error)

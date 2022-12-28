@@ -1,8 +1,7 @@
 {
   open Lexing
   open Parser
-
-  exception SyntaxError of string
+  open Error
 
   let next_line lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -45,7 +44,7 @@ rule token =
   | whitespace       { token lexbuf }
   | newline          { next_line lexbuf; token lexbuf }
   | eof              { EOF }
-  | _                { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
+  | _                { raise (SyntaxError ("SyntaxError: Unexpected charachter " ^ Lexing.lexeme lexbuf)) }
 
 and read_string buf = parse
   | '"'           { STRING (Buffer.contents buf) }
