@@ -64,9 +64,9 @@ model_field_attr_args:
 
 model_field_attr:
   | attr = MODEL_FIELD_ATTR;
-    { Model.AttributeNoArgs($startpos, attr) }
+    { Model.AttrNoArgs($startpos, attr) }
   | attr = MODEL_FIELD_ATTR; LEFT_PARAN; args = separated_list(COMMA, model_field_attr_args); RIGHT_PARAN
-    { Model.AttributeWithArgs($startpos, attr, args) }
+    { Model.AttrWithArgs($startpos, attr, args) }
   ;
 
 model_field_type:

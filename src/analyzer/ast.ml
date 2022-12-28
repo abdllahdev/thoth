@@ -26,8 +26,8 @@ module Model = struct
     | AttrArgNumber of loc * int
 
   type field_attr =
-    | AttributeNoArgs of loc * id
-    | AttributeWithArgs of loc * id * field_attr_arg list
+    | AttrNoArgs of loc * id
+    | AttrWithArgs of loc * id * field_attr_arg list
 
   type field =
     | FieldNoModifierNoAttrs of loc * id * field_type

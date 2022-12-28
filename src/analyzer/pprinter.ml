@@ -25,8 +25,8 @@ module ModelPrinter = struct
 
   let string_of_field_attr (attr : Model.field_attr) : string =
     match attr with
-    | Model.AttributeNoArgs (_, id) -> Fmt.str "%s" id
-    | Model.AttributeWithArgs (_, id, args) ->
+    | Model.AttrNoArgs (_, id) -> Fmt.str "%s" id
+    | Model.AttrWithArgs (_, id, args) ->
         Fmt.str "%s(%s)" id (string_of_field_attr_args args)
 
   let rec string_of_field_attrs (attrs : Model.field_attr list) : string =
