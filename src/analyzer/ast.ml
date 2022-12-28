@@ -16,7 +16,7 @@ module Model = struct
     | Bytes of loc
     | Custom of loc * string
 
-  type field_type_modifier = List | Optional
+  type field_type_modifier = NoModifier | List | Optional
 
   type field_attr_arg =
     | AttrArgString of loc * string
@@ -25,16 +25,10 @@ module Model = struct
     | AttrArgBoolean of loc * bool
     | AttrArgNumber of loc * int
 
-  type field_attr =
-    | AttrNoArgs of loc * id
-    | AttrWithArgs of loc * id * field_attr_arg list
+  type field_attr = Attribute of loc * id * field_attr_arg list
 
   type field =
-    | FieldNoModifierNoAttrs of loc * id * field_type
-    | FieldWithModifierNoAttrs of loc * id * field_type * field_type_modifier
-    | FieldNoModifierWithAttrs of loc * id * field_type * field_attr list
-    | FieldWithModifierWithAttrs of
-        loc * id * field_type * field_type_modifier * field_attr list
+    | Field of loc * id * field_type * field_type_modifier * field_attr list
 end
 
 (* The different types of declarations in the language *)

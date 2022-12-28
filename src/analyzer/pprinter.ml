@@ -25,8 +25,7 @@ module ModelPrinter = struct
 
   let string_of_field_attr (attr : Model.field_attr) : string =
     match attr with
-    | Model.AttrNoArgs (_, id) -> Fmt.str "%s" id
-    | Model.AttrWithArgs (_, id, args) ->
+    | Model.Attribute (_, id, args) ->
         Fmt.str "%s(%s)" id (string_of_field_attr_args args)
 
   let rec string_of_field_attrs (attrs : Model.field_attr list) : string =
@@ -38,7 +37,10 @@ module ModelPrinter = struct
 
   let string_of_field_type_modifier (modifier : Model.field_type_modifier) :
       string =
-    match modifier with Model.List -> "[]" | Model.Optional -> "?"
+    match modifier with
+    | Model.NoModifier -> ""
+    | Model.List -> "[]"
+    | Model.Optional -> "?"
 
   let string_of_field_type (field_type : Model.field_type) : string =
     match field_type with
@@ -55,17 +57,7 @@ module ModelPrinter = struct
 
   let string_of_field (field : Model.field) : string =
     match field with
-    | Model.FieldNoModifierNoAttrs (_, id, field_type) ->
-        Fmt.str "\"%s\", %s" id (string_of_field_type field_type)
-    | Model.FieldWithModifierNoAttrs (_, id, field_type, modifier) ->
-        Fmt.str "\"%s\", %s%s" id
-          (string_of_field_type field_type)
-          (string_of_field_type_modifier modifier)
-    | Model.FieldNoModifierWithAttrs (_, id, field_type, attrs) ->
-        Fmt.str "\"%s\", %s, %s" id
-          (string_of_field_type field_type)
-          (string_of_field_attrs attrs)
-    | Model.FieldWithModifierWithAttrs (_, id, field_type, modifier, attrs) ->
+    | Model.Field (_, id, field_type, modifier, attrs) ->
         Fmt.str "\"%s\", %s%s, %s" id
           (string_of_field_type field_type)
           (string_of_field_type_modifier modifier)

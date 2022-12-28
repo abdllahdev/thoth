@@ -63,10 +63,8 @@ model_field_attr_args:
   ;
 
 model_field_attr:
-  | attr = MODEL_FIELD_ATTR;
-    { Model.AttrNoArgs($startpos, attr) }
   | attr = MODEL_FIELD_ATTR; LEFT_PARAN; args = separated_list(COMMA, model_field_attr_args); RIGHT_PARAN
-    { Model.AttrWithArgs($startpos, attr, args) }
+    { Model.Attribute($startpos, attr, args) }
   ;
 
 model_field_type:
@@ -74,14 +72,10 @@ model_field_type:
     { parse_field_type field_type $startpos }
 
 model_field:
-  | id = ID; field_type = model_field_type; SEMICOLON
-    { Model.FieldNoModifierNoAttrs($startpos, id, field_type) }
-  | id = ID; field_type = model_field_type; modifier = model_field_modifier; SEMICOLON
-    { Model.FieldWithModifierNoAttrs($startpos, id, field_type, modifier) }
   | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
-    { Model.FieldNoModifierWithAttrs($startpos, id, field_type, attrs) }
+    { Model.Field($startpos, id, field_type, Model.NoModifier, attrs) }
   | id = ID; field_type = model_field_type; modifier = model_field_modifier; attrs = list(model_field_attr); SEMICOLON
-    { Model.FieldWithModifierWithAttrs($startpos, id, field_type, modifier, attrs) }
+    { Model.Field($startpos, id, field_type, modifier, attrs) }
   ;
 
 model_fields:
