@@ -1,14 +1,14 @@
 model User {
-	id        Int     @id();
+	id        Int     @id;
 	firstName String;
 	lastName  String;
 	tasks     Tasks[];
 }
 
 model Task {
-	id     Int     @id();
+	id     Int     @id;
 	title  String;
 	isDone Boolean @default(false);
 	user   User    @relation("taskUser", [userId], [User]);
-	userId Int     @unique();
+	userId Int     @unique;
 }
