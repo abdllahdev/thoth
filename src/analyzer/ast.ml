@@ -21,7 +21,7 @@ module Model = struct
   type field_attr_arg =
     | AttrArgString of loc * string
     | AttrArgFunc of loc * string
-    | AttrArgRefList of loc * string list
+    | AttrArgRefList of loc * id list
     | AttrArgBoolean of loc * bool
     | AttrArgNumber of loc * int
 
