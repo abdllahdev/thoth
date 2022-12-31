@@ -1,5 +1,6 @@
 open Core
 open Analyzer
+open Type_checker
 
 let print_error_position (lexbuf : Lexing.lexbuf) =
   let pos = lexbuf.lex_curr_p in
@@ -25,5 +26,7 @@ let () =
   let filename = "./examples/test.ra" in
   print_string (Fmt.str "Parsing %s\n" filename);
   match parse_file filename with
-  | Ok ast -> print_string (Pprinter.string_of_ast ast)
+  | Ok ast ->
+      print_string (Pprinter.string_of_ast ast);
+      TypeChecker.run ast
   | Error error -> print_string (Core.Error.to_string_hum error)

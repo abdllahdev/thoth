@@ -4,9 +4,7 @@
    3- Do type checking *)
 
 open Ast
-open Error
-
-(* open Symbol_table *)
+open Symbol_table
 
 (* TODO:
    1- Populate the SymbolTable.
@@ -14,37 +12,21 @@ open Error
    Model errors to check:
    4- Check if there is any *)
 
-let check_field_attr (Model.Attribute (_, id, args)) : unit =
-  let args_length = List.length args in
-  match id with
-  | "@id" | "@unqiue" | "@ignore" | "@updatedAt" ->
-      if args_length >= 1 then
-        raise
-          (TypeError
-             (Fmt.str
-                "TypeError: Expected 0 argument in @default but received %d."
-                args_length))
-  | "@default" -> (
-      if args_length > 1 || args_length == 0 then
-        raise
-          (TypeError
-             (Fmt.str
-                "TypeError: Expected 1 argument in @default but received %d."
-                args_length))
-      else
-        let arg = List.hd args in
-        match arg with
-        | AttrArgFunc (_, _) ->
-            raise
-              (TypeError
-                 "TypeError: Attribute @default doesn't accept functions as \
-                  arguments.")
-        | _ -> ())
-  | "@relation" ->
-      if args_length > 3 || args_length < 3 then
-        raise
-          (TypeError
-             (Fmt.str
-                "TypeError: Expected 3 argument in @relation but received %d."
-                args_length))
-  | _ -> raise (NameError (Fmt.str "NameError: Unknown attribute %s." id))
+module TypeChecker = struct
+  (* let check_declaration (declaration : declaration)
+         (table : 'a GlobalSymbolTable.t) : unit =
+       match declaration with Model (_, id, fields) -> failwith "unimplemented"
+
+     let rec semantic_check (Ast declarations) (table : 'a GlobalSymbolTable.t) :
+         unit =
+       match declarations with
+       | [] -> ()
+       | declaration :: declarations ->
+           check_declaration declaration table;
+           semantic_check (Ast declarations) table *)
+
+  let run (Ast declarations) : unit =
+    let table = GlobalSymbolTable.create () in
+    SymbolTableManager.populate (Ast declarations) table
+  (* semantic_check (Ast declarations) table *)
+end

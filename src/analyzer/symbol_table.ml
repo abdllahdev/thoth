@@ -50,23 +50,66 @@ module SymbolTableManager = struct
     field_attrs_table : Model.field_attr_arg list LocalSymbolTable.t;
   }
 
-  let rec add_field_attrs (table : 'a LocalSymbolTable.t)
+  let check_field_attr (Model.Attribute (loc, id, args)) : unit =
+    let args_length = List.length args in
+    match id with
+    | "@id" | "@unique" | "@ignore" | "@updatedAt" ->
+        if args_length >= 1 then
+          raise
+            (TypeError
+               (Fmt.str
+                  "TypeError@(%s): Expected 0 argument in '%s' but received %d."
+                  (Pprinter.string_of_loc loc)
+                  id args_length))
+    | "@default" -> (
+        if args_length > 1 || args_length == 0 then
+          raise
+            (TypeError
+               (Fmt.str
+                  "TypeError@(%s): Expected 1 argument in '@default' but \
+                   received %d."
+                  (Pprinter.string_of_loc loc)
+                  args_length))
+        else
+          let arg = List.hd args in
+          match arg with
+          | AttrArgFunc (_, _) ->
+              raise
+                (TypeError
+                   (Fmt.str
+                      "TypeError@(%s): Attribute '@default' doesn't accept \
+                       functions as arguments."
+                      (Pprinter.string_of_loc loc)))
+          | _ -> ())
+    | "@relation" ->
+        if args_length > 3 || args_length < 3 then
+          raise
+            (TypeError
+               (Fmt.str
+                  "TypeError@(%s): Expected 3 argument in '@relation' but \
+                   received %d."
+                  (Pprinter.string_of_loc loc)
+                  args_length))
+    | _ -> raise (NameError (Fmt.str "NameError: Unknown attribute '%s'." id))
+
+  let rec add_field_attrs (table : 'a LocalSymbolTable.t) (field_id : string)
       (attrs : Model.field_attr list) : unit =
     match attrs with
     | [] -> ()
     | attr :: attrs ->
-        Type_checker.check_field_attr attr;
+        check_field_attr attr;
         (match attr with
-        | Model.Attribute (_, id, args) ->
+        | Model.Attribute (loc, id, args) ->
             if LocalSymbolTable.contains table id then
               raise
                 (NameError
                    (Fmt.str
-                      "NameError: A field cannot have the same attribute %s \
-                       assigned twice."
-                      id));
+                      "NameError@(%s): The field '%s' cannot have the same \
+                       attribute '%s' assigned twice."
+                      (Pprinter.string_of_loc loc)
+                      field_id id));
             LocalSymbolTable.allocate table id args);
-        add_field_attrs table attrs
+        add_field_attrs table field_id attrs
 
   let rec add_fields (table : 'a LocalSymbolTable.t) (fields : Model.field list)
       : unit =
@@ -74,15 +117,17 @@ module SymbolTableManager = struct
     | [] -> ()
     | field :: fields ->
         (match field with
-        | Model.Field (_, id, field_type, field_type_modifier, field_attrs) ->
+        | Model.Field (loc, id, field_type, field_type_modifier, field_attrs) ->
             if LocalSymbolTable.contains table id then
               raise
-                (MultiDefinition
+                (MultiDefinitionsError
                    (Fmt.str
-                      "MultiDefinition: The field %s was defined multiple times"
+                      "MultiDefinitionsError@(%s): The field '%s' was defined \
+                       multiple times"
+                      (Pprinter.string_of_loc loc)
                       id));
             let field_attrs_table = LocalSymbolTable.create () in
-            add_field_attrs field_attrs_table field_attrs;
+            add_field_attrs field_attrs_table id field_attrs;
             let field =
               { field_type; field_type_modifier; field_attrs_table }
             in
@@ -94,7 +139,15 @@ module SymbolTableManager = struct
     | [] -> ()
     | declaration :: declarations ->
         (match declaration with
-        | Model (_, id, fields) ->
+        | Model (loc, id, fields) ->
+            if GlobalSymbolTable.contains table id then
+              raise
+                (MultiDefinitionsError
+                   (Fmt.str
+                      "MultiDefinitionsError@(%s): The field '%s' was defined \
+                       multiple times"
+                      (Pprinter.string_of_loc loc)
+                      id));
             let model_table = LocalSymbolTable.create () in
             add_fields model_table fields;
             GlobalSymbolTable.allocate table id model_table);
