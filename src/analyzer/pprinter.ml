@@ -44,16 +44,16 @@ module ModelPrinter = struct
 
   let string_of_field_type (field_type : Model.field_type) : string =
     match field_type with
-    | Model.String _ -> "String"
-    | Model.Int _ -> "Int"
-    | Model.Json _ -> "Json"
-    | Model.Boolean _ -> "Boolean"
-    | Model.Float _ -> "Float"
-    | Model.Decimal _ -> "Decimal"
-    | Model.DateTime _ -> "DateTime"
-    | Model.BigInt _ -> "BigInt"
-    | Model.Bytes _ -> "Bytes"
-    | Model.Custom (_, typ) -> typ
+    | Model.FieldTypeString _ -> "String"
+    | Model.FieldTypeInt _ -> "Int"
+    | Model.FieldTypeJson _ -> "Json"
+    | Model.FieldTypeBoolean _ -> "Boolean"
+    | Model.FieldTypeFloat _ -> "Float"
+    | Model.FieldTypeDecimal _ -> "Decimal"
+    | Model.FieldTypeDateTime _ -> "DateTime"
+    | Model.FieldTypeBigInt _ -> "BigInt"
+    | Model.FieldTypeBytes _ -> "Bytes"
+    | Model.FieldTypeCustom (_, typ) -> typ
 
   let string_of_field (field : Model.field) : string =
     match field with

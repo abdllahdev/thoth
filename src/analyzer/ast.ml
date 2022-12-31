@@ -5,16 +5,16 @@ type loc = Lexing.position
 (* Model definition *)
 module Model = struct
   type field_type =
-    | String of loc
-    | Int of loc
-    | Json of loc
-    | Boolean of loc
-    | Float of loc
-    | Decimal of loc
-    | DateTime of loc
-    | BigInt of loc
-    | Bytes of loc
-    | Custom of loc * string
+    | FieldTypeString of loc
+    | FieldTypeInt of loc
+    | FieldTypeJson of loc
+    | FieldTypeBoolean of loc
+    | FieldTypeFloat of loc
+    | FieldTypeDecimal of loc
+    | FieldTypeDateTime of loc
+    | FieldTypeBigInt of loc
+    | FieldTypeBytes of loc
+    | FieldTypeCustom of loc * string
 
   type field_type_modifier = NoModifier | List | Optional
 

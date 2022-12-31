@@ -2,7 +2,7 @@ model User {
 	id        Int     @id;
 	firstName String;
 	lastName  String;
-	tasks     Tasks[];
+	tasks     Task[];
 }
 
 model Task {

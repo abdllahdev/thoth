@@ -134,7 +134,7 @@ module SymbolTableManager = struct
             LocalSymbolTable.allocate table id field);
         add_fields table fields
 
-  let rec populate (Ast declarations) (table : 'a GlobalSymbolTable.t) : unit =
+  let rec populate (table : 'a GlobalSymbolTable.t) (Ast declarations) : unit =
     match declarations with
     | [] -> ()
     | declaration :: declarations ->
@@ -151,5 +151,5 @@ module SymbolTableManager = struct
             let model_table = LocalSymbolTable.create () in
             add_fields model_table fields;
             GlobalSymbolTable.allocate table id model_table);
-        populate (Ast declarations) table
+        populate table (Ast declarations)
 end
