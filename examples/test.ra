@@ -9,6 +9,6 @@ model Task {
 	id     Int     @id;
 	title  String;
 	isDone Boolean @default(false);
-	user   User    @relation("taskUser", [userId], [User]);
+	user   User    @relation("taskUser", userId, User);
 	userId Int     @unique;
 }

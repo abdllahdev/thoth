@@ -1,10 +1,12 @@
 open Ast
 open Error
 open Symbol_table
+open Core
 
 module ModelTypeChecker = struct
-  let check_field_attr (_ : 'a GlobalSymbolTable.t) (_ : 'a LocalSymbolTable.t)
-      (Model.Attribute (loc, id, args)) : unit =
+  let check_field_attr (global_table : 'a GlobalSymbolTable.t)
+      (model_table : 'a LocalSymbolTable.t) (Model.Attribute (loc, id, args)) :
+      unit =
     let args_length = List.length args in
     match id with
     | "@id" | "@unique" | "@ignore" | "@updatedAt" ->
@@ -16,7 +18,7 @@ module ModelTypeChecker = struct
                   (Pprinter.string_of_loc loc)
                   id args_length))
     | "@default" -> (
-        if args_length > 1 || args_length == 0 then
+        if args_length > 1 || equal_int args_length 0 then
           raise
             (TypeError
                (Fmt.str
@@ -27,18 +29,23 @@ module ModelTypeChecker = struct
         else
           let arg = List.hd args in
           match arg with
-          | Model.AttrArgFunc (_, _) ->
-              raise
-                (TypeError
-                   (Fmt.str
-                      "TypeError@(%s): Attribute '@default' doesn't accept \
-                       functions as arguments."
-                      (Pprinter.string_of_loc loc)))
-          | Model.AttrArgString _ -> ()
-          | Model.AttrArgBoolean _ -> ()
-          | Model.AttrArgNumber _ -> ()
-          | Model.AttrArgRefList _ -> ())
-    | "@relation" ->
+          | Some arg -> (
+              match arg with
+              | Model.AttrArgFunc _ | Model.AttrArgRefList _
+              | Model.AttrArgRef _ ->
+                  raise
+                    (TypeError
+                       (Fmt.str
+                          "TypeError@(%s): Attribute '@default' can only be of \
+                           type string, boolean or number"
+                          (Pprinter.string_of_loc loc)))
+              (* TODO: Implement this to check the attribute type matches the field type *)
+              | Model.AttrArgString _ -> ()
+              | Model.AttrArgBoolean _ -> ()
+              | Model.AttrArgNumber _ -> ())
+          | None -> ())
+    (* TODO: Implement a function to check for attribute arguments *)
+    | "@relation" -> (
         if args_length > 3 || args_length < 3 then
           raise
             (TypeError
@@ -46,8 +53,56 @@ module ModelTypeChecker = struct
                   "TypeError@(%s): Expected 3 argument in '@relation' but \
                    received %d."
                   (Pprinter.string_of_loc loc)
-                  args_length))
-    | _ -> raise (NameError (Fmt.str "NameError: Unknown attribute '%s'." id))
+                  args_length));
+        let relationName = List.nth args 0 in
+        (match relationName with
+        | Some argString -> (
+            match argString with
+            | Model.AttrArgString _ -> ()
+            | _ ->
+                raise
+                  (TypeError
+                     (Fmt.str "TypeError@(%s): Relation name must be string."
+                        (Pprinter.string_of_loc loc))))
+        | None -> ());
+        (let relationFields = List.nth args 1 in
+         match relationFields with
+         | Some argList -> (
+             match argList with
+             | Model.AttrArgRef (loc, field) ->
+                 if not (LocalSymbolTable.contains model_table field) then
+                   raise
+                     (TypeError
+                        (Fmt.str "TypeError@(%s): Field '%s' is not defined"
+                           (Pprinter.string_of_loc loc)
+                           field))
+             | _ ->
+                 raise
+                   (TypeError
+                      (Fmt.str
+                         "TypeError@(%s): Relation fields must be a reference."
+                         (Pprinter.string_of_loc loc))))
+         | None -> ());
+        let relationTables = List.nth args 2 in
+        match relationTables with
+        | Some argList -> (
+            match argList with
+            | Model.AttrArgRef (_, ref) ->
+                if not (GlobalSymbolTable.contains global_table ref) then
+                  raise
+                    (TypeError
+                       (Fmt.str "TypeError@(%s): Model '%s' is not defined"
+                          (Pprinter.string_of_loc loc)
+                          ref))
+            | _ ->
+                raise
+                  (TypeError
+                     (Fmt.str
+                        "TypeError@(%s): Relation references must be a \
+                         reference."
+                        (Pprinter.string_of_loc loc))))
+        | None -> ())
+    | _ -> raise (NameError (Fmt.str "NameError: Undefined attribute '%s'." id))
 
   let rec check_field_attrs (global_table : 'a GlobalSymbolTable.t)
       (model_table : 'a LocalSymbolTable.t)
@@ -65,7 +120,7 @@ module ModelTypeChecker = struct
         if not (GlobalSymbolTable.contains global_table field_type_custom) then
           raise
             (NameError
-               (Fmt.str "NameError@(%s): Unknown type '%s'"
+               (Fmt.str "NameError@(%s): Undefined type '%s'"
                   (Pprinter.string_of_loc loc)
                   field_type_custom))
     | _ -> ()

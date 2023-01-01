@@ -42,6 +42,8 @@ model_field_attr_args:
     { Model.AttrArgFunc($startpos, func) }
   | LEFT_BRACKET; refs = separated_nonempty_list(COMMA, ID); RIGHT_BRACKET
     { Model.AttrArgRefList($startpos, refs) }
+  | ref = ID
+    { Model.AttrArgRef($startpos, ref) }
   | TRUE
     { Model.AttrArgBoolean($startpos, true) }
   | FALSE
