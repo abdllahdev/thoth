@@ -5,8 +5,8 @@ open Core
 
 module ModelTypeChecker = struct
   let check_field_attr (global_table : 'a GlobalSymbolTable.t)
-      (model_table : 'a LocalSymbolTable.t) (Model.Attribute (loc, id, args)) :
-      unit =
+      (model_table : 'a LocalSymbolTable.t) (field_id : id)
+      (Model.Attribute (loc, id, args)) : unit =
     let args_length = List.length args in
     match id with
     | "@id" | "@unique" | "@ignore" | "@updatedAt" ->
@@ -22,38 +22,73 @@ module ModelTypeChecker = struct
           raise
             (TypeError
                (Fmt.str
-                  "TypeError@(%s): Expected 1 argument in '@default' but \
-                   received %d."
+                  "TypeError@(%s): Expected 1 argument in '%s' but received %d."
                   (Pprinter.string_of_loc loc)
-                  args_length))
+                  id args_length))
         else
           let arg = List.hd args in
           match arg with
           | Some arg -> (
+              let field_record : SymbolTableManager.field_record =
+                LocalSymbolTable.lookup model_table field_id
+              in
+              let field_type = field_record.field_type in
               match arg with
-              | Model.AttrArgFunc _ | Model.AttrArgRefList _
-              | Model.AttrArgRef _ ->
+              | Model.AttrArgFunc (loc, _)
+              | Model.AttrArgRefList (loc, _)
+              | Model.AttrArgRef (loc, _) ->
                   raise
                     (TypeError
                        (Fmt.str
-                          "TypeError@(%s): Attribute '@default' can only be of \
-                           type string, boolean or number"
-                          (Pprinter.string_of_loc loc)))
+                          "TypeError@(%s): Attribute '%s' can only be of type \
+                           string, boolean or number"
+                          (Pprinter.string_of_loc loc)
+                          id))
               (* TODO: Implement this to check the attribute type matches the field type *)
-              | Model.AttrArgString _ -> ()
-              | Model.AttrArgBoolean _ -> ()
-              | Model.AttrArgNumber _ -> ())
+              | Model.AttrArgString (loc, _) -> (
+                  match field_type with
+                  | Model.FieldTypeString -> ()
+                  | _ ->
+                      raise
+                        (TypeError
+                           (Fmt.str
+                              "TypeError@(%s): Attribute '%s' value must match \
+                               the field type"
+                              (Pprinter.string_of_loc loc)
+                              id)))
+              | Model.AttrArgBoolean (loc, _) -> (
+                  match field_type with
+                  | Model.FieldTypeBoolean -> ()
+                  | _ ->
+                      raise
+                        (TypeError
+                           (Fmt.str
+                              "TypeError@(%s): Attribute '%s' value must match \
+                               the field type"
+                              (Pprinter.string_of_loc loc)
+                              id)))
+              | Model.AttrArgNumber (loc, _) -> (
+                  match field_type with
+                  | Model.FieldTypeInt | Model.FieldTypeDecimal
+                  | Model.FieldTypeFloat | Model.FieldTypeBigInt ->
+                      ()
+                  | _ ->
+                      raise
+                        (TypeError
+                           (Fmt.str
+                              "TypeError@(%s): Attribute '%s' value must match \
+                               the field type"
+                              (Pprinter.string_of_loc loc)
+                              id))))
           | None -> ())
-    (* TODO: Implement a function to check for attribute arguments *)
     | "@relation" -> (
         if args_length > 3 || args_length < 3 then
           raise
             (TypeError
                (Fmt.str
-                  "TypeError@(%s): Expected 3 argument in '@relation' but \
-                   received %d."
+                  "TypeError@(%s): Expected 3 argument in '%s' but received %d."
                   (Pprinter.string_of_loc loc)
-                  args_length));
+                  id args_length));
         let relationName = List.nth args 0 in
         (match relationName with
         | Some argString -> (
@@ -105,13 +140,13 @@ module ModelTypeChecker = struct
     | _ -> raise (NameError (Fmt.str "NameError: Undefined attribute '%s'." id))
 
   let rec check_field_attrs (global_table : 'a GlobalSymbolTable.t)
-      (model_table : 'a LocalSymbolTable.t)
+      (model_table : 'a LocalSymbolTable.t) (field_id : id)
       (field_attrs : Model.field_attr list) : unit =
     match field_attrs with
     | [] -> ()
     | field_attr :: field_attrs ->
-        check_field_attr global_table model_table field_attr;
-        check_field_attrs global_table model_table field_attrs
+        check_field_attr global_table model_table field_id field_attr;
+        check_field_attrs global_table model_table field_id field_attrs
 
   let check_field_type (global_table : 'a GlobalSymbolTable.t)
       (field_type : Model.field_type) : unit =
@@ -128,9 +163,9 @@ module ModelTypeChecker = struct
   let check_field (global_table : 'a GlobalSymbolTable.t)
       (model_table : 'a LocalSymbolTable.t) (field : Model.field) : unit =
     match field with
-    | Field (_, _, field_type, _, field_attrs) ->
+    | Field (_, id, field_type, _, field_attrs) ->
         check_field_type global_table field_type;
-        check_field_attrs global_table model_table field_attrs
+        check_field_attrs global_table model_table id field_attrs
 
   let rec check_fields (global_table : 'a GlobalSymbolTable.t)
       (model_table : 'a LocalSymbolTable.t) (fields : Model.field list) : unit =
