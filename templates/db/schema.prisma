@@ -11,9 +11,7 @@ datasource db {
 
 model {{ model.id }} {
   {% for field in model.fields %}
-
   {{ field.id }} {{ field.type }} {{ field.attrs }}
-
   {% endfor %}
 }
 

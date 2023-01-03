@@ -16,16 +16,25 @@ type db_specs = { models : model_specs list }
 let generate_attr_arg_specs (arg : Model.field_attr_arg) : string =
   match arg with
   | AttrArgString (_, str) -> Fmt.str "%s" str
-  | AttrArgRef (_, id) -> id
+  | AttrArgRef (_, id) -> Fmt.str "[%s]" id
   | AttrArgBoolean (_, boolean) -> Fmt.str "%b" boolean
   | AttrArgNumber (_, number) -> Fmt.str "%d" number
   | AttrArgFunc (_, func) -> Fmt.str "%s()" func
 
 let generate_attr_specs (Model.Attribute (_, id, args)) : string =
   if List.length args > 0 then
-    Fmt.str "%s(%s)" id
-      (String.concat ", " (List.map generate_attr_arg_specs args))
-  else Fmt.str "%s" id
+    match id with
+    | "@relatoin" ->
+        Fmt.str "%s(%s)" id
+          (String.concat ", " (List.map generate_attr_arg_specs args))
+    | "@default" ->
+        Fmt.str "%s(%s)" id
+          (String.concat ", " (List.map generate_attr_arg_specs args))
+    | _ -> ""
+  else
+    match id with
+    | "@id" -> Fmt.str "%s @default(autoincrement())" id
+    | _ -> Fmt.str "%s" id
 
 let generate_attrs_specs (field_attrs : Model.field_attr list) : string =
   String.concat " " (List.map generate_attr_specs field_attrs)
