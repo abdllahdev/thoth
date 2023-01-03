@@ -10,8 +10,6 @@ module ModelPrinter = struct
     match arg with
     | Model.AttrArgString (_, str) -> Fmt.str "\"%s\"" str
     | Model.AttrArgBoolean (_, boolean) -> Fmt.str "%b" boolean
-    | Model.AttrArgRefList (_, list) ->
-        Fmt.str "[%s]" (String.concat ~sep:", " list)
     | Model.AttrArgRef (_, ref) -> Fmt.str "%s" ref
     | Model.AttrArgFunc (_, func) -> Fmt.str "%s()" func
     | Model.AttrArgNumber (_, num) -> Fmt.str "%d" num

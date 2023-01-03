@@ -1,2 +1,3 @@
 (library
- (name app_sepcs))
+ (name app_specs)
+ (libraries core fmt analyzer))

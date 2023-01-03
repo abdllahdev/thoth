@@ -34,17 +34,31 @@ module ModelTypeChecker = struct
               in
               let field_type = field_record.field_type in
               match arg with
-              | Model.AttrArgFunc (loc, _)
-              | Model.AttrArgRefList (loc, _)
               | Model.AttrArgRef (loc, _) ->
                   raise
                     (TypeError
                        (Fmt.str
                           "TypeError@(%s): Attribute '%s' can only be of type \
-                           string, boolean or number"
+                           string, boolean, number, or 'now()' func"
                           (Pprinter.string_of_loc loc)
                           id))
-              (* TODO: Implement this to check the attribute type matches the field type *)
+              | Model.AttrArgFunc (loc, func) -> (
+                  if not (String.equal func "now") then
+                    raise
+                      (NameError
+                         (Fmt.str "NameError@(%s): Undefined function %s"
+                            (Pprinter.string_of_loc loc)
+                            func));
+                  match field_type with
+                  | Model.FieldTypeDateTime -> ()
+                  | _ ->
+                      raise
+                        (TypeError
+                           (Fmt.str
+                              "TypeError@(%s): Attribute '%s' value must match \
+                               the field type"
+                              (Pprinter.string_of_loc loc)
+                              id)))
               | Model.AttrArgString (loc, _) -> (
                   match field_type with
                   | Model.FieldTypeString -> ()

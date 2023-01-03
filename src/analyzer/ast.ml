@@ -22,7 +22,6 @@ module Model = struct
     | AttrArgString of loc * string
     | AttrArgFunc of loc * string
     | AttrArgRef of loc * id
-    | AttrArgRefList of loc * id list
     | AttrArgBoolean of loc * bool
     | AttrArgNumber of loc * int
 

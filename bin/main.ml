@@ -1,6 +1,8 @@
 open Core
 open Analyzer
 open Type_checker
+open App_specs
+open Generator
 
 let print_error_position (lexbuf : Lexing.lexbuf) =
   let pos = lexbuf.lex_curr_p in
