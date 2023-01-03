@@ -30,5 +30,7 @@ let () =
   match parse_file filename with
   | Ok ast ->
       TypeChecker.run ast;
-      print_string (Pprinter.string_of_ast ast)
+      print_string (Pprinter.string_of_ast ast);
+      let db_specs = Db_specs.generate_db_specs ast in
+      print_string (Db_generator.generate_db db_specs)
   | Error error -> print_string (Core.Error.to_string_hum error)

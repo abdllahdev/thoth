@@ -1,2 +1,3 @@
 (library
- (name generator))
+ (name generator)
+ (libraries core fmt jingoo app_specs))
