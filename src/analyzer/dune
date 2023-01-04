@@ -1,6 +1,6 @@
 (library
  (name analyzer)
- (libraries core fmt))
+ (libraries core fmt yojson))
 
 (ocamllex lexer)
 

@@ -28,26 +28,19 @@
 
 %%
 
-model_field_modifier:
-  | QUESTION_MARK
-    { Model.Optional }
-  | LEFT_BRACKET; RIGHT_BRACKET
-    { Model.List }
-  ;
-
 model_field_attr_args:
   | str = STRING
-    { Model.AttrArgString($startpos, str) }
+    { Model.AttrArgString($startpos, (StringLiteral(String, str))) }
   | func = ID; LEFT_PARAN; RIGHT_PARAN
     { Model.AttrArgFunc($startpos, func) }
   | ref = ID
     { Model.AttrArgRef($startpos, ref) }
   | TRUE
-    { Model.AttrArgBoolean($startpos, true) }
+    { Model.AttrArgBoolean($startpos, (BooleanLiteral(Boolean, true))) }
   | FALSE
-    { Model.AttrArgBoolean($startpos, false) }
+    { Model.AttrArgBoolean($startpos, (BooleanLiteral(Boolean, false))) }
   | number = INT
-    { Model.AttrArgNumber($startpos, number) }
+    { Model.AttrArgInt($startpos, (IntLiteral(Int, number))) }
   ;
 
 model_field_attr:
@@ -58,14 +51,21 @@ model_field_attr:
   ;
 
 model_field_type:
+  | field_type = ID; QUESTION_MARK
+    { Composite (Optional (parse_field_type field_type)) }
+  | field_type = ID; LEFT_BRACKET; RIGHT_BRACKET
+    { Composite (List (parse_field_type field_type)) }
+  | field_type = ID; LEFT_BRACKET; RIGHT_BRACKET; QUESTION_MARK
+    { Composite (OptionalList (parse_field_type field_type)) }
   | field_type = ID
-    { parse_field_type field_type $startpos }
+    { Scalar (parse_field_type field_type) }
+  ;
 
 model_field:
   | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
-    { Model.Field($startpos, id, field_type, Model.NoModifier, attrs) }
-  | id = ID; field_type = model_field_type; modifier = model_field_modifier; attrs = list(model_field_attr); SEMICOLON
-    { Model.Field($startpos, id, field_type, modifier, attrs) }
+    { Model.Field($startpos, id, field_type, attrs) }
+  | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
+    { Model.Field($startpos, id, field_type, attrs) }
   ;
 
 model_fields:

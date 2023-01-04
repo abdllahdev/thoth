@@ -5,14 +5,37 @@ let string_of_loc loc =
   Fmt.str "Line:%d Position:%d" loc.Lexing.pos_lnum
     (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1)
 
+let string_of_scalar_type (scalar_type : scalar_type) : string =
+  match scalar_type with
+  | String -> "String"
+  | Int -> "Int"
+  | Json -> "Json"
+  | Boolean -> "Boolean"
+  | DateTime -> "DateTime"
+  | Bytes -> "Bytes"
+  | CustomType custom_type -> custom_type
+
+let string_of_composite_type (composite_type : composite_type) : string =
+  match composite_type with
+  | List scalar_type -> Fmt.str "%s[]" (string_of_scalar_type scalar_type)
+  | Optional scalar_type -> Fmt.str "%s?" (string_of_scalar_type scalar_type)
+  | OptionalList scalar_type ->
+      Fmt.str "%s[]?" (string_of_scalar_type scalar_type)
+
+let string_of_literal (literal : literal) : string =
+  match literal with
+  | StringLiteral (_, str) -> str
+  | BooleanLiteral (_, boolean) -> Fmt.str "%b" boolean
+  | IntLiteral (_, num) -> Fmt.str "%d" num
+
 module ModelPrinter = struct
   let string_of_field_attr_arg (arg : Model.field_attr_arg) =
     match arg with
-    | Model.AttrArgString (_, str) -> Fmt.str "\"%s\"" str
-    | Model.AttrArgBoolean (_, boolean) -> Fmt.str "%b" boolean
+    | Model.AttrArgString (_, str) -> Fmt.str "\"%s\"" (string_of_literal str)
+    | Model.AttrArgBoolean (_, boolean) -> string_of_literal boolean
     | Model.AttrArgRef (_, ref) -> Fmt.str "%s" ref
     | Model.AttrArgFunc (_, func) -> Fmt.str "%s()" func
-    | Model.AttrArgNumber (_, num) -> Fmt.str "%d" num
+    | Model.AttrArgInt (_, num) -> string_of_literal num
 
   let rec string_of_field_attr_args (args : Model.field_attr_arg list) : string
       =
@@ -34,32 +57,16 @@ module ModelPrinter = struct
     | attr :: attrs ->
         string_of_field_attr attr ^ ", " ^ string_of_field_attrs attrs
 
-  let string_of_field_type_modifier (modifier : Model.field_type_modifier) :
-      string =
-    match modifier with
-    | Model.NoModifier -> ""
-    | Model.List -> "[]"
-    | Model.Optional -> "?"
-
-  let string_of_field_type (field_type : Model.field_type) : string =
+  let string_of_field_type (field_type : typ) : string =
     match field_type with
-    | Model.FieldTypeString -> "String"
-    | Model.FieldTypeInt -> "Int"
-    | Model.FieldTypeJson -> "Json"
-    | Model.FieldTypeBoolean -> "Boolean"
-    | Model.FieldTypeFloat -> "Float"
-    | Model.FieldTypeDecimal -> "Decimal"
-    | Model.FieldTypeDateTime -> "DateTime"
-    | Model.FieldTypeBigInt -> "BigInt"
-    | Model.FieldTypeBytes -> "Bytes"
-    | Model.FieldTypeCustom (_, typ) -> typ
+    | Scalar scalar_type -> string_of_scalar_type scalar_type
+    | Composite composite_type -> string_of_composite_type composite_type
 
   let string_of_field (field : Model.field) : string =
     match field with
-    | Model.Field (_, id, field_type, modifier, attrs) ->
-        Fmt.str "\"%s\", %s%s, %s" id
+    | Model.Field (_, id, field_type, attrs) ->
+        Fmt.str "\"%s\", %s, %s" id
           (string_of_field_type field_type)
-          (string_of_field_type_modifier modifier)
           (string_of_field_attrs attrs)
 
   let rec string_of_fields (fields : Model.field list) : string =

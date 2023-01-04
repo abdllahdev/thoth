@@ -33,8 +33,7 @@ end
 
 module SymbolTableManager = struct
   type field_record = {
-    field_type : Model.field_type;
-    field_type_modifier : Model.field_type_modifier;
+    typ : typ;
     field_attrs_table : Model.field_attr_arg list LocalSymbolTable.t;
   }
 
@@ -62,7 +61,7 @@ module SymbolTableManager = struct
     | [] -> ()
     | field :: fields ->
         (match field with
-        | Model.Field (loc, id, field_type, field_type_modifier, field_attrs) ->
+        | Model.Field (loc, id, typ, field_attrs) ->
             if LocalSymbolTable.contains local_table id then
               raise
                 (MultiDefinitionsError
@@ -73,9 +72,7 @@ module SymbolTableManager = struct
                       id));
             let field_attrs_table = LocalSymbolTable.create () in
             add_field_attrs field_attrs_table id field_attrs;
-            let field =
-              { field_type; field_type_modifier; field_attrs_table }
-            in
+            let field = { typ; field_attrs_table } in
             LocalSymbolTable.allocate local_table id field);
         add_fields local_table fields
 

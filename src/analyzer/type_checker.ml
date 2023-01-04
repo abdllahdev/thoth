@@ -3,6 +3,27 @@ open Error
 open Symbol_table
 open Core
 
+let get_custom_scalar_type (scalar_type : scalar_type) : string option =
+  match scalar_type with CustomType str -> Some str | _ -> None
+
+let get_custom_type (typ : typ) : string option =
+  match typ with
+  | Scalar scalar_type -> get_custom_scalar_type scalar_type
+  | Composite composite_type -> (
+      match composite_type with
+      | List scalar_type -> get_custom_scalar_type scalar_type
+      | Optional scalar_type -> get_custom_scalar_type scalar_type
+      | OptionalList scalar_type -> get_custom_scalar_type scalar_type)
+
+let extract_scalar_type (typ : typ) : scalar_type =
+  match typ with
+  | Scalar scalar_type -> scalar_type
+  | Composite composite_type -> (
+      match composite_type with
+      | List scalar_type -> scalar_type
+      | Optional scalar_type -> scalar_type
+      | OptionalList scalar_type -> scalar_type)
+
 module ModelTypeChecker = struct
   let check_field_attr (global_table : 'a GlobalSymbolTable.t)
       (model_table : 'a LocalSymbolTable.t) (field_id : id)
@@ -32,7 +53,7 @@ module ModelTypeChecker = struct
               let field_record : SymbolTableManager.field_record =
                 LocalSymbolTable.lookup model_table field_id
               in
-              let field_type = field_record.field_type in
+              let field_type = extract_scalar_type field_record.typ in
               match arg with
               | Model.AttrArgRef (loc, _) ->
                   raise
@@ -50,7 +71,7 @@ module ModelTypeChecker = struct
                             (Pprinter.string_of_loc loc)
                             func));
                   match field_type with
-                  | Model.FieldTypeDateTime -> ()
+                  | DateTime -> ()
                   | _ ->
                       raise
                         (TypeError
@@ -61,7 +82,7 @@ module ModelTypeChecker = struct
                               id)))
               | Model.AttrArgString (loc, _) -> (
                   match field_type with
-                  | Model.FieldTypeString -> ()
+                  | String -> ()
                   | _ ->
                       raise
                         (TypeError
@@ -72,7 +93,7 @@ module ModelTypeChecker = struct
                               id)))
               | Model.AttrArgBoolean (loc, _) -> (
                   match field_type with
-                  | Model.FieldTypeBoolean -> ()
+                  | Boolean -> ()
                   | _ ->
                       raise
                         (TypeError
@@ -81,11 +102,9 @@ module ModelTypeChecker = struct
                                the field type"
                               (Pprinter.string_of_loc loc)
                               id)))
-              | Model.AttrArgNumber (loc, _) -> (
+              | Model.AttrArgInt (loc, _) -> (
                   match field_type with
-                  | Model.FieldTypeInt | Model.FieldTypeDecimal
-                  | Model.FieldTypeFloat | Model.FieldTypeBigInt ->
-                      ()
+                  | Int -> ()
                   | _ ->
                       raise
                         (TypeError
@@ -163,22 +182,23 @@ module ModelTypeChecker = struct
         check_field_attrs global_table model_table field_id field_attrs
 
   let check_field_type (global_table : 'a GlobalSymbolTable.t)
-      (field_type : Model.field_type) : unit =
-    match field_type with
-    | FieldTypeCustom (loc, field_type_custom) ->
-        if not (GlobalSymbolTable.contains global_table field_type_custom) then
+      (field_type : typ) (loc : loc) : unit =
+    let custom_type = get_custom_type field_type in
+    match custom_type with
+    | Some custom_type ->
+        if not (GlobalSymbolTable.contains global_table custom_type) then
           raise
             (NameError
                (Fmt.str "NameError@(%s): Undefined type '%s'"
                   (Pprinter.string_of_loc loc)
-                  field_type_custom))
-    | _ -> ()
+                  custom_type))
+    | None -> ()
 
   let check_field (global_table : 'a GlobalSymbolTable.t)
       (model_table : 'a LocalSymbolTable.t) (field : Model.field) : unit =
     match field with
-    | Field (_, id, field_type, _, field_attrs) ->
-        check_field_type global_table field_type;
+    | Field (loc, id, field_type, field_attrs) ->
+        check_field_type global_table field_type loc;
         check_field_attrs global_table model_table id field_attrs
 
   let rec check_fields (global_table : 'a GlobalSymbolTable.t)
