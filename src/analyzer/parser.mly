@@ -6,7 +6,7 @@
 %token <int>    INT
 %token <string> ID
 %token <string> STRING
-%token <string> MODEL_FIELD_ATTR
+%token <string> ATTRIBUTE
 %token          TRUE
 %token          FALSE
 %token          LEFT_BRACE
@@ -18,6 +18,10 @@
 %token          QUESTION_MARK
 %token          COMMA
 %token          MODEL
+%token          QUERY
+%token          ON
+%token          PERMISSION
+%token          COLON
 %token          SEMICOLON
 %token          EOF
 
@@ -27,6 +31,8 @@
 %type <declaration> declaration
 
 %%
+
+(* Model rules *)
 
 model_field_attr_args:
   | str = STRING
@@ -44,9 +50,9 @@ model_field_attr_args:
   ;
 
 model_field_attr:
-  | attr = MODEL_FIELD_ATTR
+  | attr = ATTRIBUTE
     { Model.Attribute($startpos, attr, []) }
-  | attr = MODEL_FIELD_ATTR; LEFT_PARAN; args = separated_list(COMMA, model_field_attr_args); RIGHT_PARAN
+  | attr = ATTRIBUTE; LEFT_PARAN; args = separated_list(COMMA, model_field_attr_args); RIGHT_PARAN
     { Model.Attribute($startpos, attr, args) }
   ;
 
@@ -68,14 +74,46 @@ model_field:
     { Model.Field($startpos, id, field_type, attrs) }
   ;
 
-model_fields:
+model_body:
   | LEFT_BRACE; model_fields = list(model_field); RIGHT_BRACE
     { model_fields }
   ;
 
+(* Query rules *)
+
+query_arg:
+  | arg = ID; COLON; field = ID;
+    { parse_query_arg $startpos arg [field] }
+  | arg = ID; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
+    { parse_query_arg $startpos arg fields }
+  ;
+
+query_args:
+  | LEFT_PARAN; args = separated_nonempty_list(COMMA, query_arg); RIGHT_PARAN
+    { args }
+  ;
+
+query_models:
+  | ON; LEFT_PARAN; models = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
+    { models }
+  ;
+
+query_permissions:
+  | PERMISSION; LEFT_PARAN; permissions = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
+    { permissions }
+
+query_body:
+  | args = query_args; COLON; typ = ID; models = query_models;
+    { (parse_query_type $startpos typ, args, models, []) }
+  | args = query_args; COLON; typ = ID; models = query_models; permissions = query_permissions
+    { (parse_query_type $startpos typ, args, models, permissions) }
+  ;
+
 declaration:
-  | MODEL; model_id = ID; model_fields = model_fields
-    { Model($startpos, model_id, model_fields) }
+  | MODEL; model_id = ID; model_body = model_body
+    { Model($startpos, model_id, model_body) }
+  | QUERY; query_id = ID; query_body = query_body; SEMICOLON
+    { Query($startpos, query_id, query_body) }
   ;
 
 ast:

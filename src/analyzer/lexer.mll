@@ -20,7 +20,7 @@ let int = '-'? digit+
 let id = (alpha)(alpha|digit|'_')*
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let model_field_attr = ('@')(id)
+let attribute = ('@')(id)
 
 (* Lexer rules *)
 rule token =
@@ -32,13 +32,17 @@ rule token =
   | '('              { LEFT_PARAN }
   | ')'              { RIGHT_PARAN }
   | '?'              { QUESTION_MARK }
+  | ':'              { COLON }
   | ';'              { SEMICOLON }
   | ','              { COMMA }
   | '"'              { read_string (Buffer.create 17) lexbuf }
   | "true"           { TRUE }
   | "false"          { FALSE }
   | "model"          { MODEL }
-  | model_field_attr { MODEL_FIELD_ATTR (Lexing.lexeme lexbuf) }
+  | "query"          { QUERY }
+  | "@on"             { ON }
+  | "@permission"     { PERMISSION }
+  | attribute        { ATTRIBUTE (Lexing.lexeme lexbuf) }
   | int              { INT (int_of_string (Lexing.lexeme lexbuf))}
   | id               { ID (Lexing.lexeme lexbuf) }
   | whitespace       { token lexbuf }

@@ -1,8 +1,8 @@
 open Core
 open Analyzer
 open Type_checker
-open App_specs
-open Generator
+(* open App_specs *)
+(* open Generator *)
 
 let print_error_position (lexbuf : Lexing.lexbuf) =
   let pos = lexbuf.lex_curr_p in
@@ -30,7 +30,7 @@ let () =
   match parse_file filename with
   | Ok ast ->
       TypeChecker.run ast;
-      print_string (Pprinter.string_of_ast ast);
-      let db_specs = Db_specs.generate_db_specs ast in
-      print_string (Db_generator.generate_db db_specs)
+      print_string (Pprinter.string_of_ast ast)
+      (* let db_specs = Db_specs.generate_db_specs ast in
+         print_string (Db_generator.generate_db db_specs) *)
   | Error error -> print_string (Core.Error.to_string_hum error)

@@ -177,14 +177,19 @@ module ModelTypeChecker = struct
                   (TypeError
                      (Fmt.str
                         "TypeError@(%s): Relation references must be a \
-                         reference."
+                         reference"
                         (Pprinter.string_of_loc loc))))
         | None -> ())
-    | _ -> raise (NameError (Fmt.str "NameError: Undefined attribute '%s'." id))
+    | _ ->
+        raise
+          (NameError
+             (Fmt.str "NameError@(%s): Undefined model field attribute '%s'"
+                (Pprinter.string_of_loc loc)
+                id))
 
   let rec check_field_attrs (global_table : 'a GlobalSymbolTable.t)
       (model_table : 'a LocalSymbolTable.t) (field_id : id)
-      (field_attrs : Model.field_attr list) : unit =
+      (field_attrs : Model.attribute list) : unit =
     match field_attrs with
     | [] -> ()
     | field_attr :: field_attrs ->
@@ -228,9 +233,10 @@ module TypeChecker = struct
   let check_declaration (global_table : 'a GlobalSymbolTable.t)
       (declaration : declaration) : unit =
     match declaration with
-    | Model (_, id, fields) ->
+    | Model (_, id, body) ->
         let model_table = GlobalSymbolTable.lookup global_table id in
-        ModelTypeChecker.check_model global_table model_table fields
+        ModelTypeChecker.check_model global_table model_table body
+    | Query (_, _, _) -> ()
 
   let rec semantic_check (global_table : 'a GlobalSymbolTable.t)
       (Ast declarations) : unit =

@@ -29,7 +29,7 @@ let string_of_literal (literal : literal) : string =
   | IntLiteral (_, num) -> Fmt.str "%d" num
 
 module ModelPrinter = struct
-  let string_of_field_attr_arg (arg : Model.field_attr_arg) =
+  let string_of_field_attr_arg (arg : Model.attr_arg) =
     match arg with
     | Model.AttrArgString (_, str) -> Fmt.str "\"%s\"" (string_of_literal str)
     | Model.AttrArgBoolean (_, boolean) -> string_of_literal boolean
@@ -37,20 +37,19 @@ module ModelPrinter = struct
     | Model.AttrArgFunc (_, func) -> Fmt.str "%s()" func
     | Model.AttrArgInt (_, num) -> string_of_literal num
 
-  let rec string_of_field_attr_args (args : Model.field_attr_arg list) : string
-      =
+  let rec string_of_field_attr_args (args : Model.attr_arg list) : string =
     match args with
     | [] -> ""
     | [ arg ] -> string_of_field_attr_arg arg
     | arg :: args ->
         string_of_field_attr_arg arg ^ ", " ^ string_of_field_attr_args args
 
-  let string_of_field_attr (attr : Model.field_attr) : string =
+  let string_of_field_attr (attr : Model.attribute) : string =
     match attr with
     | Model.Attribute (_, id, args) ->
         Fmt.str "%s(%s)" id (string_of_field_attr_args args)
 
-  let rec string_of_field_attrs (attrs : Model.field_attr list) : string =
+  let rec string_of_field_attrs (attrs : Model.attribute list) : string =
     match attrs with
     | [] -> ""
     | [ attr ] -> string_of_field_attr attr
@@ -65,9 +64,11 @@ module ModelPrinter = struct
   let string_of_field (field : Model.field) : string =
     match field with
     | Model.Field (_, id, field_type, attrs) ->
-        Fmt.str "\"%s\", %s, %s" id
-          (string_of_field_type field_type)
-          (string_of_field_attrs attrs)
+        if List.length attrs > 0 then
+          Fmt.str "\"%s\", %s, %s" id
+            (string_of_field_type field_type)
+            (string_of_field_attrs attrs)
+        else Fmt.str "\"%s\", %s" id (string_of_field_type field_type)
 
   let rec string_of_fields (fields : Model.field list) : string =
     match fields with
@@ -80,9 +81,10 @@ end
 
 let string_of_declaration (declaration : declaration) : string =
   match declaration with
-  | Model (_, model_id, model_fields) ->
-      Fmt.str "  Model(\n    \"%s\",\n    [%s\n    ]\n  )" model_id
-        (ModelPrinter.string_of_fields model_fields)
+  | Model (_, id, body) ->
+      Fmt.str "  Model(\n    \"%s\",\n    [%s\n    ]\n  )" id
+        (ModelPrinter.string_of_fields body)
+  | Query (_, _, _) -> ""
 
 let rec string_of_declarations (declarations : declaration list) : string =
   match declarations with

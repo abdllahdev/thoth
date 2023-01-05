@@ -25,19 +25,30 @@ type literal =
 
 (* Model definition *)
 module Model = struct
-  type field_attr_arg =
+  type attr_arg =
     | AttrArgString of loc * literal
     | AttrArgBoolean of loc * literal
     | AttrArgInt of loc * literal
     | AttrArgFunc of loc * string
     | AttrArgRef of loc * id
 
-  type field_attr = Attribute of loc * id * field_attr_arg list
-  type field = Field of loc * id * typ * field_attr list
+  type attribute = Attribute of loc * id * attr_arg list
+  type field = Field of loc * id * typ * attribute list
+  type body = field list
+end
+
+module Query = struct
+  type typ = FindUnique | FindAll | Create | Update | Delete
+  type args = Where of string | Filter of string list | Data of string list
+  type models = string list
+  type permissions = string list
+  type body = typ * args list * models * permissions
 end
 
 (* The different types of declarations in the language *)
-type declaration = Model of loc * id * Model.field list
+type declaration =
+  | Model of loc * id * Model.body
+  | Query of loc * id * Query.body
 
 (* Ast type *)
 type ast = Ast of declaration list

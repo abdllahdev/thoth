@@ -12,9 +12,10 @@ type db_config = {
   name : string;
 }
 
+(* TODO: add db config *)
 type db_specs = { models : model_specs list }
 
-let generate_attr_arg_specs (arg : Model.field_attr_arg) : string =
+let generate_attr_arg_specs (arg : Model.attr_arg) : string =
   match arg with
   | AttrArgString (_, str) -> generate_literals str
   | AttrArgRef (_, id) -> Fmt.str "[%s]" id
@@ -37,7 +38,7 @@ let generate_attr_specs (Model.Attribute (_, id, args)) : string =
     | "@id" -> Fmt.str "%s @default(autoincrement())" id
     | _ -> Fmt.str "%s" id
 
-let generate_attrs_specs (field_attrs : Model.field_attr list) : string =
+let generate_attrs_specs (field_attrs : Model.attribute list) : string =
   String.concat " " (List.map generate_attr_specs field_attrs)
 
 let generate_field_type_specs (field_type : typ) : string =
@@ -51,13 +52,16 @@ let generate_field_specs (Model.Field (_, id, field_type, field_attrs)) :
   let field_attrs = generate_attrs_specs field_attrs in
   { id; field_type; field_attrs }
 
-let generate_model_specs (Model (_, id, fields)) : model_specs =
-  let fields = List.map generate_field_specs fields in
-  { id; fields }
+(* let generate_model_specs (Model (_, id, fields)) : model_specs =
+     let fields = List.map generate_field_specs fields in
+     { id; fields }
 
-let generate_models_specs declarations =
-  List.map generate_model_specs declarations
+   let generate_db_specs (Ast declarations) : db_specs =
+        let models = List.map generate_model_specs declarations in
+        { models }
 
-let generate_db_specs (Ast declarations) : db_specs =
-  let models = generate_models_specs declarations in
-  { models }
+      (* TODO: add queries *)
+      type app_specs = { db : db_specs }
+
+      let generate_app_specs (Ast declarations) : app_specs =
+        match decl *)

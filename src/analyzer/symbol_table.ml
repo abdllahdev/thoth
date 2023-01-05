@@ -34,11 +34,11 @@ end
 module SymbolTableManager = struct
   type field_record = {
     typ : typ;
-    field_attrs_table : Model.field_attr_arg list LocalSymbolTable.t;
+    field_attrs_table : Model.attr_arg list LocalSymbolTable.t;
   }
 
   let rec add_field_attrs (local_table : 'a LocalSymbolTable.t)
-      (field_id : string) (attrs : Model.field_attr list) : unit =
+      (field_id : string) (attrs : Model.attribute list) : unit =
     match attrs with
     | [] -> ()
     | attr :: attrs ->
@@ -93,6 +93,7 @@ module SymbolTableManager = struct
                       id));
             let model_table = LocalSymbolTable.create () in
             add_fields model_table fields;
-            GlobalSymbolTable.allocate global_table id model_table);
+            GlobalSymbolTable.allocate global_table id model_table
+        | Query (_, _, _) -> ());
         populate global_table (Ast declarations)
 end
