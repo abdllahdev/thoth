@@ -122,10 +122,10 @@ module ModelTypeChecker = struct
                   "TypeError@(%s): Expected 3 argument in '%s' but received %d."
                   (Pprinter.string_of_loc loc)
                   id args_length));
-        let relationName = List.nth args 0 in
-        (match relationName with
-        | Some argString -> (
-            match argString with
+        let relation_name = List.nth args 0 in
+        (match relation_name with
+        | Some arg_string -> (
+            match arg_string with
             | Model.AttrArgString _ -> ()
             | _ ->
                 raise
@@ -133,15 +133,25 @@ module ModelTypeChecker = struct
                      (Fmt.str "TypeError@(%s): Relation name must be string."
                         (Pprinter.string_of_loc loc))))
         | None -> ());
-        (let relationFields = List.nth args 1 in
-         match relationFields with
-         | Some argList -> (
-             match argList with
+        (let relation_field = List.nth args 1 in
+         match relation_field with
+         | Some field -> (
+             match field with
              | Model.AttrArgRef (loc, field) ->
+                 let field_attrs =
+                   (LocalSymbolTable.lookup model_table field).field_attrs_table
+                 in
                  if not (LocalSymbolTable.contains model_table field) then
                    raise
                      (TypeError
                         (Fmt.str "TypeError@(%s): Field '%s' is not defined"
+                           (Pprinter.string_of_loc loc)
+                           field))
+                 else if not (LocalSymbolTable.contains field_attrs "@unique")
+                 then
+                   raise
+                     (TypeError
+                        (Fmt.str "TypeError@(%s): Field '%s' must be unique"
                            (Pprinter.string_of_loc loc)
                            field))
              | _ ->
@@ -151,10 +161,10 @@ module ModelTypeChecker = struct
                          "TypeError@(%s): Relation fields must be a reference."
                          (Pprinter.string_of_loc loc))))
          | None -> ());
-        let relationTables = List.nth args 2 in
-        match relationTables with
-        | Some argList -> (
-            match argList with
+        let relation_ref = List.nth args 2 in
+        match relation_ref with
+        | Some ref -> (
+            match ref with
             | Model.AttrArgRef (_, ref) ->
                 if not (GlobalSymbolTable.contains global_table ref) then
                   raise
