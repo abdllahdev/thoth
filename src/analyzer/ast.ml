@@ -39,11 +39,13 @@ end
 
 module Query = struct
   type typ = FindUnique | FindAll | Create | Update | Delete
-  type args = Where of string | Filter of string list | Data of string list
-  type models = string list
-  type permissions = string list
-  type body = typ * args list * models * permissions
+  type arg = Where of string | Filter of string list | Data of string list
+  type model = string
+  type permission = string
+  type body = typ * arg list * model list * permission list
 end
+
+type declaration_type = ModelType | QueryType
 
 (* The different types of declarations in the language *)
 type declaration =

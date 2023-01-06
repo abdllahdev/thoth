@@ -70,8 +70,6 @@ model_field_type:
 model_field:
   | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
     { Model.Field($startpos, id, field_type, attrs) }
-  | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
-    { Model.Field($startpos, id, field_type, attrs) }
   ;
 
 model_body:
@@ -100,7 +98,7 @@ query_models:
 
 query_permissions:
   | PERMISSION; LEFT_PARAN; permissions = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
-    { permissions }
+    { parse_query_permissions $startpos permissions }
 
 query_body:
   | args = query_args; COLON; typ = ID; models = query_models;

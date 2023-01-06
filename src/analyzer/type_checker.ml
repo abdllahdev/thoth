@@ -50,7 +50,7 @@ module ModelTypeChecker = struct
           let arg = List.hd args in
           match arg with
           | Some arg -> (
-              let field_record : SymbolTableManager.field_record =
+              let field_record : ModelManager.field_record =
                 LocalSymbolTable.lookup model_table field_id
               in
               let field_type = extract_scalar_type field_record.typ in
@@ -171,7 +171,20 @@ module ModelTypeChecker = struct
                     (TypeError
                        (Fmt.str "TypeError@(%s): Model '%s' is not defined"
                           (Pprinter.string_of_loc loc)
-                          ref))
+                          ref));
+
+                if not (GlobalSymbolTable.check_type global_table ref ModelType)
+                then
+                  raise
+                    (TypeError
+                       (Fmt.str
+                          "TypeError@(%s): relation reference must be of type \
+                           Model but received %s of type %s"
+                          (Pprinter.string_of_loc loc)
+                          ref
+                          (Pprinter.string_of_declaration_type
+                             (GlobalSymbolTable.get_declaration_type
+                                global_table ref))))
             | _ ->
                 raise
                   (TypeError
@@ -229,12 +242,14 @@ module ModelTypeChecker = struct
     check_fields global_table model_table fields
 end
 
+module QueryTypeChecker = struct end
+
 module TypeChecker = struct
   let check_declaration (global_table : 'a GlobalSymbolTable.t)
       (declaration : declaration) : unit =
     match declaration with
     | Model (_, id, body) ->
-        let model_table = GlobalSymbolTable.lookup global_table id in
+        let model_table = GlobalSymbolTable.get_table global_table id in
         ModelTypeChecker.check_model global_table model_table body
     | Query (_, _, _) -> ()
 
