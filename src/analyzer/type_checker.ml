@@ -1,7 +1,6 @@
 open Ast
 open Error
 open Symbol_table
-open Core
 
 let get_custom_scalar_type (scalar_type : scalar_type) : string option =
   match scalar_type with CustomType str -> Some str | _ -> None
@@ -39,7 +38,7 @@ module ModelTypeChecker = struct
                   (Pprinter.string_of_loc loc)
                   id args_length))
     | "@default" -> (
-        if args_length > 1 || equal_int args_length 0 then
+        if args_length > 1 || args_length == 0 then
           raise
             (TypeError
                (Fmt.str
@@ -48,72 +47,69 @@ module ModelTypeChecker = struct
                   id args_length))
         else
           let arg = List.hd args in
+          let field_record : ModelManager.field_record =
+            LocalSymbolTable.lookup model_table field_id
+          in
+          let field_type = extract_scalar_type field_record.typ in
           match arg with
-          | Some arg -> (
-              let field_record : ModelManager.field_record =
-                LocalSymbolTable.lookup model_table field_id
-              in
-              let field_type = extract_scalar_type field_record.typ in
-              match arg with
-              | Model.AttrArgRef (loc, _) ->
+          | Model.AttrArgRef (loc, _) ->
+              raise
+                (TypeError
+                   (Fmt.str
+                      "TypeError@(%s): Attribute '%s' can only be of type \
+                       string, boolean, number, or 'now()' func"
+                      (Pprinter.string_of_loc loc)
+                      id))
+          | Model.AttrArgFunc (loc, func) -> (
+              if not (String.equal func "now") then
+                raise
+                  (NameError
+                     (Fmt.str "NameError@(%s): Undefined function %s"
+                        (Pprinter.string_of_loc loc)
+                        func));
+              match field_type with
+              | DateTime -> ()
+              | _ ->
                   raise
                     (TypeError
                        (Fmt.str
-                          "TypeError@(%s): Attribute '%s' can only be of type \
-                           string, boolean, number, or 'now()' func"
+                          "TypeError@(%s): Attribute '%s' value must match the \
+                           field type"
                           (Pprinter.string_of_loc loc)
-                          id))
-              | Model.AttrArgFunc (loc, func) -> (
-                  if not (String.equal func "now") then
-                    raise
-                      (NameError
-                         (Fmt.str "NameError@(%s): Undefined function %s"
-                            (Pprinter.string_of_loc loc)
-                            func));
-                  match field_type with
-                  | DateTime -> ()
-                  | _ ->
-                      raise
-                        (TypeError
-                           (Fmt.str
-                              "TypeError@(%s): Attribute '%s' value must match \
-                               the field type"
-                              (Pprinter.string_of_loc loc)
-                              id)))
-              | Model.AttrArgString (loc, _) -> (
-                  match field_type with
-                  | String -> ()
-                  | _ ->
-                      raise
-                        (TypeError
-                           (Fmt.str
-                              "TypeError@(%s): Attribute '%s' value must match \
-                               the field type"
-                              (Pprinter.string_of_loc loc)
-                              id)))
-              | Model.AttrArgBoolean (loc, _) -> (
-                  match field_type with
-                  | Boolean -> ()
-                  | _ ->
-                      raise
-                        (TypeError
-                           (Fmt.str
-                              "TypeError@(%s): Attribute '%s' value must match \
-                               the field type"
-                              (Pprinter.string_of_loc loc)
-                              id)))
-              | Model.AttrArgInt (loc, _) -> (
-                  match field_type with
-                  | Int -> ()
-                  | _ ->
-                      raise
-                        (TypeError
-                           (Fmt.str
-                              "TypeError@(%s): Attribute '%s' value must match \
-                               the field type"
-                              (Pprinter.string_of_loc loc)
-                              id))))
-          | None -> ())
+                          id)))
+          | Model.AttrArgString (loc, _) -> (
+              match field_type with
+              | String -> ()
+              | _ ->
+                  raise
+                    (TypeError
+                       (Fmt.str
+                          "TypeError@(%s): Attribute '%s' value must match the \
+                           field type"
+                          (Pprinter.string_of_loc loc)
+                          id)))
+          | Model.AttrArgBoolean (loc, _) -> (
+              match field_type with
+              | Boolean -> ()
+              | _ ->
+                  raise
+                    (TypeError
+                       (Fmt.str
+                          "TypeError@(%s): Attribute '%s' value must match the \
+                           field type"
+                          (Pprinter.string_of_loc loc)
+                          id)))
+          | Model.AttrArgInt (loc, _) -> (
+              match field_type with
+              | Int -> ()
+              | _ ->
+                  raise
+                    (TypeError
+                       (Fmt.str
+                          "TypeError@(%s): Attribute '%s' value must match the \
+                           field type"
+                          (Pprinter.string_of_loc loc)
+                          id))))
     | "@relation" -> (
         if args_length > 3 || args_length < 3 then
           raise
@@ -124,75 +120,64 @@ module ModelTypeChecker = struct
                   id args_length));
         let relation_name = List.nth args 0 in
         (match relation_name with
-        | Some arg_string -> (
-            match arg_string with
-            | Model.AttrArgString _ -> ()
-            | _ ->
-                raise
-                  (TypeError
-                     (Fmt.str "TypeError@(%s): Relation name must be string."
-                        (Pprinter.string_of_loc loc))))
-        | None -> ());
+        | Model.AttrArgString _ -> ()
+        | _ ->
+            raise
+              (TypeError
+                 (Fmt.str "TypeError@(%s): Relation name must be string."
+                    (Pprinter.string_of_loc loc))));
         (let relation_field = List.nth args 1 in
          match relation_field with
-         | Some field -> (
-             match field with
-             | Model.AttrArgRef (loc, field) ->
-                 let field_attrs =
-                   (LocalSymbolTable.lookup model_table field).field_attrs_table
-                 in
-                 if not (LocalSymbolTable.contains model_table field) then
-                   raise
-                     (TypeError
-                        (Fmt.str "TypeError@(%s): Field '%s' is not defined"
-                           (Pprinter.string_of_loc loc)
-                           field))
-                 else if not (LocalSymbolTable.contains field_attrs "@unique")
-                 then
-                   raise
-                     (TypeError
-                        (Fmt.str "TypeError@(%s): Field '%s' must be unique"
-                           (Pprinter.string_of_loc loc)
-                           field))
-             | _ ->
-                 raise
-                   (TypeError
-                      (Fmt.str
-                         "TypeError@(%s): Relation fields must be a reference."
-                         (Pprinter.string_of_loc loc))))
-         | None -> ());
+         | Model.AttrArgRef (loc, field) ->
+             let field_attrs =
+               (LocalSymbolTable.lookup model_table field).field_attrs_table
+             in
+             if not (LocalSymbolTable.contains model_table field) then
+               raise
+                 (TypeError
+                    (Fmt.str "TypeError@(%s): Field '%s' is not defined"
+                       (Pprinter.string_of_loc loc)
+                       field))
+             else if not (LocalSymbolTable.contains field_attrs "@unique") then
+               raise
+                 (TypeError
+                    (Fmt.str "TypeError@(%s): Field '%s' must be unique"
+                       (Pprinter.string_of_loc loc)
+                       field))
+         | _ ->
+             raise
+               (TypeError
+                  (Fmt.str
+                     "TypeError@(%s): Relation fields must be a reference."
+                     (Pprinter.string_of_loc loc))));
         let relation_ref = List.nth args 2 in
         match relation_ref with
-        | Some ref -> (
-            match ref with
-            | Model.AttrArgRef (_, ref) ->
-                if not (GlobalSymbolTable.contains global_table ref) then
-                  raise
-                    (TypeError
-                       (Fmt.str "TypeError@(%s): Model '%s' is not defined"
-                          (Pprinter.string_of_loc loc)
-                          ref));
+        | Model.AttrArgRef (_, ref) ->
+            if not (GlobalSymbolTable.contains global_table ref) then
+              raise
+                (TypeError
+                   (Fmt.str "TypeError@(%s): Model '%s' is not defined"
+                      (Pprinter.string_of_loc loc)
+                      ref));
 
-                if not (GlobalSymbolTable.check_type global_table ref ModelType)
-                then
-                  raise
-                    (TypeError
-                       (Fmt.str
-                          "TypeError@(%s): relation reference must be of type \
-                           Model but received %s of type %s"
-                          (Pprinter.string_of_loc loc)
-                          ref
-                          (Pprinter.string_of_declaration_type
-                             (GlobalSymbolTable.get_declaration_type
-                                global_table ref))))
-            | _ ->
-                raise
-                  (TypeError
-                     (Fmt.str
-                        "TypeError@(%s): Relation references must be a \
-                         reference"
-                        (Pprinter.string_of_loc loc))))
-        | None -> ())
+            if not (GlobalSymbolTable.check_type global_table ref ModelType)
+            then
+              raise
+                (TypeError
+                   (Fmt.str
+                      "TypeError@(%s): Relation reference must be of type \
+                       'Model' but received %s of type '%s'"
+                      (Pprinter.string_of_loc loc)
+                      ref
+                      (Pprinter.string_of_declaration_type
+                         (GlobalSymbolTable.get_declaration_type global_table
+                            ref))))
+        | _ ->
+            raise
+              (TypeError
+                 (Fmt.str
+                    "TypeError@(%s): Relation references must be a reference"
+                    (Pprinter.string_of_loc loc))))
     | _ ->
         raise
           (NameError
@@ -242,16 +227,199 @@ module ModelTypeChecker = struct
     check_fields global_table model_table fields
 end
 
-module QueryTypeChecker = struct end
+module QueryTypeChecker = struct
+  let rec check_models (global_table : 'a GlobalSymbolTable.t)
+      (models : Query.model list) : unit =
+    match models with
+    | [] -> ()
+    | model :: models ->
+        (match model with
+        | loc, model_id ->
+            if not (GlobalSymbolTable.contains global_table model_id) then
+              raise
+                (NameError
+                   (Fmt.str "NameError@(%s): Undefined model '%s'"
+                      (Pprinter.string_of_loc loc)
+                      model_id))
+            else if
+              not (GlobalSymbolTable.check_type global_table model_id ModelType)
+            then
+              raise
+                (TypeError
+                   (Fmt.str
+                      "TypeError@(%s): Query model reference must be of type \
+                       'Model' but received %s of type '%s'"
+                      (Pprinter.string_of_loc loc)
+                      model_id
+                      (Pprinter.string_of_declaration_type
+                         (GlobalSymbolTable.get_declaration_type global_table
+                            model_id)))));
+        check_models global_table models
+
+  let check_where_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
+      (model : Query.model) (field : string) : unit =
+    let _, model_id = model in
+    let model_table =
+      Option.get (GlobalSymbolTable.get_table global_table model_id)
+    in
+    if not (LocalSymbolTable.contains model_table field) then
+      raise
+        (TypeError
+           (Fmt.str "TypeError@(%s): Field '%s' doesn't exist in model '%s'"
+              (Pprinter.string_of_loc loc)
+              field model_id));
+    let field_record : ModelManager.field_record =
+      LocalSymbolTable.lookup model_table field
+    in
+    let field_attrs_table = field_record.field_attrs_table in
+    if not (LocalSymbolTable.contains model_table field) then
+      raise
+        (TypeError
+           (Fmt.str "TypeError@(%s): Field '%s' doesn't exist in model '%s'"
+              (Pprinter.string_of_loc loc)
+              field model_id))
+    else if
+      not
+        (LocalSymbolTable.contains field_attrs_table "@unique"
+        || LocalSymbolTable.contains field_attrs_table "@id")
+    then
+      raise
+        (TypeError
+           (Fmt.str "TypeError@(%s): Field '%s' must be unique"
+              (Pprinter.string_of_loc loc)
+              field))
+
+  let check_filter_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
+      (model : Query.model) (fields : string list) : unit =
+    let _, model_id = model in
+    let model_table =
+      Option.get (GlobalSymbolTable.get_table global_table model_id)
+    in
+    ignore
+      (List.map
+         (fun field ->
+           if not (LocalSymbolTable.contains model_table field) then
+             raise
+               (TypeError
+                  (Fmt.str
+                     "TypeError@(%s): Field '%s' doesn't exist in model '%s'"
+                     (Pprinter.string_of_loc loc)
+                     field model_id)))
+         fields)
+
+  let check_data_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
+      (model : Query.model) (fields : string list) : unit =
+    let _, model_id = model in
+    let model_table =
+      Option.get (GlobalSymbolTable.get_table global_table model_id)
+    in
+    ignore
+      (List.map
+         (fun field ->
+           if not (LocalSymbolTable.contains model_table field) then
+             raise
+               (TypeError
+                  (Fmt.str
+                     "TypeError@(%s): Field '%s' doesn't exist in model '%s'"
+                     (Pprinter.string_of_loc loc)
+                     field model_id)))
+         fields)
+
+  let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
+      (typ : Query.typ) (model : Query.model) (args : Query.arg list) : unit =
+    match typ with
+    | Query.FindAll -> (
+        let arg = List.hd args in
+        match arg with
+        | Query.Where (loc, _) | Query.Data (loc, _) ->
+            raise
+              (TypeError
+                 (Fmt.str
+                    "TypeError@(%s): Query of type 'findAll' only takes a \
+                     'filter' argument"
+                    (Pprinter.string_of_loc loc)))
+        | Query.Filter (loc, fields) ->
+            check_filter_arg global_table loc model fields)
+    | Query.FindUnique -> (
+        let arg = List.hd args in
+        match arg with
+        | Query.Filter (loc, _) | Query.Data (loc, _) ->
+            raise
+              (TypeError
+                 (Fmt.str
+                    "TypeError@(%s): Query of type 'findUnqiue' only takes a \
+                     'where' argument"
+                    (Pprinter.string_of_loc loc)))
+        | Query.Where (loc, field) ->
+            check_where_arg global_table loc model field)
+    | Query.Create -> (
+        let arg = List.hd args in
+        match arg with
+        | Query.Filter (loc, _) | Query.Where (loc, _) ->
+            raise
+              (TypeError
+                 (Fmt.str
+                    "TypeError@(%s): Query of type 'create' only takes a \
+                     'data' argument"
+                    (Pprinter.string_of_loc loc)))
+        | Query.Data (loc, fields) ->
+            check_data_arg global_table loc model fields)
+    | Query.Update ->
+        if List.length args != 2 then
+          raise
+            (TypeError
+               (Fmt.str
+                  "TypeError@(%s): Query of type 'update' only takes a 'where' \
+                   and 'data' arguments"
+                  (Pprinter.string_of_loc loc)));
+        ignore
+          (List.map
+             (fun arg ->
+               match arg with
+               | Query.Filter (loc, _) ->
+                   raise
+                     (TypeError
+                        (Fmt.str
+                           "TypeError@(%s): Query of type 'update' only takes \
+                            a 'where' and 'data' arguments"
+                           (Pprinter.string_of_loc loc)))
+               | Query.Where (loc, field) ->
+                   check_where_arg global_table loc model field
+               | Query.Data (loc, fields) ->
+                   check_data_arg global_table loc model fields)
+             args)
+    | Query.Delete -> (
+        let arg = List.hd args in
+        match arg with
+        | Query.Filter (loc, _) | Query.Data (loc, _) ->
+            raise
+              (TypeError
+                 (Fmt.str
+                    "TypeError@(%s): Query of type 'delete' only takes a \
+                     'where' argument"
+                    (Pprinter.string_of_loc loc)))
+        | Query.Where (loc, field) ->
+            check_where_arg global_table loc model field)
+
+  let check_query_body (global_table : 'a GlobalSymbolTable.t) (loc : loc)
+      (body : Query.body) : unit =
+    match body with
+    | typ, args, models, _ ->
+        check_models global_table models;
+        check_args global_table loc typ (List.hd models) args
+end
 
 module TypeChecker = struct
   let check_declaration (global_table : 'a GlobalSymbolTable.t)
       (declaration : declaration) : unit =
     match declaration with
     | Model (_, id, body) ->
-        let model_table = GlobalSymbolTable.get_table global_table id in
+        let model_table =
+          Option.get (GlobalSymbolTable.get_table global_table id)
+        in
         ModelTypeChecker.check_model global_table model_table body
-    | Query (_, _, _) -> ()
+    | Query (loc, _, body) ->
+        QueryTypeChecker.check_query_body global_table loc body
 
   let rec semantic_check (global_table : 'a GlobalSymbolTable.t)
       (Ast declarations) : unit =

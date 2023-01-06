@@ -39,9 +39,14 @@ end
 
 module Query = struct
   type typ = FindUnique | FindAll | Create | Update | Delete
-  type arg = Where of string | Filter of string list | Data of string list
-  type model = string
-  type permission = string
+
+  type arg =
+    | Where of loc * string
+    | Filter of loc * string list
+    | Data of loc * string list
+
+  type model = loc * id
+  type permission = loc * id
   type body = typ * arg list * model list * permission list
 end
 

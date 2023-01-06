@@ -93,7 +93,7 @@ query_args:
 
 query_models:
   | ON; LEFT_PARAN; models = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
-    { models }
+    { List.map (fun model -> ($startpos, model)) models }
   ;
 
 query_permissions:

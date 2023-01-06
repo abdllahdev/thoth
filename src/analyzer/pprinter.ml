@@ -80,9 +80,7 @@ module ModelPrinter = struct
 end
 
 let string_of_declaration_type (declaration_type : declaration_type) =
-  match declaration_type with
-  | ModelType -> "ModelType"
-  | QueryType -> "QueryTable"
+  match declaration_type with ModelType -> "Model" | QueryType -> "Query"
 
 let string_of_declaration (declaration : declaration) : string =
   match declaration with

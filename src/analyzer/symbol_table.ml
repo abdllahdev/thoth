@@ -17,8 +17,8 @@ end
 
 module GlobalSymbolTable = struct
   type 'a value_record = {
-    declaraction_type : declaration_type;
-    table : 'a LocalSymbolTable.t;
+    declaration_type : declaration_type;
+    some_table : 'a LocalSymbolTable.t option;
   }
 
   type 'a t = (string, 'a value_record) Hashtbl.t
@@ -29,11 +29,12 @@ module GlobalSymbolTable = struct
       =
     Hashtbl.add table symbol value
 
-  let get_table (table : 'a t) (symbol : string) : 'a LocalSymbolTable.t =
-    (Hashtbl.find table symbol).table
+  let get_table (table : 'a t) (symbol : string) : 'a LocalSymbolTable.t option
+      =
+    (Hashtbl.find table symbol).some_table
 
   let get_declaration_type (table : 'a t) (symbol : string) : declaration_type =
-    (Hashtbl.find table symbol).declaraction_type
+    (Hashtbl.find table symbol).declaration_type
 
   let contains (table : 'a t) (symbol : string) : bool =
     Hashtbl.mem table symbol
@@ -50,7 +51,7 @@ module ModelManager = struct
     field_attrs_table : Model.attr_arg list LocalSymbolTable.t;
   }
 
-  let rec add_field_attrs (local_table : 'a LocalSymbolTable.t)
+  let rec allocate_field_attrs (local_table : 'a LocalSymbolTable.t)
       (field_id : string) (attrs : Model.attribute list) : unit =
     match attrs with
     | [] -> ()
@@ -66,11 +67,11 @@ module ModelManager = struct
                       (Pprinter.string_of_loc loc)
                       field_id id));
             LocalSymbolTable.allocate local_table id args);
-        add_field_attrs local_table field_id attrs
+        allocate_field_attrs local_table field_id attrs
 
-  let rec add_fields (local_table : 'a LocalSymbolTable.t)
-      (fields : Model.field list) : unit =
-    match fields with
+  let rec allocate_fields (local_table : 'a LocalSymbolTable.t)
+      (body : Model.body) : unit =
+    match body with
     | [] -> ()
     | field :: fields ->
         (match field with
@@ -84,19 +85,10 @@ module ModelManager = struct
                       (Pprinter.string_of_loc loc)
                       id));
             let field_attrs_table = LocalSymbolTable.create () in
-            add_field_attrs field_attrs_table id field_attrs;
+            allocate_field_attrs field_attrs_table id field_attrs;
             let field = { typ; field_attrs_table } in
             LocalSymbolTable.allocate local_table id field);
-        add_fields local_table fields
-end
-
-module QueryManager = struct
-  type query_record = {
-    args : Query.arg list;
-    typ : Query.typ;
-    models : Query.model;
-    permissions : Query.permission;
-  }
+        allocate_fields local_table fields
 end
 
 module SymbolTableManager = struct
@@ -106,20 +98,33 @@ module SymbolTableManager = struct
     | [] -> ()
     | declaration :: declarations ->
         (match declaration with
-        | Model (loc, id, fields) ->
+        | Model (loc, id, body) ->
             if GlobalSymbolTable.contains global_table id then
               raise
                 (MultiDefinitionsError
                    (Fmt.str
-                      "MultiDefinitionsError@(%s): The field '%s' was defined \
-                       multiple times"
+                      "MultiDefinitionsError@(%s): '%s' is defined multiple \
+                       times"
                       (Pprinter.string_of_loc loc)
                       id));
             let table = LocalSymbolTable.create () in
-            let declaraction_type = ModelType in
-            ModelManager.add_fields table fields;
+            let some_table = Some table in
+            let declaration_type = ModelType in
+            ModelManager.allocate_fields table body;
             GlobalSymbolTable.allocate global_table id
-              { declaraction_type; table }
-        | Query (_, _, _) -> ());
+              { declaration_type; some_table }
+        | Query (loc, id, _) ->
+            if GlobalSymbolTable.contains global_table id then
+              raise
+                (MultiDefinitionsError
+                   (Fmt.str
+                      "MultiDefinitionsError@(%s): '%s' is defined multiple \
+                       times"
+                      (Pprinter.string_of_loc loc)
+                      id));
+            let some_table = None in
+            let declaration_type = QueryType in
+            GlobalSymbolTable.allocate global_table id
+              { declaration_type; some_table });
         populate global_table (Ast declarations)
 end
