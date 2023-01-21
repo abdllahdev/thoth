@@ -1,7 +1,7 @@
 {
   open Lexing
   open Parser
-  open Error
+  open Error_handler.Error
 
   let next_line lexbuf =
     let pos = lexbuf.lex_curr_p in

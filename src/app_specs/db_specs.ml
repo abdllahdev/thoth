@@ -1,5 +1,5 @@
-open Analyzer.Ast
-open General_specs
+open Ast.Ast_types
+open Helper
 
 type id = string
 type field_specs = { id : string; field_type : string; field_attrs : string }

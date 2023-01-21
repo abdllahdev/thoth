@@ -1,4 +1,3 @@
 (library
- (wrapped false)
- (name ralang_core)
- (libraries analyzer generator app_specs))
+ (name src)
+ (libraries analyzer app_specs generator))

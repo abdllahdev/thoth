@@ -1,5 +1,6 @@
 open Ast
-open Error
+open Ast.Ast_types
+open Error_handler.Error
 
 let parse_field_type (field_type : string) : scalar_type =
   match field_type with

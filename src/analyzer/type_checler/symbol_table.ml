@@ -1,5 +1,6 @@
 open Ast
-open Error
+open Ast.Ast_types
+open Error_handler.Error
 
 module LocalSymbolTable = struct
   type 'a t = (string, 'a) Hashtbl.t

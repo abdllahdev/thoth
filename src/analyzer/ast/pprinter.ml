@@ -1,5 +1,5 @@
-open Ast
 open Core
+open Ast_types
 
 let string_of_loc loc =
   Fmt.str "Line:%d Position:%d" loc.Lexing.pos_lnum

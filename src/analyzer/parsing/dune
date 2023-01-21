@@ -1,0 +1,8 @@
+(library
+ (name parsing)
+ (libraries ast fmt error_handler))
+
+(ocamllex lexer)
+
+(menhir
+ (modules parser))

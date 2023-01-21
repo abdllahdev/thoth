@@ -1,4 +1,4 @@
-open Analyzer.Ast
+open Ast.Ast_types
 
 let generate_literals (literal : literal) : string =
   match literal with

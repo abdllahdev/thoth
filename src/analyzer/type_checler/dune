@@ -1,0 +1,3 @@
+(library
+ (name type_checker)
+ (libraries ast error_handler fmt))

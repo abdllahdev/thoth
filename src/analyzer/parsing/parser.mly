@@ -1,5 +1,5 @@
 %{
-  open Ast
+  open Ast.Ast_types
   open Parser_helper
 %}
 

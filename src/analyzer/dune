@@ -1,8 +1,3 @@
 (library
  (name analyzer)
- (libraries core fmt yojson))
-
-(ocamllex lexer)
-
-(menhir
- (modules parser))
+ (libraries ast parsing error_handler type_checker))
