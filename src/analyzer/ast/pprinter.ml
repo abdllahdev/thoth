@@ -2,7 +2,7 @@ open Core
 open Ast_types
 
 let string_of_loc loc =
-  Fmt.str "Line:%d Position:%d" loc.Lexing.pos_lnum
+  Fmt.str "Line:%d, Position:%d" loc.Lexing.pos_lnum
     (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1)
 
 let string_of_scalar_type (scalar_type : scalar_type) : string =

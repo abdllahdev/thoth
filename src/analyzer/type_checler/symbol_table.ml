@@ -1,6 +1,6 @@
 open Ast
 open Ast.Ast_types
-open Error_handler.Error
+open Error_handler.Handler
 
 module LocalSymbolTable = struct
   type 'a t = (string, 'a) Hashtbl.t
@@ -60,13 +60,7 @@ module ModelManager = struct
         (match attr with
         | Model.Attribute (loc, id, args) ->
             if LocalSymbolTable.contains local_table id then
-              raise
-                (NameError
-                   (Fmt.str
-                      "MultiDefinitionsError@(%s): The field '%s' cannot have \
-                       the same attribute '%s' assigned twice."
-                      (Pprinter.string_of_loc loc)
-                      field_id id));
+              raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
             LocalSymbolTable.allocate local_table id args);
         allocate_field_attrs local_table field_id attrs
 
@@ -78,13 +72,7 @@ module ModelManager = struct
         (match field with
         | Model.Field (loc, id, typ, field_attrs) ->
             if LocalSymbolTable.contains local_table id then
-              raise
-                (MultiDefinitionsError
-                   (Fmt.str
-                      "MultiDefinitionsError@(%s): The field '%s' was defined \
-                       multiple times"
-                      (Pprinter.string_of_loc loc)
-                      id));
+              raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
             let field_attrs_table = LocalSymbolTable.create () in
             allocate_field_attrs field_attrs_table id field_attrs;
             let field = { typ; field_attrs_table } in
@@ -101,13 +89,7 @@ module SymbolTableManager = struct
         (match declaration with
         | Model (loc, id, body) ->
             if GlobalSymbolTable.contains global_table id then
-              raise
-                (MultiDefinitionsError
-                   (Fmt.str
-                      "MultiDefinitionsError@(%s): '%s' is defined multiple \
-                       times"
-                      (Pprinter.string_of_loc loc)
-                      id));
+              raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
             let table = LocalSymbolTable.create () in
             let some_table = Some table in
             let declaration_type = ModelType in
@@ -116,13 +98,7 @@ module SymbolTableManager = struct
               { declaration_type; some_table }
         | Query (loc, id, _) ->
             if GlobalSymbolTable.contains global_table id then
-              raise
-                (MultiDefinitionsError
-                   (Fmt.str
-                      "MultiDefinitionsError@(%s): '%s' is defined multiple \
-                       times"
-                      (Pprinter.string_of_loc loc)
-                      id));
+              raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
             let some_table = None in
             let declaration_type = QueryType in
             GlobalSymbolTable.allocate global_table id

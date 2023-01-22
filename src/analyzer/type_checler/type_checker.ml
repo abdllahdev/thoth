@@ -11,7 +11,7 @@ let check_declaration (global_table : 'a GlobalSymbolTable.t)
         Option.get (GlobalSymbolTable.get_table global_table id)
       in
       check_model global_table model_table body
-  | Query (loc, _, body) -> check_query_body global_table loc body
+  | Query (loc, id, body) -> check_query global_table loc id body
 
 let rec semantic_check (global_table : 'a GlobalSymbolTable.t)
     (Ast declarations) : unit =

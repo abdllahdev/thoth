@@ -6,7 +6,7 @@ let print_error_position (lexbuf : Lexing.lexbuf) =
 
 let parse_with_error (lexbuf : Lexing.lexbuf) =
   try Ok (Parsing.Parser.ast Parsing.Lexer.token lexbuf) with
-  | Error_handler.Error.SyntaxError msg ->
+  | Error_handler.Errors.SyntaxError msg ->
       let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in
       Error (Core.Error.of_string error_msg)
   | Parsing.Parser.Error ->

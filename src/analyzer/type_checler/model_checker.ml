@@ -1,8 +1,28 @@
 open Ast
 open Ast.Ast_types
-open Error_handler.Error
+open Error_handler.Handler
 open Symbol_table
-open Helper
+
+let get_custom_scalar_type (scalar_type : scalar_type) : string option =
+  match scalar_type with CustomType str -> Some str | _ -> None
+
+let get_custom_type (typ : typ) : string option =
+  match typ with
+  | Scalar scalar_type -> get_custom_scalar_type scalar_type
+  | Composite composite_type -> (
+      match composite_type with
+      | List scalar_type -> get_custom_scalar_type scalar_type
+      | Optional scalar_type -> get_custom_scalar_type scalar_type
+      | OptionalList scalar_type -> get_custom_scalar_type scalar_type)
+
+let extract_scalar_type (typ : typ) : scalar_type =
+  match typ with
+  | Scalar scalar_type -> scalar_type
+  | Composite composite_type -> (
+      match composite_type with
+      | List scalar_type -> scalar_type
+      | Optional scalar_type -> scalar_type
+      | OptionalList scalar_type -> scalar_type)
 
 let check_field_attr (global_table : 'a GlobalSymbolTable.t)
     (model_table : 'a LocalSymbolTable.t) (field_id : id)
@@ -11,20 +31,14 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
   match id with
   | "@id" | "@unique" | "@ignore" | "@updatedAt" ->
       if args_length >= 1 then
-        raise
-          (TypeError
-             (Fmt.str
-                "TypeError@(%s): Expected 0 argument in '%s' but received %d."
-                (Pprinter.string_of_loc loc)
-                id args_length))
+        raise_argument_number_error
+          (Pprinter.string_of_loc loc)
+          0 args_length id
   | "@default" -> (
       if args_length > 1 || args_length == 0 then
-        raise
-          (TypeError
-             (Fmt.str
-                "TypeError@(%s): Expected 1 argument in '%s' but received %d."
-                (Pprinter.string_of_loc loc)
-                id args_length))
+        raise_argument_number_error
+          (Pprinter.string_of_loc loc)
+          1 args_length id
       else
         let arg = List.hd args in
         let field_record : ModelManager.field_record =
@@ -32,80 +46,78 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
         in
         let field_type = extract_scalar_type field_record.typ in
         match arg with
-        | Model.AttrArgRef (loc, _) ->
-            raise
-              (TypeError
-                 (Fmt.str
-                    "TypeError@(%s): Attribute '%s' can only be of type \
-                     string, boolean, number, or 'now()' func"
-                    (Pprinter.string_of_loc loc)
-                    id))
+        | Model.AttrArgRef (loc, ref) ->
+            raise_type_error
+              (Pprinter.string_of_loc loc)
+              (Pprinter.string_of_scalar_type field_type)
+              ref "Reference" id
         | Model.AttrArgFunc (loc, func) -> (
             if not (String.equal func "now") then
-              raise
-                (NameError
-                   (Fmt.str "NameError@(%s): Undefined function %s"
-                      (Pprinter.string_of_loc loc)
-                      func));
+              raise_name_error (Pprinter.string_of_loc loc) "function" func;
             match field_type with
             | DateTime -> ()
             | _ ->
-                raise
-                  (TypeError
-                     (Fmt.str
-                        "TypeError@(%s): Attribute '%s' value must match the \
-                         field type"
-                        (Pprinter.string_of_loc loc)
-                        id)))
-        | Model.AttrArgString (loc, _) -> (
+                raise_type_error
+                  (Pprinter.string_of_loc loc)
+                  (Pprinter.string_of_scalar_type field_type)
+                  func "DateTime" id)
+        | Model.AttrArgString (loc, str) -> (
             match field_type with
             | String -> ()
             | _ ->
-                raise
-                  (TypeError
-                     (Fmt.str
-                        "TypeError@(%s): Attribute '%s' value must match the \
-                         field type"
-                        (Pprinter.string_of_loc loc)
-                        id)))
-        | Model.AttrArgBoolean (loc, _) -> (
+                raise_type_error
+                  (Pprinter.string_of_loc loc)
+                  (Pprinter.string_of_scalar_type field_type)
+                  (Pprinter.string_of_literal str)
+                  "String" id)
+        | Model.AttrArgBoolean (loc, boolean) -> (
             match field_type with
             | Boolean -> ()
             | _ ->
-                raise
-                  (TypeError
-                     (Fmt.str
-                        "TypeError@(%s): Attribute '%s' value must match the \
-                         field type"
-                        (Pprinter.string_of_loc loc)
-                        id)))
-        | Model.AttrArgInt (loc, _) -> (
+                raise_type_error
+                  (Pprinter.string_of_loc loc)
+                  (Pprinter.string_of_scalar_type field_type)
+                  (Pprinter.string_of_literal boolean)
+                  "Boolean" id)
+        | Model.AttrArgInt (loc, number) -> (
             match field_type with
             | Int -> ()
             | _ ->
-                raise
-                  (TypeError
-                     (Fmt.str
-                        "TypeError@(%s): Attribute '%s' value must match the \
-                         field type"
-                        (Pprinter.string_of_loc loc)
-                        id))))
+                raise_type_error
+                  (Pprinter.string_of_loc loc)
+                  (Pprinter.string_of_scalar_type field_type)
+                  (Pprinter.string_of_literal number)
+                  "Int" id))
   | "@relation" -> (
       if args_length > 3 || args_length < 3 then
-        raise
-          (TypeError
-             (Fmt.str
-                "TypeError@(%s): Expected 3 argument in '%s' but received %d."
-                (Pprinter.string_of_loc loc)
-                id args_length));
+        raise_argument_number_error
+          (Pprinter.string_of_loc loc)
+          3 args_length id;
       let relation_name = List.nth args 0 in
       (match relation_name with
       | Model.AttrArgString _ -> ()
-      | _ ->
-          raise
-            (TypeError
-               (Fmt.str "TypeError@(%s): Relation name must be string."
-                  (Pprinter.string_of_loc loc))));
+      | Model.AttrArgBoolean (loc, boolean) ->
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "String"
+            (Pprinter.string_of_literal boolean)
+            "Boolean" id
+      | Model.AttrArgFunc (loc, func) ->
+          if not (String.equal func "now") then
+            raise_name_error (Pprinter.string_of_loc loc) "function" func;
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "String" func "DateTime" id
+      | Model.AttrArgInt (loc, number) ->
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "String"
+            (Pprinter.string_of_literal number)
+            "Int" id
+      | Model.AttrArgRef (loc, ref) ->
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "String" ref "Reference" id);
       (let relation_field = List.nth args 1 in
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
@@ -113,54 +125,73 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
              (LocalSymbolTable.lookup model_table field).field_attrs_table
            in
            if not (LocalSymbolTable.contains model_table field) then
-             raise
-               (TypeError
-                  (Fmt.str "TypeError@(%s): Field '%s' is not defined"
-                     (Pprinter.string_of_loc loc)
-                     field))
+             raise_name_error (Pprinter.string_of_loc loc) "field" field
            else if not (LocalSymbolTable.contains field_attrs "@unique") then
-             raise
-               (TypeError
-                  (Fmt.str "TypeError@(%s): Field '%s' must be unique"
-                     (Pprinter.string_of_loc loc)
-                     field))
-       | _ ->
-           raise
-             (TypeError
-                (Fmt.str "TypeError@(%s): Relation fields must be a reference."
-                   (Pprinter.string_of_loc loc))));
+             raise_type_error
+               (Pprinter.string_of_loc loc)
+               "UniqueField" field "NonUniqueField" id
+       | Model.AttrArgString (loc, str) ->
+           raise_type_error
+             (Pprinter.string_of_loc loc)
+             "Reference"
+             (Pprinter.string_of_literal str)
+             "String" id
+       | Model.AttrArgBoolean (loc, boolean) ->
+           raise_type_error
+             (Pprinter.string_of_loc loc)
+             "Reference"
+             (Pprinter.string_of_literal boolean)
+             "Boolean" id
+       | Model.AttrArgFunc (loc, func) ->
+           if not (String.equal func "now") then
+             raise_name_error (Pprinter.string_of_loc loc) "function" func;
+           raise_type_error
+             (Pprinter.string_of_loc loc)
+             "Reference" func "DateTime" id
+       | Model.AttrArgInt (loc, number) ->
+           raise_type_error
+             (Pprinter.string_of_loc loc)
+             "Reference"
+             (Pprinter.string_of_literal number)
+             "Int" id);
       let relation_ref = List.nth args 2 in
       match relation_ref with
       | Model.AttrArgRef (_, ref) ->
           if not (GlobalSymbolTable.contains global_table ref) then
-            raise
-              (TypeError
-                 (Fmt.str "TypeError@(%s): Model '%s' is not defined"
-                    (Pprinter.string_of_loc loc)
-                    ref));
+            raise_name_error (Pprinter.string_of_loc loc) "model" ref;
 
           if not (GlobalSymbolTable.check_type global_table ref ModelType) then
-            raise
-              (TypeError
-                 (Fmt.str
-                    "TypeError@(%s): Relation reference must be of type \
-                     'Model' but received %s of type '%s'"
-                    (Pprinter.string_of_loc loc)
-                    ref
-                    (Pprinter.string_of_declaration_type
-                       (GlobalSymbolTable.get_declaration_type global_table ref))))
-      | _ ->
-          raise
-            (TypeError
-               (Fmt.str
-                  "TypeError@(%s): Relation references must be a reference"
-                  (Pprinter.string_of_loc loc))))
-  | _ ->
-      raise
-        (NameError
-           (Fmt.str "NameError@(%s): Undefined model field attribute '%s'"
+            raise_type_error
               (Pprinter.string_of_loc loc)
-              id))
+              "Model" ref
+              (Pprinter.string_of_declaration_type
+                 (GlobalSymbolTable.get_declaration_type global_table ref))
+              id
+      | Model.AttrArgString (loc, str) ->
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "Reference"
+            (Pprinter.string_of_literal str)
+            "String" id
+      | Model.AttrArgBoolean (loc, boolean) ->
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "Reference"
+            (Pprinter.string_of_literal boolean)
+            "Boolean" id
+      | Model.AttrArgFunc (loc, func) ->
+          if not (String.equal func "now") then
+            raise_name_error (Pprinter.string_of_loc loc) "function" func;
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "Reference" func "DateTime" id
+      | Model.AttrArgInt (loc, number) ->
+          raise_type_error
+            (Pprinter.string_of_loc loc)
+            "Reference"
+            (Pprinter.string_of_literal number)
+            "Int" id)
+  | _ -> raise_name_error (Pprinter.string_of_loc loc) "attribute" id
 
 let rec check_field_attrs (global_table : 'a GlobalSymbolTable.t)
     (model_table : 'a LocalSymbolTable.t) (field_id : id)
@@ -177,11 +208,7 @@ let check_field_type (global_table : 'a GlobalSymbolTable.t) (field_type : typ)
   match custom_type with
   | Some custom_type ->
       if not (GlobalSymbolTable.contains global_table custom_type) then
-        raise
-          (NameError
-             (Fmt.str "NameError@(%s): Undefined type '%s'"
-                (Pprinter.string_of_loc loc)
-                custom_type))
+        raise_name_error (Pprinter.string_of_loc loc) "type" custom_type
   | None -> ()
 
 let check_field (global_table : 'a GlobalSymbolTable.t)

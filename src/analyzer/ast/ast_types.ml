@@ -24,6 +24,8 @@ type literal =
   | BooleanLiteral of scalar_type * bool
 
 (* Model definition *)
+
+(** TODO: Change AttrArgFunc to AttrArgNow of type DateTime *)
 module Model = struct
   type attr_arg =
     | AttrArgString of loc * literal

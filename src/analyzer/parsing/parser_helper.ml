@@ -1,6 +1,6 @@
 open Ast
 open Ast.Ast_types
-open Error_handler.Error
+open Error_handler.Handler
 
 let parse_field_type (field_type : string) : scalar_type =
   match field_type with
@@ -18,12 +18,7 @@ let parse_query_arg (loc : loc) (arg : string) (fields : string list) :
   | "filter" -> Query.Filter (loc, fields)
   | "where" -> Query.Where (loc, List.hd fields)
   | "data" -> Query.Data (loc, fields)
-  | _ ->
-      raise
-        (NameError
-           (Fmt.str "NameError@(%s): Undefined query argument '%s'"
-              (Pprinter.string_of_loc loc)
-              arg))
+  | _ -> raise_name_error (Pprinter.string_of_loc loc) "query argument" arg
 
 let parse_query_type (loc : loc) (typ : string) : Query.typ =
   match typ with
@@ -32,12 +27,7 @@ let parse_query_type (loc : loc) (typ : string) : Query.typ =
   | "create" -> Query.Create
   | "update" -> Query.Update
   | "delete" -> Query.Delete
-  | _ ->
-      raise
-        (NameError
-           (Fmt.str "NameError@(%s): Undefined query type '%s'"
-              (Pprinter.string_of_loc loc)
-              typ))
+  | _ -> raise_name_error (Pprinter.string_of_loc loc) "query type" typ
 
 let parse_query_permissions (loc : loc) (permissions : string list) :
     Query.permission list =
@@ -47,9 +37,7 @@ let parse_query_permissions (loc : loc) (permissions : string list) :
       | "isAuth" -> (loc, "isAuth")
       | "owns" -> (loc, "owns")
       | _ ->
-          raise
-            (NameError
-               (Fmt.str "NameError@(%s): Undefined query permission '%s'"
-                  (Pprinter.string_of_loc loc)
-                  permission)))
+          raise_name_error
+            (Pprinter.string_of_loc loc)
+            "query permission" permission)
     permissions
