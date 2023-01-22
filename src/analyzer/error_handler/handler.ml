@@ -5,28 +5,25 @@ let raise_type_error (loc : string) (expected_type : string)
   raise
     (TypeError
        (Fmt.str
-          "TypeError@(%s): Excepted an argument of type '%s' but received '%s' \
-           of type '%s' in '%s'"
+          "@(%s): Excepted an argument of type '%s' but received '%s' of type \
+           '%s' in '%s'"
           loc expected_type received_value received_type id))
 
 let raise_name_error (loc : string) (typ : string) (id : string) =
   raise (NameError (Fmt.str "NameError@(%s): Undefined %s '%s'" loc typ id))
 
 let raise_syntax_error (loc : string) (value : string) =
-  raise
-    (SyntaxError (Fmt.str "SyntaxError@(%s): Illegal charachter %s" loc value))
+  raise (SyntaxError (Fmt.str "@(%s): Illegal charachter %s" loc value))
 
 let raise_argument_number_error (loc : string) (expected_number : int)
     (received_number : int) (id : string) =
   raise
     (ArgumentNumberError
        (Fmt.str
-          "ArgumentNumberError@(%s): Expected '%d' arguments but received '%d' \
-           arguments in '%s'."
+          "@(%s): Expected '%d' arguments but received '%d' arguments in '%s'."
           loc expected_number received_number id))
 
 let raise_multi_definitions_error (loc : string) (id : string) =
   raise
     (MultiDefinitionsError
-       (Fmt.str "MultiDefinitionsError@(%s): '%s' was declared multiple times"
-          loc id))
+       (Fmt.str "@(%s): '%s' was declared multiple times" loc id))
