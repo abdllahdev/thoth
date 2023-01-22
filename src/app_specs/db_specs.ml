@@ -21,7 +21,7 @@ let generate_attr_arg_specs (arg : Model.attr_arg) : string =
   | AttrArgRef (_, id) -> Fmt.str "[%s]" id
   | AttrArgBoolean (_, boolean) -> generate_literals boolean
   | AttrArgInt (_, number) -> generate_literals number
-  | AttrArgFunc (_, func) -> Fmt.str "%s()" func
+  | AttrArgNow _ -> Fmt.str "now()"
 
 let generate_attr_specs (Model.Attribute (_, id, args)) : string =
   if List.length args > 0 then

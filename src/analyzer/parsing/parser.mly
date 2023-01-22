@@ -17,6 +17,7 @@
 %token          RIGHT_PARAN
 %token          QUESTION_MARK
 %token          COMMA
+%token          NOW
 %token          MODEL
 %token          QUERY
 %token          ON
@@ -37,8 +38,8 @@
 model_field_attr_args:
   | str = STRING
     { Model.AttrArgString($startpos, (StringLiteral(String, str))) }
-  | func = ID; LEFT_PARAN; RIGHT_PARAN
-    { Model.AttrArgFunc($startpos, func) }
+  | NOW
+    { Model.AttrArgNow($startpos) }
   | ref = ID
     { Model.AttrArgRef($startpos, ref) }
   | TRUE

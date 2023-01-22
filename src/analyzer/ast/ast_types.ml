@@ -23,15 +23,12 @@ type literal =
   | IntLiteral of scalar_type * int
   | BooleanLiteral of scalar_type * bool
 
-(* Model definition *)
-
-(** TODO: Change AttrArgFunc to AttrArgNow of type DateTime *)
 module Model = struct
   type attr_arg =
     | AttrArgString of loc * literal
     | AttrArgBoolean of loc * literal
     | AttrArgInt of loc * literal
-    | AttrArgFunc of loc * string
+    | AttrArgNow of loc
     | AttrArgRef of loc * id
 
   type attribute = Attribute of loc * id * attr_arg list

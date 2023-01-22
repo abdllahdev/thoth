@@ -34,7 +34,7 @@ module ModelPrinter = struct
     | Model.AttrArgString (_, str) -> Fmt.str "\"%s\"" (string_of_literal str)
     | Model.AttrArgBoolean (_, boolean) -> string_of_literal boolean
     | Model.AttrArgRef (_, ref) -> Fmt.str "%s" ref
-    | Model.AttrArgFunc (_, func) -> Fmt.str "%s()" func
+    | Model.AttrArgNow _ -> Fmt.str "now"
     | Model.AttrArgInt (_, num) -> string_of_literal num
 
   let rec string_of_field_attr_args (args : Model.attr_arg list) : string =

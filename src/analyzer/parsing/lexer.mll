@@ -26,30 +26,31 @@ let attribute = ('@')(id)
 (* Lexer rules *)
 rule token =
   parse
-  | '{'              { LEFT_BRACE }
-  | '}'              { RIGHT_BRACE }
-  | '['              { LEFT_BRACKET }
-  | ']'              { RIGHT_BRACKET }
-  | '('              { LEFT_PARAN }
-  | ')'              { RIGHT_PARAN }
-  | '?'              { QUESTION_MARK }
-  | ':'              { COLON }
-  | ';'              { SEMICOLON }
-  | ','              { COMMA }
-  | '"'              { read_string (Buffer.create 17) lexbuf }
-  | "true"           { TRUE }
-  | "false"          { FALSE }
-  | "model"          { MODEL }
-  | "query"          { QUERY }
-  | "@on"             { ON }
-  | "@permission"     { PERMISSION }
-  | attribute        { ATTRIBUTE (Lexing.lexeme lexbuf) }
-  | int              { INT (int_of_string (Lexing.lexeme lexbuf))}
-  | id               { ID (Lexing.lexeme lexbuf) }
-  | whitespace       { token lexbuf }
-  | newline          { next_line lexbuf; token lexbuf }
-  | eof              { EOF }
-  | _                { raise_syntax_error (string_of_loc lexbuf.lex_curr_p) (Lexing.lexeme lexbuf) }
+  | '{'           { LEFT_BRACE }
+  | '}'           { RIGHT_BRACE }
+  | '['           { LEFT_BRACKET }
+  | ']'           { RIGHT_BRACKET }
+  | '('           { LEFT_PARAN }
+  | ')'           { RIGHT_PARAN }
+  | '?'           { QUESTION_MARK }
+  | ':'           { COLON }
+  | ';'           { SEMICOLON }
+  | ','           { COMMA }
+  | '"'           { read_string (Buffer.create 17) lexbuf }
+  | "true"        { TRUE }
+  | "false"       { FALSE }
+  | "model"       { MODEL }
+  | "query"       { QUERY }
+  | "now"         { NOW }
+  | "@on"         { ON }
+  | "@permission" { PERMISSION }
+  | attribute     { ATTRIBUTE (Lexing.lexeme lexbuf) }
+  | int           { INT (int_of_string (Lexing.lexeme lexbuf))}
+  | id            { ID (Lexing.lexeme lexbuf) }
+  | whitespace    { token lexbuf }
+  | newline       { next_line lexbuf; token lexbuf }
+  | eof           { EOF }
+  | _             { raise_syntax_error (string_of_loc lexbuf.lex_curr_p) (Lexing.lexeme lexbuf) }
 
 and read_string buf = parse
   | '"'           { STRING (Buffer.contents buf) }

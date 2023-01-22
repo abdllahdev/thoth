@@ -51,16 +51,14 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
               (Pprinter.string_of_loc loc)
               (Pprinter.string_of_scalar_type field_type)
               ref "Reference" id
-        | Model.AttrArgFunc (loc, func) -> (
-            if not (String.equal func "now") then
-              raise_name_error (Pprinter.string_of_loc loc) "function" func;
+        | Model.AttrArgNow loc -> (
             match field_type with
             | DateTime -> ()
             | _ ->
                 raise_type_error
                   (Pprinter.string_of_loc loc)
                   (Pprinter.string_of_scalar_type field_type)
-                  func "DateTime" id)
+                  "now" "DateTime" id)
         | Model.AttrArgString (loc, str) -> (
             match field_type with
             | String -> ()
@@ -102,12 +100,10 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
             "String"
             (Pprinter.string_of_literal boolean)
             "Boolean" id
-      | Model.AttrArgFunc (loc, func) ->
-          if not (String.equal func "now") then
-            raise_name_error (Pprinter.string_of_loc loc) "function" func;
+      | Model.AttrArgNow loc ->
           raise_type_error
             (Pprinter.string_of_loc loc)
-            "String" func "DateTime" id
+            "String" "now" "DateTime" id
       | Model.AttrArgInt (loc, number) ->
           raise_type_error
             (Pprinter.string_of_loc loc)
@@ -142,12 +138,10 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
              "Reference"
              (Pprinter.string_of_literal boolean)
              "Boolean" id
-       | Model.AttrArgFunc (loc, func) ->
-           if not (String.equal func "now") then
-             raise_name_error (Pprinter.string_of_loc loc) "function" func;
+       | Model.AttrArgNow loc ->
            raise_type_error
              (Pprinter.string_of_loc loc)
-             "Reference" func "DateTime" id
+             "Reference" "now" "DateTime" id
        | Model.AttrArgInt (loc, number) ->
            raise_type_error
              (Pprinter.string_of_loc loc)
@@ -179,12 +173,10 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
             "Reference"
             (Pprinter.string_of_literal boolean)
             "Boolean" id
-      | Model.AttrArgFunc (loc, func) ->
-          if not (String.equal func "now") then
-            raise_name_error (Pprinter.string_of_loc loc) "function" func;
+      | Model.AttrArgNow loc ->
           raise_type_error
             (Pprinter.string_of_loc loc)
-            "Reference" func "DateTime" id
+            "Reference" "now" "DateTime" id
       | Model.AttrArgInt (loc, number) ->
           raise_type_error
             (Pprinter.string_of_loc loc)
