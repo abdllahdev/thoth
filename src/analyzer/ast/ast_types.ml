@@ -50,11 +50,16 @@ module Query = struct
 end
 
 type declaration_type = ModelType | QueryType
+type model_declaration = loc * id * Model.body
+type query_declaration = loc * id * Query.body
 
 (* The different types of declarations in the language *)
-type declaration =
-  | Model of loc * id * Model.body
-  | Query of loc * id * Query.body
+type declaration = Model of model_declaration | Query of query_declaration
+
+type filtered_ast = {
+  model_declarations : model_declaration list;
+  query_declarations : query_declaration list;
+}
 
 (* Ast type *)
 type ast = Ast of declaration list

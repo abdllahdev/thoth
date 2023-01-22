@@ -1,4 +1,4 @@
-open App_specs.Db_specs
+open Specs.Db_specs
 open Jingoo
 open Sys
 
@@ -12,11 +12,11 @@ let generate_field (field_specs : field_specs) : Jg_types.tvalue =
     ]
 
 let generate_model (model_specs : model_specs) : Jg_types.tvalue =
-  let { id; fields } = model_specs in
+  let { id; body } = model_specs in
   Jg_types.Tobj
     [
       ("id", Jg_types.Tstr id);
-      ("fields", Jg_types.Tlist (List.map generate_field fields));
+      ("fields", Jg_types.Tlist (List.map generate_field body));
     ]
 
 let generate_db (db_specs : db_specs) : string =

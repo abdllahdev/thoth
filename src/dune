@@ -1,3 +1,3 @@
 (library
  (name src)
- (libraries analyzer app_specs generator))
+ (libraries analyzer specs generator))

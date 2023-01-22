@@ -3,7 +3,7 @@ open Helper
 
 type id = string
 type field_specs = { id : string; field_type : string; field_attrs : string }
-type model_specs = { id : string; fields : field_specs list }
+type model_specs = { id : string; body : field_specs list }
 
 type db_config = {
   user : string;
@@ -52,16 +52,12 @@ let generate_field_specs (Model.Field (_, id, field_type, field_attrs)) :
   let field_attrs = generate_attrs_specs field_attrs in
   { id; field_type; field_attrs }
 
-(* let generate_model_specs (Model (_, id, fields)) : model_specs =
-     let fields = List.map generate_field_specs fields in
-     { id; fields }
+let generate_model_specs (model : model_declaration) : model_specs =
+  match model with
+  | _, id, body ->
+      let body = List.map generate_field_specs body in
+      { id; body }
 
-   let generate_db_specs (Ast declarations) : db_specs =
-        let models = List.map generate_model_specs declarations in
-        { models }
-
-      (* TODO: add queries *)
-      type app_specs = { db : db_specs }
-
-      let generate_app_specs (Ast declarations) : app_specs =
-        match decl *)
+let generate_db_specs (models : model_declaration list) : db_specs =
+  let models = List.map generate_model_specs models in
+  { models }
