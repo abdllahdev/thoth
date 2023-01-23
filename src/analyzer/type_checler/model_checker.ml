@@ -1,3 +1,4 @@
+open Core
 open Ast
 open Ast.Ast_types
 open Error_handler.Handler
@@ -35,14 +36,14 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
           (Pprinter.string_of_loc loc)
           0 args_length id
   | "@default" -> (
-      if args_length > 1 || args_length == 0 then
+      if args_length > 1 || phys_equal args_length 0 then
         raise_argument_number_error
           (Pprinter.string_of_loc loc)
           1 args_length id
       else
-        let arg = List.hd args in
+        let arg = List.hd_exn args in
         let field_record : ModelManager.field_record =
-          LocalSymbolTable.lookup model_table field_id
+          LocalSymbolTable.lookup model_table ~key:field_id
         in
         let field_type = extract_scalar_type field_record.typ in
         match arg with
@@ -91,7 +92,7 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
         raise_argument_number_error
           (Pprinter.string_of_loc loc)
           3 args_length id;
-      let relation_name = List.nth args 0 in
+      let relation_name = List.nth_exn args 0 in
       (match relation_name with
       | Model.AttrArgString _ -> ()
       | Model.AttrArgBoolean (loc, boolean) ->
@@ -114,15 +115,16 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
           raise_type_error
             (Pprinter.string_of_loc loc)
             "String" ref "Reference" id);
-      (let relation_field = List.nth args 1 in
+      (let relation_field = List.nth_exn args 1 in
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
            let field_attrs =
-             (LocalSymbolTable.lookup model_table field).field_attrs_table
+             (LocalSymbolTable.lookup model_table ~key:field).field_attrs_table
            in
-           if not (LocalSymbolTable.contains model_table field) then
+           if not (LocalSymbolTable.contains model_table ~key:field) then
              raise_name_error (Pprinter.string_of_loc loc) "field" field
-           else if not (LocalSymbolTable.contains field_attrs "@unique") then
+           else if not (LocalSymbolTable.contains field_attrs ~key:"@unique")
+           then
              raise_type_error
                (Pprinter.string_of_loc loc)
                "UniqueField" field "NonUniqueField" id
@@ -148,18 +150,19 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
              "Reference"
              (Pprinter.string_of_literal number)
              "Int" id);
-      let relation_ref = List.nth args 2 in
+      let relation_ref = List.nth_exn args 2 in
       match relation_ref with
       | Model.AttrArgRef (_, ref) ->
-          if not (GlobalSymbolTable.contains global_table ref) then
+          if not (GlobalSymbolTable.contains global_table ~key:ref) then
             raise_name_error (Pprinter.string_of_loc loc) "model" ref;
 
-          if not (GlobalSymbolTable.check_type global_table ref ModelType) then
+          if not (GlobalSymbolTable.check_type global_table ~key:ref ModelType)
+          then
             raise_type_error
               (Pprinter.string_of_loc loc)
               "Model" ref
               (Pprinter.string_of_declaration_type
-                 (GlobalSymbolTable.get_declaration_type global_table ref))
+                 (GlobalSymbolTable.get_declaration_type global_table ~key:ref))
               id
       | Model.AttrArgString (loc, str) ->
           raise_type_error
@@ -199,7 +202,7 @@ let check_field_type (global_table : 'a GlobalSymbolTable.t) (field_type : typ)
   let custom_type = get_custom_type field_type in
   match custom_type with
   | Some custom_type ->
-      if not (GlobalSymbolTable.contains global_table custom_type) then
+      if not (GlobalSymbolTable.contains global_table ~key:custom_type) then
         raise_name_error (Pprinter.string_of_loc loc) "type" custom_type
   | None -> ()
 

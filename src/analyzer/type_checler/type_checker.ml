@@ -1,27 +1,23 @@
+open Core
 open Ast.Ast_types
 open Symbol_table
 open Model_checker
 open Query_checker
 
 let check_declaration (global_table : 'a GlobalSymbolTable.t)
-    (declaration : declaration) : unit =
-  match declaration with
-  | Model (_, id, body) ->
-      let model_table =
-        Option.get (GlobalSymbolTable.get_table global_table id)
-      in
-      check_model global_table model_table body
-  | Query (loc, id, body) -> check_query global_table loc id body
-
-let rec semantic_check (global_table : 'a GlobalSymbolTable.t)
-    (Ast declarations) : unit =
-  match declarations with
-  | [] -> ()
-  | declaration :: declarations ->
-      check_declaration global_table declaration;
-      semantic_check global_table (Ast declarations)
+    (declarations : declaration list) : unit =
+  let check_declaration declaration =
+    match declaration with
+    | Model (_, id, body) ->
+        let model_table =
+          Option.value_exn (GlobalSymbolTable.get_table global_table ~key:id)
+        in
+        check_model global_table model_table body
+    | Query (loc, id, body) -> check_query global_table loc id body
+  in
+  List.iter ~f:(fun declaration -> check_declaration declaration) declarations
 
 let run_type_checker (Ast declarations) : unit =
   let global_table = GlobalSymbolTable.create () in
   SymbolTableManager.populate global_table (Ast declarations);
-  semantic_check global_table (Ast declarations)
+  check_declaration global_table declarations

@@ -1,3 +1,4 @@
+open Core
 open Ast
 open Ast.Ast_types
 open Symbol_table
@@ -10,16 +11,18 @@ let rec check_models (global_table : 'a GlobalSymbolTable.t) (id : id)
   | model :: models ->
       (match model with
       | loc, model_id ->
-          if not (GlobalSymbolTable.contains global_table model_id) then
+          if not (GlobalSymbolTable.contains global_table ~key:model_id) then
             raise_name_error (Pprinter.string_of_loc loc) "model" model_id
           else if
-            not (GlobalSymbolTable.check_type global_table model_id ModelType)
+            not
+              (GlobalSymbolTable.check_type global_table ~key:model_id ModelType)
           then
             raise_type_error
               (Pprinter.string_of_loc loc)
               "Model" model_id
               (Pprinter.string_of_declaration_type
-                 (GlobalSymbolTable.get_declaration_type global_table model_id))
+                 (GlobalSymbolTable.get_declaration_type global_table
+                    ~key:model_id))
               id);
       check_models global_table id models
 
@@ -27,20 +30,20 @@ let check_where_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     (id : id) (model : Query.model) (field : string) : unit =
   let _, model_id = model in
   let model_table =
-    Option.get (GlobalSymbolTable.get_table global_table model_id)
+    Option.value_exn (GlobalSymbolTable.get_table global_table ~key:model_id)
   in
-  if not (LocalSymbolTable.contains model_table field) then
+  if not (LocalSymbolTable.contains model_table ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field;
   let field_record : ModelManager.field_record =
-    LocalSymbolTable.lookup model_table field
+    LocalSymbolTable.lookup model_table ~key:field
   in
   let field_attrs_table = field_record.field_attrs_table in
-  if not (LocalSymbolTable.contains model_table field) then
+  if not (LocalSymbolTable.contains model_table ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field
   else if
     not
-      (LocalSymbolTable.contains field_attrs_table "@unique"
-      || LocalSymbolTable.contains field_attrs_table "@id")
+      (LocalSymbolTable.contains field_attrs_table ~key:"@unique"
+      || LocalSymbolTable.contains field_attrs_table ~key:"@id")
   then
     raise_type_error
       (Pprinter.string_of_loc loc)
@@ -50,12 +53,12 @@ let check_filter_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     (model : Query.model) (fields : string list) : unit =
   let _, model_id = model in
   let model_table =
-    Option.get (GlobalSymbolTable.get_table global_table model_id)
+    Option.value_exn (GlobalSymbolTable.get_table global_table ~key:model_id)
   in
   ignore
     (List.map
-       (fun field ->
-         if not (LocalSymbolTable.contains model_table field) then
+       ~f:(fun field ->
+         if not (LocalSymbolTable.contains model_table ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 
@@ -63,12 +66,12 @@ let check_data_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     (model : Query.model) (fields : string list) : unit =
   let _, model_id = model in
   let model_table =
-    Option.get (GlobalSymbolTable.get_table global_table model_id)
+    Option.value_exn (GlobalSymbolTable.get_table global_table ~key:model_id)
   in
   ignore
     (List.map
-       (fun field ->
-         if not (LocalSymbolTable.contains model_table field) then
+       ~f:(fun field ->
+         if not (LocalSymbolTable.contains model_table ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 
@@ -77,7 +80,7 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     unit =
   match typ with
   | Query.FindAll -> (
-      let arg = List.hd args in
+      let arg = List.hd_exn args in
       match arg with
       | Query.Where (loc, _) ->
           raise_type_error
@@ -90,7 +93,7 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
       | Query.Filter (loc, fields) ->
           check_filter_arg global_table loc model fields)
   | Query.FindUnique -> (
-      let arg = List.hd args in
+      let arg = List.hd_exn args in
       match arg with
       | Query.Filter (loc, _) ->
           raise_type_error
@@ -103,7 +106,7 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
       | Query.Where (loc, field) ->
           check_where_arg global_table loc id model field)
   | Query.Create -> (
-      let arg = List.hd args in
+      let arg = List.hd_exn args in
       match arg with
       | Query.Filter (loc, _) ->
           raise_type_error
@@ -117,13 +120,13 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
       )
   | Query.Update ->
       let args_length = List.length args in
-      if args_length != 2 then
+      if not (phys_equal args_length 2) then
         raise_argument_number_error
           (Pprinter.string_of_loc loc)
           2 args_length id;
       ignore
         (List.map
-           (fun arg ->
+           ~f:(fun arg ->
              match arg with
              | Query.Filter (loc, _) ->
                  raise_type_error
@@ -135,7 +138,7 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
                  check_data_arg global_table loc model fields)
            args)
   | Query.Delete -> (
-      let arg = List.hd args in
+      let arg = List.hd_exn args in
       match arg with
       | Query.Filter (loc, _) ->
           raise_type_error
@@ -150,7 +153,6 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
 
 let check_query (global_table : 'a GlobalSymbolTable.t) (loc : loc) (id : id)
     (body : Query.body) : unit =
-  match body with
-  | typ, args, models, _ ->
-      check_models global_table id models;
-      check_args global_table loc typ id (List.hd models) args
+  let typ, args, models, _ = body in
+  check_models global_table id models;
+  check_args global_table loc typ id (List.hd_exn models) args
