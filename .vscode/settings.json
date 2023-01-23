@@ -24,6 +24,7 @@
     "ocaml.menhir"
   ],
   "files.associations": {
-    "*.js": "jinja"
-}
+    "*.prisma": "jinja",
+    "*.js": "jinja",
+  }
 }

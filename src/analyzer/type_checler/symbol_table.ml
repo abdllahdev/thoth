@@ -81,6 +81,7 @@ module ModelManager = struct
 end
 
 module SymbolTableManager = struct
+  (* check for illegal identifiers like any keywords used in the language *)
   let rec populate (global_table : 'a GlobalSymbolTable.t) (Ast declarations) :
       unit =
     match declarations with

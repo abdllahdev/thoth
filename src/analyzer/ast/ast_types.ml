@@ -2,6 +2,8 @@
 type id = string
 type loc = Lexing.position
 
+(* TODO: add auth config, app config, and db config *)
+
 type scalar_type =
   | String
   | Int

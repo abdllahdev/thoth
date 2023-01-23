@@ -2,9 +2,11 @@ open Core
 open Ast.Ast_types
 open Ast.Pprinter
 
-type service_specs = { name : string; types : string list }
-type controller_specs = { name : string; types : string list }
-type routes_specs = { name : string; types : string list }
+type query_specs = { id : string; typ : string }
+type service_specs = { name : string; queries : query_specs list }
+
+(* type controller_specs = { name : string; types : string list }
+   type routes_specs = { name : string; types : string list } *)
 type server_specs = { services : service_specs list }
 
 let group_queries (queries : query_declaration list) :
@@ -32,17 +34,19 @@ let generate_service_specs (queries : query_declaration list) : service_specs =
     let _, _, models, _ = body in
     let model = List.hd_exn models in
     let _, name = model in
-    name
+    String.lowercase name
   in
 
   let get_type lst query =
-    let _, _, body = query in
+    let _, id, body = query in
     let typ, _, _, _ = body in
-    QueryPrinter.string_of_query_type typ :: lst
+    let typ = QueryPrinter.string_of_query_type typ in
+    let query = { id; typ } in
+    query :: lst
   in
 
-  let types = List.fold_left ~init:[] ~f:get_type queries in
-  { name; types }
+  let queries = List.fold_left ~init:[] ~f:get_type queries in
+  { name; queries }
 
 let generate_server_specs (queries : query_declaration list) : server_specs =
   let groups = group_queries queries in

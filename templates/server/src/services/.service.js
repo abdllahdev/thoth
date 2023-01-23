@@ -1,26 +1,30 @@
 const prismaClient = require('../utils/prismaClient');
-{% if function.type == "findUnique" %}
+{% for query in service.queries %}
+{% if query.type == 'findUnique' %}
 const httpStatus = require('http-status');
 const { ApiError } = require('../utils');
 {% endif %}
+{% endfor %}
 
-{% for type in service.types %}
-const {{ "{{ type }}" if type != "delete" else "destroy" }} = async ({{ "data," if type == "create" or type == "update" }}' '{{"where" if type != "create" }}) => {
-  {{"const {{ service.name }}{{ 's' if type == 'findMany' }} = " if type != "delete" }}await prismaClient.{{ service.name }}.{{ type }}({
-    {{"where," if type != "create" }}
-    {{ "data," if type == "create" or type == "update" }}
+{% for query in service.queries %}
+const {{ query.id }} = async ({% if query.type != 'create' %}where, {% endif %}{% if query.type == 'create' or query.type == 'update' %}data{% endif %}) => {
+  const {{ service.name }}{% if type == 'findMany' %}s{% endif %} = await prismaClient.{{ service.name }}.{{ query.type }}({
+    {% if query.type != 'create' %}where,{% endif %}
+    {% if query.type == 'create' or query.type == 'update' %}data,{% endif %}
   });
 
-  {% if type == "findUnique" %}
+  {% if query.type == 'findUnique' %}
   if (!item) throw new ApiError(httpStatus.NOT_FOUND, [{ msg: 'Instance not found' }]);
   {% endif %}
 
-  {{"return item{{ 's' if function.type == 'findMany' }};" if type != "delete" }}
+  {% if query.type != 'destroy' %}
+    return item{% if query.type == 'findMany' %}s{% endif %};
+  {% endif %}
 };
 {% endfor %}
 
 module.exports = {
-{% for type in service.types %}
-  {{ type }},
+{% for query in service.queries %}
+  {{ query.id }},
 {% endfor %}
 };

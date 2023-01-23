@@ -84,7 +84,7 @@ module QueryPrinter = struct
     match query_type with
     | Query.Create -> "create"
     | Query.Update -> "update"
-    | Query.Delete -> "destroy"
+    | Query.Delete -> "delete"
     | Query.FindUnique -> "findUnique"
     | Query.FindAll -> "findMany"
 end
