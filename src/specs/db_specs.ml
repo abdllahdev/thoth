@@ -53,10 +53,9 @@ let generate_field_specs (Model.Field (_, id, field_type, field_attrs)) :
   { id; field_type; field_attrs }
 
 let generate_model_specs (model : model_declaration) : model_specs =
-  match model with
-  | _, id, body ->
-      let body = List.map generate_field_specs body in
-      { id; body }
+  let _, id, body = model in
+  let body = List.map generate_field_specs body in
+  { id; body }
 
 let generate_db_specs (models : model_declaration list) : db_specs =
   let models = List.map generate_model_specs models in

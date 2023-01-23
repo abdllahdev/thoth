@@ -22,5 +22,8 @@
   ],
   "cSpell.enableFiletypes": [
     "ocaml.menhir"
-  ]
+  ],
+  "files.associations": {
+    "*.js": "jinja"
+}
 }

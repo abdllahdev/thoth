@@ -79,6 +79,16 @@ module ModelPrinter = struct
         ^ string_of_fields fields
 end
 
+module QueryPrinter = struct
+  let string_of_query_type (query_type : Query.typ) : string =
+    match query_type with
+    | Query.Create -> "create"
+    | Query.Update -> "update"
+    | Query.Delete -> "destroy"
+    | Query.FindUnique -> "findUnique"
+    | Query.FindAll -> "findMany"
+end
+
 let string_of_declaration_type (declaration_type : declaration_type) =
   match declaration_type with ModelType -> "Model" | QueryType -> "Query"
 
