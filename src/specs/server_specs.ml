@@ -4,7 +4,7 @@ open Ast.Pprinter
 
 type service_specs = { name : string; types : string list }
 type controller_specs = { name : string; types : string list }
-type router_specs = { name : string; types : string list }
+type routes_specs = { name : string; types : string list }
 type server_specs = { services : service_specs list }
 
 let group_queries (queries : query_declaration list) :
