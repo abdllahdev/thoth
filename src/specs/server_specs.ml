@@ -23,7 +23,7 @@ type controller_specs = {
 }
 
 type route = { id : string; typ : string; where : string option }
-type route_specs = { name : string; routes : route list }
+type route_specs = { name : string; list : route list }
 
 type server_specs = {
   services : service_specs list;
@@ -127,8 +127,8 @@ let generate_routes_specs (queries : query_declaration list) : route_specs =
     let route = { id; typ; where } in
     route :: lst
   in
-  let routes = List.fold_left ~init:[] ~f:get_controller_function queries in
-  { name; routes }
+  let list = List.fold_left ~init:[] ~f:get_controller_function queries in
+  { name; list }
 
 let generate_server_specs (queries : query_declaration list) : server_specs =
   let groups = group_queries queries in

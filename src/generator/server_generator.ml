@@ -33,7 +33,7 @@ let generate_service (service_specs : service_specs) : unit =
 let generate_services (services : service_specs list) : unit =
   ignore (List.map ~f:generate_service services);
   let names =
-    List.map ~f:(fun service -> Jg_types.Tstr service.name) services
+    List.map ~f:(fun element -> Jg_types.Tstr element.name) services
   in
   let services_index_file =
     getcwd () ^ "/templates/server/src/services/index.js"
@@ -84,19 +84,59 @@ let generate_controller (controller_sepcs : controller_specs) : unit =
                ] );
          ])
 
-let generate_controllers (controllers : controller_specs list) : unit =
+let generate_controller (controllers : controller_specs list) : unit =
   ignore (List.map ~f:generate_controller controllers);
   let names =
-    List.map ~f:(fun service -> Jg_types.Tstr service.name) controllers
+    List.map ~f:(fun element -> Jg_types.Tstr element.name) controllers
   in
-  let controllers_index_file =
+  let services_index_file =
     getcwd () ^ "/templates/server/src/controllers/index.js"
   in
   ignore
-    (Jg_template.from_file controllers_index_file
+    (Jg_template.from_file services_index_file
+       ~models:[ ("names", Jg_types.Tlist names) ])
+
+let generate_route (route_specs : route_specs) : unit =
+  let { name; list } = route_specs in
+  let controller_file =
+    getcwd () ^ "/templates/server/src/controllers/.controller.js"
+  in
+  ignore
+    (Jg_template.from_file controller_file
+       ~models:
+         [
+           ( "route",
+             Jg_types.Tobj
+               [
+                 ("name", Jg_types.Tstr name);
+                 ( "list",
+                   Jg_types.Tlist
+                     (List.map
+                        ~f:(fun element ->
+                          Jg_types.Tobj
+                            [
+                              ("id", Jg_types.Tstr element.id);
+                              ("type", Jg_types.Tstr element.typ);
+                              ( "where",
+                                Jg_types.Tstr (string_of_option element.where)
+                              );
+                            ])
+                        list) );
+               ] );
+         ])
+
+let generate_routes (routes : route_specs list) : unit =
+  ignore (List.map ~f:generate_route routes);
+  let names = List.map ~f:(fun element -> Jg_types.Tstr element.name) routes in
+  let services_index_file =
+    getcwd () ^ "/templates/server/src/routes/index.js"
+  in
+  ignore
+    (Jg_template.from_file services_index_file
        ~models:[ ("names", Jg_types.Tlist names) ])
 
 let generate_server (server_specs : server_specs) : unit =
-  let { services; controllers; _ } = server_specs in
+  let { services; controllers; routes } = server_specs in
   generate_services services;
-  generate_controllers controllers
+  generate_controller controllers;
+  generate_routes routes
