@@ -110,9 +110,9 @@ query_body:
 
 declaration:
   | MODEL; model_id = ID; model_body = model_body
-    { Model($startpos, model_id, model_body) }
+    { Model($startpos, (parse_id $startpos model_id), model_body) }
   | QUERY; query_id = ID; query_body = query_body; SEMICOLON
-    { Query($startpos, query_id, query_body) }
+    { Query($startpos, (parse_id $startpos query_id), query_body) }
   ;
 
 ast:

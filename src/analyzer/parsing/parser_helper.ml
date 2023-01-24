@@ -3,6 +3,14 @@ open Ast
 open Ast.Ast_types
 open Error_handler.Handler
 
+let parse_id (loc : loc) (id : id) : id =
+  let keywords =
+    [ "true"; "false"; "model"; "query"; "now"; "on"; "permission"; "delete" ]
+  in
+  if List.exists ~f:(fun x -> String.equal x id) keywords then
+    raise_reserved_keyword_error id (Pprinter.string_of_loc loc)
+  else id
+
 let parse_field_type (field_type : string) : scalar_type =
   match field_type with
   | "String" -> String

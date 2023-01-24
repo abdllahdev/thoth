@@ -15,6 +15,11 @@ let raise_name_error (loc : string) (typ : string) (id : string) =
 let raise_syntax_error (loc : string) (value : string) =
   raise (SyntaxError (Fmt.str "@(%s): Unidentifiable '%s'" loc value))
 
+let raise_reserved_keyword_error (loc : string) (value : string) =
+  raise
+    (ReservedKeywordError
+       (Fmt.str "@(%s): '%s' cannot be used as identifier" loc value))
+
 let raise_argument_number_error (loc : string) (expected_number : int)
     (received_number : int) (id : string) =
   raise
