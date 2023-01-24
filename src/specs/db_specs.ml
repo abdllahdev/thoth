@@ -1,6 +1,6 @@
 open Core
 open Ast.Ast_types
-open Helper
+open Ast.Pprinter
 
 type id = string
 type field_specs = { id : string; field_type : string; field_attrs : string }
@@ -18,10 +18,10 @@ type db_specs = { models : model_specs list }
 
 let generate_attr_arg_specs (arg : Model.attr_arg) : string =
   match arg with
-  | AttrArgString (_, str) -> generate_literals str
+  | AttrArgString (_, str) -> string_of_literal str
   | AttrArgRef (_, id) -> Fmt.str "[%s]" id
-  | AttrArgBoolean (_, boolean) -> generate_literals boolean
-  | AttrArgInt (_, number) -> generate_literals number
+  | AttrArgBoolean (_, boolean) -> string_of_literal boolean
+  | AttrArgInt (_, number) -> string_of_literal number
   | AttrArgNow _ -> Fmt.str "now()"
 
 let generate_attr_specs (Model.Attribute (_, id, args)) : string =
@@ -44,8 +44,8 @@ let generate_attrs_specs (field_attrs : Model.attribute list) : string =
 
 let generate_field_type_specs (field_type : typ) : string =
   match field_type with
-  | Scalar scalar_type -> generate_scalar_type scalar_type
-  | Composite composite_type -> generate_composite_type composite_type
+  | Scalar scalar_type -> string_of_scalar_type scalar_type
+  | Composite composite_type -> string_of_composite_type composite_type
 
 let generate_field_specs (Model.Field (_, id, field_type, field_attrs)) :
     field_specs =

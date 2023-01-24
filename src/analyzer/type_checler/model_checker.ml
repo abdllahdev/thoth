@@ -36,7 +36,7 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
           (Pprinter.string_of_loc loc)
           0 args_length id
   | "@default" -> (
-      if args_length > 1 || phys_equal args_length 0 then
+      if args_length > 1 || equal_int args_length 0 then
         raise_argument_number_error
           (Pprinter.string_of_loc loc)
           1 args_length id

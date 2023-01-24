@@ -120,7 +120,7 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
       )
   | Query.Update ->
       let args_length = List.length args in
-      if not (phys_equal args_length 2) then
+      if not (equal_int args_length 2) then
         raise_argument_number_error
           (Pprinter.string_of_loc loc)
           2 args_length id;

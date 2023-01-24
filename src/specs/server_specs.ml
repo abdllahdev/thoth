@@ -2,16 +2,34 @@ open Core
 open Ast.Ast_types
 open Ast.Pprinter
 
-type query_specs = { id : string; typ : string }
-type service_specs = { name : string; service_functions : query_specs list }
+type service_function = { id : string; typ : string }
+
+type service_specs = {
+  name : string;
+  service_functions : service_function list;
+}
+
+type controller_function = {
+  id : string;
+  typ : string;
+  where : string option;
+  filter : string list option;
+  data : string list option;
+}
 
 type controller_specs = {
   name : string;
-  controller_function : query_specs list;
+  controller_functions : controller_function list;
 }
 
-type routes_specs = { name : string; route_function : query_specs list }
-type server_specs = { services : service_specs list }
+type route = { id : string; typ : string; where : string option }
+type routes_specs = { name : string; routes : route list }
+
+type server_specs = {
+  services : service_specs list;
+  controllers : controller_specs list;
+  routes : routes_specs list;
+}
 
 let group_queries (queries : query_declaration list) :
     query_declaration list list =
@@ -32,29 +50,89 @@ let group_queries (queries : query_declaration list) :
   let groups = Hashtbl.create (module String) in
   List.fold_left ~f:groups_builder ~init:groups queries |> Hashtbl.data
 
-let generate_service_specs (queries : query_declaration list) : service_specs =
-  let name =
-    let _, _, body = List.hd_exn queries in
-    let _, _, models, _ = body in
-    let model = List.hd_exn models in
-    let _, name = model in
-    String.lowercase name
-  in
+let get_model_name (queries : query_declaration list) : string =
+  let _, _, body = List.hd_exn queries in
+  let _, _, models, _ = body in
+  let model = List.hd_exn models in
+  let _, name = model in
+  String.lowercase name
 
-  let get_type lst query =
+let generate_service_specs (queries : query_declaration list) : service_specs =
+  let name = get_model_name queries in
+  let get_service_function lst query =
     let _, id, body = query in
     let typ, _, _, _ = body in
     let typ = QueryPrinter.string_of_query_type typ in
-    let query = { id; typ } in
-    query :: lst
+    let service_function = { id; typ } in
+    service_function :: lst
   in
-
-  let service_functions = List.fold_left ~init:[] ~f:get_type queries in
+  let service_functions =
+    List.fold_left ~init:[] ~f:get_service_function queries
+  in
   { name; service_functions }
+
+let generate_controller_specs (queries : query_declaration list) :
+    controller_specs =
+  let name = get_model_name queries in
+  let get_controller_function lst (query : query_declaration) =
+    let _, id, body = query in
+    let typ, args, _, _ = body in
+    let typ = QueryPrinter.string_of_query_type typ in
+
+    let where =
+      List.map
+        ~f:(function Query.Where (_, field) -> Some field | _ -> None)
+        args
+      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+    in
+    let filter =
+      List.map
+        ~f:(function Query.Filter (_, fields) -> Some fields | _ -> None)
+        args
+      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+    in
+    let data =
+      List.map
+        ~f:(function Query.Data (_, fields) -> Some fields | _ -> None)
+        args
+      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+    in
+
+    let controller_function = { id; typ; where; filter; data } in
+    controller_function :: lst
+  in
+  let controller_functions =
+    List.fold_left ~init:[] ~f:get_controller_function queries
+  in
+  { name; controller_functions }
+
+let generate_routes_specs (queries : query_declaration list) : routes_specs =
+  let name = get_model_name queries in
+  let get_controller_function lst (query : query_declaration) =
+    let _, id, body = query in
+    let typ, args, _, _ = body in
+    let typ = QueryPrinter.string_of_query_type typ in
+
+    let where =
+      List.map
+        ~f:(function Query.Where (_, field) -> Some field | _ -> None)
+        args
+      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+    in
+
+    let route = { id; typ; where } in
+    route :: lst
+  in
+  let routes = List.fold_left ~init:[] ~f:get_controller_function queries in
+  { name; routes }
 
 let generate_server_specs (queries : query_declaration list) : server_specs =
   let groups = group_queries queries in
   let services =
     List.map ~f:(fun group -> generate_service_specs group) groups
   in
-  { services }
+  let controllers =
+    List.map ~f:(fun group -> generate_controller_specs group) groups
+  in
+  let routes = List.map ~f:(fun group -> generate_routes_specs group) groups in
+  { services; controllers; routes }
