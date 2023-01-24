@@ -23,12 +23,12 @@ type controller_specs = {
 }
 
 type route = { id : string; typ : string; where : string option }
-type routes_specs = { name : string; routes : route list }
+type route_specs = { name : string; routes : route list }
 
 type server_specs = {
   services : service_specs list;
   controllers : controller_specs list;
-  routes : routes_specs list;
+  routes : route_specs list;
 }
 
 let group_queries (queries : query_declaration list) :
@@ -109,7 +109,7 @@ let generate_controller_specs (queries : query_declaration list) :
   in
   { name; controller_functions }
 
-let generate_routes_specs (queries : query_declaration list) : routes_specs =
+let generate_routes_specs (queries : query_declaration list) : route_specs =
   let name = get_model_name queries in
   let get_controller_function lst (query : query_declaration) =
     let _, id, body = query in
