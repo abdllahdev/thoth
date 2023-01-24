@@ -4,7 +4,7 @@ open Jingoo
 open Specs.Server_specs
 
 let generate_service (service_specs : service_specs) : unit =
-  let { name; queries } = service_specs in
+  let { name; service_functions } = service_specs in
   let service_file = getcwd () ^ "/templates/server/src/services/.service.js" in
   let service =
     Jg_template.from_file service_file
@@ -14,7 +14,7 @@ let generate_service (service_specs : service_specs) : unit =
             Jg_types.Tobj
               [
                 ("name", Jg_types.Tstr name);
-                ( "queries",
+                ( "service_functions",
                   Jg_types.Tlist
                     (List.map
                        ~f:(fun query ->
@@ -23,7 +23,7 @@ let generate_service (service_specs : service_specs) : unit =
                              ("id", Jg_types.Tstr query.id);
                              ("type", Jg_types.Tstr query.typ);
                            ])
-                       queries) );
+                       service_functions) );
               ] );
         ]
   in

@@ -3,10 +3,14 @@ open Ast.Ast_types
 open Ast.Pprinter
 
 type query_specs = { id : string; typ : string }
-type service_specs = { name : string; queries : query_specs list }
+type service_specs = { name : string; service_functions : query_specs list }
 
-(* type controller_specs = { name : string; types : string list }
-   type routes_specs = { name : string; types : string list } *)
+type controller_specs = {
+  name : string;
+  controller_function : query_specs list;
+}
+
+type routes_specs = { name : string; route_function : query_specs list }
 type server_specs = { services : service_specs list }
 
 let group_queries (queries : query_declaration list) :
@@ -45,8 +49,8 @@ let generate_service_specs (queries : query_declaration list) : service_specs =
     query :: lst
   in
 
-  let queries = List.fold_left ~init:[] ~f:get_type queries in
-  { name; queries }
+  let service_functions = List.fold_left ~init:[] ~f:get_type queries in
+  { name; service_functions }
 
 let generate_server_specs (queries : query_declaration list) : server_specs =
   let groups = group_queries queries in

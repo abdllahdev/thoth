@@ -2,9 +2,9 @@
  * @param {int} status
  * @param {Array} errors
  */
-const ApiError = (status, errors) => {
+const ApiError = function (status, msg) {
   this.status = status;
-  this.errors = errors;
+  this.msg = msg;
 };
 
 module.exports = ApiError;

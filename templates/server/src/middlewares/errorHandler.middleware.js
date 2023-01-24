@@ -7,15 +7,15 @@ const errorHandler = (err, req, res, next) => {
 
   if (!(apiError instanceof ApiError)) {
     console.error(apiError);
-    apiError = new ApiError(httpStatus.INTERNAL_SERVER_ERROR, [
-      { msg: 'Sorry, something went wrong' },
-    ]);
+    apiError = new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Sorry, something went wrong');
   }
 
-  handleResponse(res, {
+  const payload = {
     status: apiError.status,
-    errors: apiError.errors,
-  });
+    msg: apiError.msg,
+  };
+
+  handleResponse(res, payload);
 
   return next();
 };

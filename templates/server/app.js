@@ -39,7 +39,8 @@ app.use('/', routes);
 
 // Send back a 404 error for any unknown api request
 app.use((req, res, next) => {
-  next(new ApiError(httpStatus.NOT_FOUND, [{ msg: 'Not found' }]));
+  const error = new ApiError(httpStatus.NOT_FOUND, 'Not found');
+  errorHandler(error, req, res, next);
 });
 
 // Global error handler
