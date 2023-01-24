@@ -1,12 +1,9 @@
-{% if services %}
-
-{% for service in services %}
-const {{ service.name }}Service = require('./{{ service.name }}.service');
+{% for name in names %}
+const {{ name }}Service = require('./{{ name }}.service');
 {% endfor %}
 
 module.exports = {
-  {% for service in services %}
-    {{ service.name }}Service,
+  {% for name in names %}
+    {{ name }}Service,
   {% endfor %}
 };
-{% endif %}

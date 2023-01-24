@@ -29,6 +29,19 @@ let generate_service (service_specs : service_specs) : unit =
   in
   print_string service
 
+let generate_services (services : service_specs list) : unit =
+  ignore (List.map ~f:generate_service services);
+  let names =
+    List.map ~f:(fun service -> Jg_types.Tstr service.name) services
+  in
+  let services_index_file =
+    getcwd () ^ "/templates/server/src/services/index.js"
+  in
+  let services_index =
+    Jg_template.from_file services_index_file
+      ~models:[ ("names", Jg_types.Tlist names) ]
+  in
+  print_string services_index
+
 let generate_server (server_specs : server_specs) : unit =
-  let { services } = server_specs in
-  ignore (List.map ~f:generate_service services)
+  generate_services server_specs.services

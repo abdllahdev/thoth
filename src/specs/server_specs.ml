@@ -83,19 +83,22 @@ let generate_controller_specs (queries : query_declaration list) :
       List.map
         ~f:(function Query.Where (_, field) -> Some field | _ -> None)
         args
-      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+      |> List.find ~f:(function Some _ -> true | None -> false)
+      |> Option.value_or_thunk ~default:(fun () -> None)
     in
     let filter =
       List.map
         ~f:(function Query.Filter (_, fields) -> Some fields | _ -> None)
         args
-      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+      |> List.find ~f:(function Some _ -> true | None -> false)
+      |> Option.value_or_thunk ~default:(fun () -> None)
     in
     let data =
       List.map
         ~f:(function Query.Data (_, fields) -> Some fields | _ -> None)
         args
-      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+      |> List.find ~f:(function Some _ -> true | None -> false)
+      |> Option.value_or_thunk ~default:(fun () -> None)
     in
 
     let controller_function = { id; typ; where; filter; data } in
@@ -117,7 +120,8 @@ let generate_routes_specs (queries : query_declaration list) : routes_specs =
       List.map
         ~f:(function Query.Where (_, field) -> Some field | _ -> None)
         args
-      |> List.find_exn ~f:(function Some _ -> true | None -> false)
+      |> List.find ~f:(function Some _ -> true | None -> false)
+      |> Option.value_or_thunk ~default:(fun () -> None)
     in
 
     let route = { id; typ; where } in
