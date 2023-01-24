@@ -13,7 +13,7 @@ let raise_name_error (loc : string) (typ : string) (id : string) =
   raise (NameError (Fmt.str "NameError@(%s): Undefined %s '%s'" loc typ id))
 
 let raise_syntax_error (loc : string) (value : string) =
-  raise (SyntaxError (Fmt.str "@(%s): Illegal charachter %s" loc value))
+  raise (SyntaxError (Fmt.str "@(%s): Unidentifiable '%s'" loc value))
 
 let raise_argument_number_error (loc : string) (expected_number : int)
     (received_number : int) (id : string) =

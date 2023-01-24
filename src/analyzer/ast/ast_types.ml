@@ -25,6 +25,7 @@ type literal =
   | IntLiteral of scalar_type * int
   | BooleanLiteral of scalar_type * bool
 
+(* TODO: add enums to data models *)
 module Model = struct
   type attr_arg =
     | AttrArgString of loc * literal

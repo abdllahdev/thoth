@@ -1,19 +1,11 @@
 open Core
 
-let print_error_position (lexbuf : Lexing.lexbuf) =
-  let pos = lexbuf.lex_curr_p in
-  Fmt.str "Line:%d Position:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
-
 let parse_with_error (lexbuf : Lexing.lexbuf) =
-  try Ok (Parsing.Parser.ast Parsing.Lexer.token lexbuf) with
-  | Error_handler.Errors.SyntaxError msg ->
-      let error_msg = Fmt.str "%s: %s@." (print_error_position lexbuf) msg in
-      Error (Core.Error.of_string error_msg)
-  | Parsing.Parser.Error ->
-      let error_msg =
-        Fmt.str "%s: Syntax error@." (print_error_position lexbuf)
-      in
-      Error (Core.Error.of_string error_msg)
+  try Ok (Parsing.Parser.ast Parsing.Lexer.token lexbuf)
+  with Parsing.Parser.Error ->
+    Error_handler.Handler.raise_syntax_error
+      (Ast.Pprinter.string_of_loc lexbuf.lex_curr_p)
+      (Lexing.lexeme lexbuf)
 
 let parse_file (filename : string) =
   let file_content = In_channel.read_all filename in
