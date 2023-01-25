@@ -18,7 +18,6 @@ let () =
   match parse_file filename with
   | Ok ast ->
       Type_checker.run_type_checker ast;
-      print_string (Ast.Pprinter.string_of_ast ast);
       let app_specs = Specs.App_specs.generate_app_specs ast in
       Generator.App_generator.generate_app app_specs
   | Error error -> print_string (Core.Error.to_string_hum error)

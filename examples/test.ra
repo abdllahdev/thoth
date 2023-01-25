@@ -15,7 +15,7 @@ model Task {
 	updatedAt DateTime @updatedAt;
 }
 
-query getTasks(filter: { title, isDone }) : findAll
+query getTasks(filter: { title, isDone }) : findMany
 @on(Task)
 @permission(isAuth);
 

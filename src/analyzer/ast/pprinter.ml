@@ -86,7 +86,7 @@ module QueryPrinter = struct
     | Query.Update -> "update"
     | Query.Delete -> "delete"
     | Query.FindUnique -> "findUnique"
-    | Query.FindAll -> "findMany"
+    | Query.FindMany -> "findMany"
 end
 
 let string_of_declaration_type (declaration_type : declaration_type) =

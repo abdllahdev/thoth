@@ -98,9 +98,7 @@ let generate_controller (controllers : controller_specs list) : unit =
 
 let generate_route (route_specs : route_specs) : unit =
   let { name; list } = route_specs in
-  let controller_file =
-    getcwd () ^ "/templates/server/src/controllers/.controller.js"
-  in
+  let controller_file = getcwd () ^ "/templates/server/src/routes/.routes.js" in
   ignore
     (Jg_template.from_file controller_file
        ~models:

@@ -8,17 +8,17 @@ const { ApiError } = require('../utils');
 
 {% for func in service.service_functions %}
 const {{ func.id }} = async ({% if func.type != 'create' %}where, {% endif %}{% if func.type == 'create' or func.type == 'update' %}data{% endif %}) => {
-  const {{ func.name }}{% if type == 'findMany' %}s{% endif %} = await prismaClient.{{ service.name }}.{{ func.type }}({
+  const result = await prismaClient.{{ service.name }}.{{ func.type }}({
     {% if func.type != 'create' %}where,{% endif %}
     {% if func.type == 'create' or func.type == 'update' %}data,{% endif %}
   });
 
   {% if func.type == 'findUnique' %}
-  if (!item) throw new ApiError(httpStatus.NOT_FOUND, 'Instance not found');
+  if (!result) throw new ApiError(httpStatus.NOT_FOUND, 'Instance not found');
   {% endif %}
 
   {% if func.type != 'destroy' %}
-  return item{% if func.type == 'findMany' %}s{% endif %};
+  return result;
   {% endif %}
 };
 {% endfor %}

@@ -31,7 +31,7 @@ let parse_query_arg (loc : loc) (arg : string) (fields : string list) :
 
 let parse_query_type (loc : loc) (typ : string) : Query.typ =
   match typ with
-  | "findAll" -> Query.FindAll
+  | "findMany" -> Query.FindMany
   | "findUnique" -> Query.FindUnique
   | "create" -> Query.Create
   | "update" -> Query.Update

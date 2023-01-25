@@ -79,7 +79,7 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     (typ : Query.typ) (id : id) (model : Query.model) (args : Query.arg list) :
     unit =
   match typ with
-  | Query.FindAll -> (
+  | Query.FindMany -> (
       let arg = List.hd_exn args in
       match arg with
       | Query.Where (loc, _) ->

@@ -40,7 +40,7 @@ module Model = struct
 end
 
 module Query = struct
-  type typ = FindUnique | FindAll | Create | Update | Delete
+  type typ = FindUnique | FindMany | Create | Update | Delete
 
   type arg =
     | Where of loc * string
