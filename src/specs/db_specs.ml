@@ -18,7 +18,7 @@ type db_specs = { models : model_specs list }
 
 let generate_attr_arg_specs (arg : Model.attr_arg) : string =
   match arg with
-  | AttrArgString (_, str) -> string_of_literal str
+  | AttrArgString (_, str) -> Fmt.str "'%s'" (string_of_literal str)
   | AttrArgRef (_, id) -> Fmt.str "[%s]" id
   | AttrArgBoolean (_, boolean) -> string_of_literal boolean
   | AttrArgInt (_, number) -> string_of_literal number
@@ -27,7 +27,7 @@ let generate_attr_arg_specs (arg : Model.attr_arg) : string =
 let generate_attr_specs (Model.Attribute (_, id, args)) : string =
   if List.length args > 0 then
     match id with
-    | "@relatoin" ->
+    | "@relation" ->
         Fmt.str "%s(%s)" id
           (String.concat ~sep:", " (List.map ~f:generate_attr_arg_specs args))
     | "@default" ->

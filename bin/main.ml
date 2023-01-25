@@ -1,3 +1,4 @@
+open Sys
 open Core
 
 let parse_with_error (lexbuf : Lexing.lexbuf) =
@@ -13,7 +14,7 @@ let parse_file (filename : string) =
   parse_with_error lexbuf
 
 let () =
-  let filename = "./examples/test.ra" in
+  let filename = getcwd () ^ "/examples/test.ra" in
   print_string (Fmt.str "Parsing %s\n" filename);
   match parse_file filename with
   | Ok ast ->

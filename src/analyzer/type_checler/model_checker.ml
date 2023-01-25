@@ -150,6 +150,7 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
              "Reference"
              (Pprinter.string_of_literal number)
              "Int" id);
+      (* TODO: fix bug here, the relation reference should point to a field in the other model *)
       let relation_ref = List.nth_exn args 2 in
       match relation_ref with
       | Model.AttrArgRef (_, ref) ->

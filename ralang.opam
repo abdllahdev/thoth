@@ -10,7 +10,10 @@ doc: "https://url/to/documentation"
 bug-reports: "https://github.com/username/reponame/issues"
 depends: [
   "ocaml"
-  "dune" {>= "3.4"}
+  "dune"      {>= "3.4"}
+  "core"      {>= "0.15.1"}
+  "jingoo"    {>= "1.4.4"}
+  "fileutils" {>= "0.6.4"}
   "odoc" {with-doc}
 ]
 build: [

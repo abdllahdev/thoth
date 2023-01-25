@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "{{ datasource_provider }}"
-  url      = "{{ datasource_url }}"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 {% for model in models %}
