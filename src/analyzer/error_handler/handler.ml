@@ -32,3 +32,12 @@ let raise_multi_definitions_error (loc : string) (id : string) =
   raise
     (MultiDefinitionsError
        (Fmt.str "@(%s): '%s' was declared multiple times" loc id))
+
+let raise_relation_error (loc : string) (field_id : string) (model_id : string)
+    (other_model_id : string) =
+  raise
+    (RelationError
+       (Fmt.str
+          "@(%s): The relation field '%s' on model '%s' is missing an opposite \
+           relation field on the model '%s'"
+          loc field_id model_id other_model_id))

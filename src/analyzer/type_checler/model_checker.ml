@@ -16,7 +16,7 @@ let get_custom_type (typ : typ) : string option =
       | Optional scalar_type -> get_custom_scalar_type scalar_type
       | OptionalList scalar_type -> get_custom_scalar_type scalar_type)
 
-let extract_scalar_type (typ : typ) : scalar_type =
+let get_scalar_type (typ : typ) : scalar_type =
   match typ with
   | Scalar scalar_type -> scalar_type
   | Composite composite_type -> (
@@ -45,7 +45,7 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
         let field_record : ModelManager.field_record =
           LocalSymbolTable.lookup model_table ~key:field_id
         in
-        let field_type = extract_scalar_type field_record.typ in
+        let field_type = get_scalar_type field_record.typ in
         match arg with
         | Model.AttrArgRef (loc, ref) ->
             raise_type_error
@@ -191,30 +191,62 @@ let rec check_field_attrs (global_table : 'a GlobalSymbolTable.t)
       check_field_attr global_table model_table field_id field_attr;
       check_field_attrs global_table model_table field_id field_attrs
 
-let check_field_type (global_table : 'a GlobalSymbolTable.t) (field_type : typ)
-    (loc : loc) : unit =
+let check_field_type (global_table : 'a GlobalSymbolTable.t) (model_id : id)
+    (field_id : id) (field_type : typ) (loc : loc) : unit =
   let custom_type = get_custom_type field_type in
   match custom_type with
   | Some custom_type ->
       if not (GlobalSymbolTable.contains global_table ~key:custom_type) then
-        raise_name_error (Pprinter.string_of_loc loc) "type" custom_type
+        raise_name_error (Pprinter.string_of_loc loc) "type" custom_type;
+
+      if
+        not
+          (GlobalSymbolTable.check_type global_table ~key:custom_type ModelType)
+      then
+        raise_type_error
+          (Pprinter.string_of_loc loc)
+          "Model" custom_type
+          (Pprinter.string_of_declaration_type
+             (GlobalSymbolTable.get_declaration_type global_table
+                ~key:custom_type))
+          field_id;
+
+      let other_model =
+        GlobalSymbolTable.get_table global_table ~key:custom_type
+        |> Option.value_exn
+      in
+      let all_custom_types =
+        Hashtbl.fold ~init:[]
+          ~f:
+            (fun ~key:_ ~(data : ModelManager.field_record) (acc : string list) ->
+            let scalar_type = get_scalar_type data.typ in
+            match scalar_type with CustomType str -> acc @ [ str ] | _ -> acc)
+          other_model
+      in
+      if not (List.mem all_custom_types model_id ~equal:equal_string) then
+        raise_relation_error
+          (Pprinter.string_of_loc loc)
+          field_id model_id custom_type
   | None -> ()
 
 let check_field (global_table : 'a GlobalSymbolTable.t)
-    (model_table : 'a LocalSymbolTable.t) (field : Model.field) : unit =
+    (model_table : 'a LocalSymbolTable.t) (model_id : id) (field : Model.field)
+    : unit =
   match field with
   | Field (loc, id, field_type, field_attrs) ->
-      check_field_type global_table field_type loc;
+      check_field_type global_table model_id id field_type loc;
       check_field_attrs global_table model_table id field_attrs
 
 let rec check_fields (global_table : 'a GlobalSymbolTable.t)
-    (model_table : 'a LocalSymbolTable.t) (fields : Model.field list) : unit =
+    (model_table : 'a LocalSymbolTable.t) (model_id : id)
+    (fields : Model.field list) : unit =
   match fields with
   | [] -> ()
   | field :: fields ->
-      check_field global_table model_table field;
-      check_fields global_table model_table fields
+      check_field global_table model_table model_id field;
+      check_fields global_table model_table model_id fields
 
 let check_model (global_table : 'a GlobalSymbolTable.t)
-    (model_table : 'a LocalSymbolTable.t) (fields : Model.field list) : unit =
-  check_fields global_table model_table fields
+    (model_table : 'a LocalSymbolTable.t) (model_id : id)
+    (fields : Model.field list) : unit =
+  check_fields global_table model_table model_id fields

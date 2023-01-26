@@ -4,3 +4,4 @@ exception NameError of string
 exception TypeError of string
 exception MultiDefinitionsError of string
 exception ArgumentNumberError of string
+exception RelationError of string

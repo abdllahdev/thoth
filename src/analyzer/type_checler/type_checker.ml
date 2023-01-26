@@ -12,7 +12,7 @@ let check_declaration (global_table : 'a GlobalSymbolTable.t)
         let model_table =
           Option.value_exn (GlobalSymbolTable.get_table global_table ~key:id)
         in
-        check_model global_table model_table body
+        check_model global_table model_table id body
     | Query (loc, id, body) -> check_query global_table loc id body
   in
   List.iter ~f:(fun declaration -> check_declaration declaration) declarations
