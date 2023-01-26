@@ -88,42 +88,22 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
                   (Pprinter.string_of_literal number)
                   "Int" id))
   | "@relation" -> (
-      if args_length > 3 || args_length < 3 then
+      if not (equal args_length 2) then
         raise_argument_number_error
           (Pprinter.string_of_loc loc)
-          3 args_length id;
-      let relation_name = List.nth_exn args 0 in
-      (match relation_name with
-      | Model.AttrArgString _ -> ()
-      | Model.AttrArgBoolean (loc, boolean) ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "String"
-            (Pprinter.string_of_literal boolean)
-            "Boolean" id
-      | Model.AttrArgNow loc ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "String" "now" "DateTime" id
-      | Model.AttrArgInt (loc, number) ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "String"
-            (Pprinter.string_of_literal number)
-            "Int" id
-      | Model.AttrArgRef (loc, ref) ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "String" ref "Reference" id);
-      (let relation_field = List.nth_exn args 1 in
+          2 args_length id;
+      (let relation_field = List.nth_exn args 0 in
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
            let field_attrs =
              (LocalSymbolTable.lookup model_table ~key:field).field_attrs_table
            in
+
            if not (LocalSymbolTable.contains model_table ~key:field) then
              raise_name_error (Pprinter.string_of_loc loc) "field" field
-           else if not (LocalSymbolTable.contains field_attrs ~key:"@unique")
+           else if
+             (not (LocalSymbolTable.contains field_attrs ~key:"@unique"))
+             && not (LocalSymbolTable.contains field_attrs ~key:"@id")
            then
              raise_type_error
                (Pprinter.string_of_loc loc)
@@ -150,21 +130,34 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
              "Reference"
              (Pprinter.string_of_literal number)
              "Int" id);
-      (* TODO: fix bug here, the relation reference should point to a field in the other model *)
-      let relation_ref = List.nth_exn args 2 in
+      let relation_ref = List.nth_exn args 1 in
       match relation_ref with
-      | Model.AttrArgRef (_, ref) ->
-          if not (GlobalSymbolTable.contains global_table ~key:ref) then
-            raise_name_error (Pprinter.string_of_loc loc) "model" ref;
+      | Model.AttrArgRef (loc, ref) ->
+          let other_model_id =
+            (LocalSymbolTable.lookup model_table ~key:field_id).typ
+            |> get_custom_type |> Option.value_exn
+          in
 
-          if not (GlobalSymbolTable.check_type global_table ~key:ref ModelType)
+          let other_model_table =
+            GlobalSymbolTable.get_table global_table ~key:other_model_id
+            |> Option.value_exn
+          in
+
+          if not (LocalSymbolTable.contains other_model_table ~key:ref) then
+            raise_name_error (Pprinter.string_of_loc loc) "field" ref;
+
+          let field_attrs =
+            (LocalSymbolTable.lookup other_model_table ~key:ref)
+              .field_attrs_table
+          in
+
+          if
+            (not (LocalSymbolTable.contains field_attrs ~key:"@unique"))
+            && not (LocalSymbolTable.contains field_attrs ~key:"@id")
           then
             raise_type_error
               (Pprinter.string_of_loc loc)
-              "Model" ref
-              (Pprinter.string_of_declaration_type
-                 (GlobalSymbolTable.get_declaration_type global_table ~key:ref))
-              id
+              "UniqueField" ref "NonUniqueField" id
       | Model.AttrArgString (loc, str) ->
           raise_type_error
             (Pprinter.string_of_loc loc)

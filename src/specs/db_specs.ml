@@ -29,7 +29,13 @@ let generate_attr_specs (Model.Attribute (_, id, args)) : string =
     match id with
     | "@relation" ->
         Fmt.str "%s(%s)" id
-          (String.concat ~sep:", " (List.map ~f:generate_attr_arg_specs args))
+          (String.concat ~sep:", "
+             [
+               Fmt.str "fields: %s"
+                 (generate_attr_arg_specs (List.nth_exn args 0));
+               Fmt.str "references: %s"
+                 (generate_attr_arg_specs (List.nth_exn args 1));
+             ])
     | "@default" ->
         Fmt.str "%s(%s)" id
           (String.concat ~sep:", " (List.map ~f:generate_attr_arg_specs args))

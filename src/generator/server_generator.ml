@@ -75,7 +75,7 @@ let generate_controller (controller_sepcs : controller_specs) : unit =
                              ( "where",
                                Jg_types.Tstr
                                  (string_of_option controller_function.where) );
-                             ( "filter",
+                             ( "filters",
                                Jg_types.Tlist
                                  (List.map
                                     ~f:(fun field -> Jg_types.Tstr field)

@@ -2,14 +2,14 @@ model User {
 	id        Int     @id;
 	firstName String;
 	lastName  String;
-	tasks     Task[];
+	tasks     Task[]
 }
 
 model Task {
 	id        Int      @id;
 	title     String;
 	isDone    Boolean  @default(false);
-	user      User     @relation("taskUser", userId, User);
+	user      User     @relation(userId, id);
 	userId    Int      @unique;
 	createdAt DateTime @default(now);
 	updatedAt DateTime @updatedAt;
@@ -19,7 +19,7 @@ query getTasks(filter: { title, isDone }) : findMany
 @on(Task)
 @permission(isAuth);
 
-query createTask(data: { title }) : create
+query createTask(data: { title, user }) : create
 @on(Task)
 @permission(isAuth);
 

@@ -1,25 +1,29 @@
 const httpStatus = require('http-status');
 const { {{ controller.name }}Service } = require('../services');
-const { handleResponse, getNum } = require('../utils');
+const { handleResponse, getNum, filterObject } = require('../utils');
 
 {% for func in controller.controller_functions %}
 const {{ func.id }} = async (req, res, next) => {
   {% if func.type == "create" or func.type == "update" %}
-  const data = req.body;
+  const data = filterObject(req.body, [ {% for key in func.data %}"{{ key }}",{% endfor %} ]);
+  {% endif %}
+
+  {# TODO: implement queries with relations #}
+  {% if func.type == "findMany" %}
+  const where = filterObject(req.query, [ {% for key in func.filters %}"{{ key }}",{% endfor %} ])
   {% endif %}
 
   {% if func.type == "findUnique" or func.type == "update" or func.type == "delete" %}
-  let where = req.params.{{ func.where }};
+  let {{ func.where }} = req.params.{{ func.where }};
 
-  if (!isNan(getNum(fun.where)))
-    where = parseInt(where);
+  if (!isNaN(getNum({{ func.where }})))
+    {{ func.where }} = parseInt({{ func.where }});
 
-  const {{ func.where }} = where;
+  const where = { {{ func.where }} };
   {% endif %}
 
-  {# TODO: implement where for findMany query #}
   try {
-    const result = await {{ controller.name }}Service.{{ func.name }}({% if func.type != 'create' %}where, {% endif %}{% if func.type == 'create' or func.type == 'update' %}data{% endif %});
+    const result = await {{ controller.name }}Service.{{ func.id }}({% if func.type != 'create' %}where, {% endif %}{% if func.type == 'create' or func.type == 'update' %}data{% endif %});
 
     const payload = {
       status: {% if func.type == "create" %}httpStatus.CREATED,{% else %}httpStatus.OK,{% endif %}
