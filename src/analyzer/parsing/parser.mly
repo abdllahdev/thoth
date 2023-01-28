@@ -69,7 +69,7 @@ model_field_type:
   ;
 
 model_field:
-  | id = ID; field_type = model_field_type; attrs = list(model_field_attr); SEMICOLON
+  | id = ID; field_type = model_field_type; attrs = list(model_field_attr); option(SEMICOLON)
     { Model.Field($startpos, id, field_type, attrs) }
   ;
 
@@ -111,7 +111,7 @@ query_body:
 declaration:
   | MODEL; model_id = ID; model_body = model_body
     { Model($startpos, (parse_id $startpos model_id), model_body) }
-  | QUERY; query_id = ID; query_body = query_body; SEMICOLON
+  | QUERY; query_id = ID; query_body = query_body; option(SEMICOLON)
     { Query($startpos, (parse_id $startpos query_id), query_body) }
   ;
 

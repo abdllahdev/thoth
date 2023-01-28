@@ -1,36 +1,36 @@
 model User {
-	id        Int     @id;
-	firstName String;
-	lastName  String;
-	tasks     Task[];
+	id        Int     @id
+	firstName String
+	lastName  String
+	tasks     Task[]
 }
 
 model Task {
-	id        Int      @id;
-	title     String;
-	isDone    Boolean  @default(false);
-	user      User     @relation(userId, id);
-	userId    Int      @unique;
-	createdAt DateTime @default(now);
-	updatedAt DateTime @updatedAt;
+	id        Int      @id
+	title     String
+	isDone    Boolean  @default(false)
+	user      User     @relation(userId, id)
+	userId    Int      @unique
+	createdAt DateTime @default(now)
+	updatedAt DateTime @updatedAt
 }
 
 query getTasks(filter: { title, isDone }) : findMany
 @on(Task)
-@permission(isAuth);
+@permission(isAuth)
 
 query createTask(data: { title, user }) : create
 @on(Task)
-@permission(isAuth);
+@permission(isAuth)
 
 query getTaskById(where: id) : findUnique
 @on(Task)
-@permission(isAuth);
+@permission(isAuth)
 
 query updateTaskById(where: id, data: { title, isDone }) : update
 @on(Task)
-@permission(isAuth, owns);
+@permission(isAuth, owns)
 
 query deleteTaskById(where: id) : delete
 @on(Task)
-@permission(isAuth, owns);
+@permission(isAuth, owns)
