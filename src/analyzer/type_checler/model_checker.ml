@@ -95,19 +95,8 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
       (let relation_field = List.nth_exn args 0 in
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
-           let field_attrs =
-             (LocalSymbolTable.lookup model_table ~key:field).field_attrs_table
-           in
-
            if not (LocalSymbolTable.contains model_table ~key:field) then
              raise_name_error (Pprinter.string_of_loc loc) "field" field
-           else if
-             (not (LocalSymbolTable.contains field_attrs ~key:"@unique"))
-             && not (LocalSymbolTable.contains field_attrs ~key:"@id")
-           then
-             raise_type_error
-               (Pprinter.string_of_loc loc)
-               "UniqueField" field "NonUniqueField" id
        | Model.AttrArgString (loc, str) ->
            raise_type_error
              (Pprinter.string_of_loc loc)
