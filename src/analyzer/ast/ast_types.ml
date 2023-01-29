@@ -83,6 +83,7 @@ type declaration =
 type filtered_ast = {
   model_declarations : model_declaration list;
   query_declarations : query_declaration list;
+  component_declarations : component_declaration list;
 }
 
 (* Ast type *)

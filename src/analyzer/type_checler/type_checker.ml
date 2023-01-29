@@ -9,9 +9,7 @@ let check_declaration (global_table : 'a GlobalSymbolTable.t)
   let check_declaration declaration =
     match declaration with
     | Model (_, id, body) ->
-        let model_table =
-          Option.value_exn (GlobalSymbolTable.get_table global_table ~key:id)
-        in
+        let model_table = GlobalSymbolTable.get_table global_table ~key:id in
         check_model global_table model_table id body
     | Query (loc, id, body) -> check_query global_table loc id body
     | Component _ -> ()

@@ -4,6 +4,10 @@ open Ast_types
 let get_model_declaration = function Model model -> Some model | _ -> None
 let get_query_declaration = function Query query -> Some query | _ -> None
 
+let get_component_declaration = function
+  | Component component -> Some component
+  | _ -> None
+
 let get_filtered_ast (declarations : declaration list) : filtered_ast =
   let model_declarations =
     List.filter_map ~f:get_model_declaration declarations
@@ -11,4 +15,7 @@ let get_filtered_ast (declarations : declaration list) : filtered_ast =
   let query_declarations =
     List.filter_map ~f:get_query_declaration declarations
   in
-  { model_declarations; query_declarations }
+  let component_declarations =
+    List.filter_map ~f:get_component_declaration declarations
+  in
+  { model_declarations; query_declarations; component_declarations }

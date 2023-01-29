@@ -29,13 +29,12 @@ let rec check_models (global_table : 'a GlobalSymbolTable.t) (id : id)
 let check_where_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     (id : id) (model : Query.model) (field : string) : unit =
   let _, model_id = model in
-  let model_table =
-    Option.value_exn (GlobalSymbolTable.get_table global_table ~key:model_id)
-  in
+  let model_table = GlobalSymbolTable.get_table global_table ~key:model_id in
   if not (LocalSymbolTable.contains model_table ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field;
-  let field_record : ModelManager.field_record =
+  let field_record : field_record =
     LocalSymbolTable.lookup model_table ~key:field
+    |> SymbolTableManager.get_model_info
   in
   let field_attrs_table = field_record.field_attrs_table in
   if not (LocalSymbolTable.contains model_table ~key:field) then
@@ -52,9 +51,7 @@ let check_where_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
 let check_filter_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     (model : Query.model) (fields : string list) : unit =
   let _, model_id = model in
-  let model_table =
-    Option.value_exn (GlobalSymbolTable.get_table global_table ~key:model_id)
-  in
+  let model_table = GlobalSymbolTable.get_table global_table ~key:model_id in
   ignore
     (List.map
        ~f:(fun field ->
@@ -65,9 +62,7 @@ let check_filter_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
 let check_data_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
     (model : Query.model) (fields : string list) : unit =
   let _, model_id = model in
-  let model_table =
-    Option.value_exn (GlobalSymbolTable.get_table global_table ~key:model_id)
-  in
+  let model_table = GlobalSymbolTable.get_table global_table ~key:model_id in
   ignore
     (List.map
        ~f:(fun field ->

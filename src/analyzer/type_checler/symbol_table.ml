@@ -18,23 +18,38 @@ module LocalSymbolTable = struct
     Hashtbl.mem table symbol
 end
 
+type field_record = {
+  typ : typ;
+  field_attrs_table : Model.attr_arg list LocalSymbolTable.t;
+}
+
+type query_record = {
+  typ : Query.typ;
+  args : Query.arg list;
+  models : Query.model list;
+  permissions : Query.permission list;
+}
+
 module GlobalSymbolTable = struct
-  type 'a value_record = {
+  type declaration_info =
+    | ModelInfo of field_record
+    | QueryInfo of query_record
+
+  type value_record = {
     declaration_type : declaration_type;
-    some_table : 'a LocalSymbolTable.t option;
+    table : declaration_info LocalSymbolTable.t;
   }
 
-  type 'a t = (string, 'a value_record) Hashtbl.t
+  type 'a t = (string, value_record) Hashtbl.t
 
   let create () : 'a t = Hashtbl.create ~size:10 (module String)
 
   let allocate (table : 'a t) ~key:(symbol : string)
-      ~data:(value : 'a value_record) : unit =
+      ~data:(value : value_record) : unit =
     Hashtbl.add_exn table ~key:symbol ~data:value
 
-  let get_table (table : 'a t) ~key:(symbol : string) :
-      'a LocalSymbolTable.t option =
-    (Hashtbl.find_exn table symbol).some_table
+  let get_table (table : 'a t) ~key:(symbol : string) =
+    (Hashtbl.find_exn table symbol).table
 
   let get_declaration_type (table : 'a t) ~key:(symbol : string) :
       declaration_type =
@@ -51,13 +66,9 @@ module GlobalSymbolTable = struct
 end
 
 module ModelManager = struct
-  type field_record = {
-    typ : typ;
-    field_attrs_table : Model.attr_arg list LocalSymbolTable.t;
-  }
-
-  let rec allocate_field_attrs (local_table : 'a LocalSymbolTable.t)
-      (field_id : string) (attrs : Model.attribute list) : unit =
+  let rec allocate_field_attrs
+      (local_table : Model.attr_arg list LocalSymbolTable.t) (field_id : string)
+      (attrs : Model.attribute list) : unit =
     match attrs with
     | [] -> ()
     | attr :: attrs ->
@@ -68,7 +79,8 @@ module ModelManager = struct
             LocalSymbolTable.allocate local_table ~key:id ~data:args);
         allocate_field_attrs local_table field_id attrs
 
-  let rec allocate_fields (local_table : 'a LocalSymbolTable.t)
+  let rec allocate_fields
+      (local_table : GlobalSymbolTable.declaration_info LocalSymbolTable.t)
       (body : Model.body) : unit =
     match body with
     | [] -> ()
@@ -79,56 +91,64 @@ module ModelManager = struct
               raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
             let field_attrs_table = LocalSymbolTable.create () in
             allocate_field_attrs field_attrs_table id field_attrs;
-            let field = { typ; field_attrs_table } in
+            let field =
+              GlobalSymbolTable.ModelInfo { typ; field_attrs_table }
+            in
             LocalSymbolTable.allocate local_table ~key:id ~data:field);
         allocate_fields local_table fields
 
-  let allocate_model (global_table : 'a GlobalSymbolTable.t)
-      (Model (loc, id, body)) : unit =
+  let allocate_model (global_table : 'a GlobalSymbolTable.t) (loc, id, body) :
+      unit =
     if GlobalSymbolTable.contains global_table ~key:id then
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
     let table = LocalSymbolTable.create () in
-    let some_table = Some table in
     let declaration_type = ModelType in
     allocate_fields table body;
     GlobalSymbolTable.allocate global_table ~key:id
-      ~data:{ declaration_type; some_table }
+      ~data:{ declaration_type; table }
 end
 
 module QueryManager = struct
-  type query_record = {
-    typ : Query.typ;
-    args : Query.arg list;
-    models : Query.model list;
-    permissions : Query.permission list;
-  }
-
   let allocation_body (local_table : 'a LocalSymbolTable.t) (id : id)
       (body : Query.body) : unit =
     let typ, args, models, permissions = body in
-    let query_body = { typ; args; models; permissions } in
+    let query_body =
+      GlobalSymbolTable.QueryInfo { typ; args; models; permissions }
+    in
     LocalSymbolTable.allocate local_table ~key:id ~data:query_body
 
-  let allocate_query (global_table : 'a GlobalSymbolTable.t)
-      (Query (loc, id, body)) : unit =
+  let allocate_query (global_table : 'a GlobalSymbolTable.t) (loc, id, body) :
+      unit =
     if GlobalSymbolTable.contains global_table ~key:id then
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
     let table = LocalSymbolTable.create () in
-    let some_table = Some table in
     let declaration_type = QueryType in
     allocation_body table id body;
     GlobalSymbolTable.allocate global_table ~key:id
-      ~data:{ declaration_type; some_table }
+      ~data:{ declaration_type; table }
 end
 
 module SymbolTableManager = struct
-  (* check for illegal identifiers like any keywords used in the language *)
+  let get_model_info (declaration_info : GlobalSymbolTable.declaration_info) :
+      field_record =
+    (match declaration_info with
+    | ModelInfo field_record -> Some field_record
+    | _ -> None)
+    |> Option.value_exn
+
+  let get_query_info (declaration_info : GlobalSymbolTable.declaration_info) :
+      query_record =
+    (match declaration_info with
+    | QueryInfo field_record -> Some field_record
+    | _ -> None)
+    |> Option.value_exn
+
   let populate (global_table : 'a GlobalSymbolTable.t) (Ast declarations) : unit
       =
     let populate_declaration global_table declaration =
       match declaration with
-      | Model model -> QueryManager.allocate_query global_table (Model model)
-      | Query query -> QueryManager.allocate_query global_table (Query query)
+      | Model model -> ModelManager.allocate_model global_table model
+      | Query query -> QueryManager.allocate_query global_table query
       | Component _ -> ()
     in
     List.iter
