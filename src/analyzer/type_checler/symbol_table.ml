@@ -82,14 +82,43 @@ module ModelManager = struct
             let field = { typ; field_attrs_table } in
             LocalSymbolTable.allocate local_table ~key:id ~data:field);
         allocate_fields local_table fields
+
+  let allocate_model (global_table : 'a GlobalSymbolTable.t)
+      (Model (loc, id, body)) : unit =
+    if GlobalSymbolTable.contains global_table ~key:id then
+      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+    let table = LocalSymbolTable.create () in
+    let some_table = Some table in
+    let declaration_type = ModelType in
+    allocate_fields table body;
+    GlobalSymbolTable.allocate global_table ~key:id
+      ~data:{ declaration_type; some_table }
 end
 
 module QueryManager = struct
   type query_record = {
+    typ : Query.typ;
+    args : Query.arg list;
     models : Query.model list;
     permissions : Query.permission list;
-    args : Query.arg list;
   }
+
+  let allocation_body (local_table : 'a LocalSymbolTable.t) (id : id)
+      (body : Query.body) : unit =
+    let typ, args, models, permissions = body in
+    let query_body = { typ; args; models; permissions } in
+    LocalSymbolTable.allocate local_table ~key:id ~data:query_body
+
+  let allocate_query (global_table : 'a GlobalSymbolTable.t)
+      (Query (loc, id, body)) : unit =
+    if GlobalSymbolTable.contains global_table ~key:id then
+      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+    let table = LocalSymbolTable.create () in
+    let some_table = Some table in
+    let declaration_type = QueryType in
+    allocation_body table id body;
+    GlobalSymbolTable.allocate global_table ~key:id
+      ~data:{ declaration_type; some_table }
 end
 
 module SymbolTableManager = struct
@@ -98,24 +127,8 @@ module SymbolTableManager = struct
       =
     let populate_declaration global_table declaration =
       match declaration with
-      | Model (loc, id, body) ->
-          if GlobalSymbolTable.contains global_table ~key:id then
-            raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
-          let table = LocalSymbolTable.create () in
-          let some_table = Some table in
-          let declaration_type = ModelType in
-          ModelManager.allocate_fields table body;
-          GlobalSymbolTable.allocate global_table ~key:id
-            ~data:{ declaration_type; some_table }
-      (* TODO: Query symbol table *)
-      | Query (loc, id, _) ->
-          if GlobalSymbolTable.contains global_table ~key:id then
-            raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
-          let table = LocalSymbolTable.create () in
-          let some_table = Some table in
-          let declaration_type = QueryType in
-          GlobalSymbolTable.allocate global_table ~key:id
-            ~data:{ declaration_type; some_table }
+      | Model model -> QueryManager.allocate_query global_table (Model model)
+      | Query query -> QueryManager.allocate_query global_table (Query query)
       | Component _ -> ()
     in
     List.iter
