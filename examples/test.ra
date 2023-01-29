@@ -34,3 +34,20 @@ query updateTaskById(where: id, data: { title, isDone }) : update
 query deleteTaskById(where: id) : delete
 @on(Task)
 @permission(isAuth, owns)
+
+component TaskView(task) {
+	render("
+		<div>
+			{task.id}
+			{task.updatedAt}
+		</div>
+	")
+}
+
+component Home @on("/") {
+	let tasks = getTasks()
+
+	render("
+		{tasks.map((task) => <Task key={task.id} id={task.id} />)}
+	")
+}

@@ -32,7 +32,11 @@ rule token =
   | ']'           { RIGHT_BRACKET }
   | '('           { LEFT_PARAN }
   | ')'           { RIGHT_PARAN }
+  | '<'           { LT }
+  | '>'           { GT }
+  | '/'           { SLASH }
   | '?'           { QUESTION_MARK }
+  | '='           { EQUAL }
   | ':'           { COLON }
   | ';'           { SEMICOLON }
   | ','           { COMMA }
@@ -41,6 +45,9 @@ rule token =
   | "false"       { FALSE }
   | "model"       { MODEL }
   | "query"       { QUERY }
+  | "component"   { COMPONENT }
+  | "render"      { RENDER }
+  | "let"         { LET }
   | "now"         { NOW }
   | "@on"         { ON }
   | "@permission" { PERMISSION }

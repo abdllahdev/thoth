@@ -90,7 +90,10 @@ module QueryPrinter = struct
 end
 
 let string_of_declaration_type (declaration_type : declaration_type) =
-  match declaration_type with ModelType -> "Model" | QueryType -> "Query"
+  match declaration_type with
+  | ModelType -> "Model"
+  | QueryType -> "Query"
+  | ComponentType -> "Component"
 
 let string_of_declaration (declaration : declaration) : string =
   match declaration with
@@ -98,6 +101,7 @@ let string_of_declaration (declaration : declaration) : string =
       Fmt.str "  Model(\n    \"%s\",\n    [%s\n    ]\n  )" id
         (ModelPrinter.string_of_fields body)
   | Query (_, _, _) -> ""
+  | Component _ -> ""
 
 let rec string_of_declarations (declarations : declaration list) : string =
   match declarations with

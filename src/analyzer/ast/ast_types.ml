@@ -52,12 +52,33 @@ module Query = struct
   type body = typ * arg list * model list * permission list
 end
 
-type declaration_type = ModelType | QueryType
+module Component = struct
+  type query_application = loc * id * id list
+  type lex_expression = loc * id * query_application
+  type jsx_element_attribute = loc * id * string
+
+  type jsx =
+    | Element of loc * id * jsx_element_attribute list option * jsx list option
+    | Text of loc * string
+    | Expression of loc * string
+
+  type route = string option
+  type args = string list option
+  type body = lex_expression list option * string option
+end
+
+type declaration_type = ModelType | QueryType | ComponentType
 type model_declaration = loc * id * Model.body
 type query_declaration = loc * id * Query.body
 
+type component_declaration =
+  loc * id * Component.args * Component.route * Component.body
+
 (* The different types of declarations in the language *)
-type declaration = Model of model_declaration | Query of query_declaration
+type declaration =
+  | Model of model_declaration
+  | Query of query_declaration
+  | Component of component_declaration
 
 type filtered_ast = {
   model_declarations : model_declaration list;

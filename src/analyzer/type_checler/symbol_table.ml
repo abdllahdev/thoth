@@ -84,6 +84,14 @@ module ModelManager = struct
         allocate_fields local_table fields
 end
 
+module QueryManager = struct
+  type query_record = {
+    models : Query.model list;
+    permissions : Query.permission list;
+    args : Query.arg list;
+  }
+end
+
 module SymbolTableManager = struct
   (* check for illegal identifiers like any keywords used in the language *)
   let populate (global_table : 'a GlobalSymbolTable.t) (Ast declarations) : unit
@@ -99,13 +107,16 @@ module SymbolTableManager = struct
           ModelManager.allocate_fields table body;
           GlobalSymbolTable.allocate global_table ~key:id
             ~data:{ declaration_type; some_table }
+      (* TODO: Query symbol table *)
       | Query (loc, id, _) ->
           if GlobalSymbolTable.contains global_table ~key:id then
             raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
-          let some_table = None in
+          let table = LocalSymbolTable.create () in
+          let some_table = Some table in
           let declaration_type = QueryType in
           GlobalSymbolTable.allocate global_table ~key:id
             ~data:{ declaration_type; some_table }
+      | Component _ -> ()
     in
     List.iter
       ~f:(fun declaration -> populate_declaration global_table declaration)

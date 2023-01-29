@@ -5,7 +5,19 @@ open Error_handler.Handler
 
 let parse_id (loc : loc) (id : id) : id =
   let keywords =
-    [ "true"; "false"; "model"; "query"; "now"; "on"; "permission"; "delete" ]
+    [
+      "true";
+      "false";
+      "model";
+      "query";
+      "component";
+      "let";
+      "render";
+      "now";
+      "on";
+      "permission";
+      "delete";
+    ]
   in
   if List.exists ~f:(fun x -> String.equal x id) keywords then
     raise_reserved_keyword_error id (Pprinter.string_of_loc loc)
@@ -50,3 +62,10 @@ let parse_query_permissions (loc : loc) (permissions : string list) :
           "query permission" permission
   in
   List.map ~f:check_permission permissions
+
+let parse_jsx_element (loc : loc) (opening_id : id) (closing_id : id)
+    (attributes : Component.jsx_element_attribute list option)
+    (children : Component.jsx list option) : Component.jsx =
+  if not (String.equal opening_id closing_id) then
+    raise_syntax_error (Pprinter.string_of_loc loc) closing_id
+  else Component.Element (loc, opening_id, attributes, children)

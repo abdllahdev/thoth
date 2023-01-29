@@ -15,11 +15,18 @@
 %token          RIGHT_BRACKET
 %token          LEFT_PARAN
 %token          RIGHT_PARAN
+%token          LT
+%token          GT
+%token          SLASH
 %token          QUESTION_MARK
+%token          EQUAL
 %token          COMMA
 %token          NOW
 %token          MODEL
 %token          QUERY
+%token          COMPONENT
+%token          LET
+%token          RENDER
 %token          ON
 %token          PERMISSION
 %token          COLON
@@ -108,11 +115,67 @@ query_body:
     { (parse_query_type $startpos typ, args, models, permissions) }
   ;
 
+query_application:
+  | id = ID; LEFT_PARAN; args = separated_list(COMMA, ID); RIGHT_PARAN; option(SEMICOLON)
+    { ($startpos, id, args) }
+  ;
+
+let_expression:
+  | LET; id = ID; EQUAL; query_application = query_application;
+    { ($startpos, (parse_id $startpos id), query_application) }
+  ;
+
+jsx_element_attribute:
+  | id = ID; EQUAL; value = STRING
+    { ($startpos, id, value) }
+  ;
+
+jsx_element_opening_tag:
+  | LT; id = ID; attributes = option(list(jsx_element_attribute)); GT
+    { (id, attributes) }
+  ;
+
+jsx_element_closing_tag:
+  | LT; SLASH; id = ID; GT
+    { id }
+  ;
+
+jsx_element:
+  | LT; opening_id = ID; GT; jsx_element_list; LT; SLASH; ID; GT
+    { Component.Element($startpos, opening_id, None, None) }
+  ;
+
+jsx_element_list:
+  | jsx_element jsx_element_list
+    { }
+  ;
+
+render_expr:
+  | RENDER; LEFT_PARAN; jsx = STRING; RIGHT_PARAN
+    { jsx }
+  ;
+
+component_route:
+  | ON; LEFT_PARAN; route = STRING; RIGHT_PARAN
+    { route }
+  ;
+
+component_body:
+  | LEFT_BRACE; let_expressions = option(list(let_expression)); render_expr = option(render_expr); RIGHT_BRACE
+    { (let_expressions, render_expr) }
+  ;
+
+component_args:
+  | LEFT_PARAN; args = separated_list(COMMA, ID); RIGHT_PARAN
+    { args }
+
 declaration:
   | MODEL; model_id = ID; model_body = model_body
     { Model($startpos, (parse_id $startpos model_id), model_body) }
   | QUERY; query_id = ID; query_body = query_body; option(SEMICOLON)
     { Query($startpos, (parse_id $startpos query_id), query_body) }
+  | COMPONENT; component_id = ID; args = option(component_args); route = option(component_route); component_body = component_body
+    { Component($startpos, (parse_id $startpos component_id), args, route, component_body) }
   ;
 
 ast:
