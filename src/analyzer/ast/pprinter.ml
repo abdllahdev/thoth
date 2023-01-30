@@ -100,8 +100,9 @@ let string_of_declaration (declaration : declaration) : string =
   | Model (_, id, body) ->
       Fmt.str "  Model(\n    \"%s\",\n    [%s\n    ]\n  )" id
         (ModelPrinter.string_of_fields body)
-  | Query (_, _, _) -> ""
+  | Query _ -> ""
   | Component _ -> ""
+  | Page _ -> ""
 
 let rec string_of_declarations (declarations : declaration list) : string =
   match declarations with

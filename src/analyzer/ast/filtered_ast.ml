@@ -8,6 +8,8 @@ let get_component_declaration = function
   | Component component -> Some component
   | _ -> None
 
+let get_page_declaration = function Page page -> Some page | _ -> None
+
 let get_filtered_ast (declarations : declaration list) : filtered_ast =
   let model_declarations =
     List.filter_map ~f:get_model_declaration declarations
@@ -18,4 +20,12 @@ let get_filtered_ast (declarations : declaration list) : filtered_ast =
   let component_declarations =
     List.filter_map ~f:get_component_declaration declarations
   in
-  { model_declarations; query_declarations; component_declarations }
+  let page_declarations =
+    List.filter_map ~f:get_page_declaration declarations
+  in
+  {
+    model_declarations;
+    query_declarations;
+    component_declarations;
+    page_declarations;
+  }

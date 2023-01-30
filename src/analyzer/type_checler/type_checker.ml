@@ -13,6 +13,7 @@ let check_declaration (global_table : 'a GlobalSymbolTable.t)
         check_model global_table model_table id body
     | Query (loc, id, body) -> check_query global_table loc id body
     | Component _ -> ()
+    | Page _ -> ()
   in
   List.iter ~f:(fun declaration -> check_declaration declaration) declarations
 

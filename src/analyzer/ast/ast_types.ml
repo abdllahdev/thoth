@@ -62,7 +62,7 @@ module Component = struct
     | Text of loc * string
     | Expression of loc * string
 
-  type route = string option
+  type route = string
   type args = string list option
   type body = lex_expression list option * string option
 end
@@ -70,8 +70,9 @@ end
 type declaration_type = ModelType | QueryType | ComponentType
 type model_declaration = loc * id * Model.body
 type query_declaration = loc * id * Query.body
+type component_declaration = loc * id * Component.args * Component.body
 
-type component_declaration =
+type page_declaration =
   loc * id * Component.args * Component.route * Component.body
 
 (* The different types of declarations in the language *)
@@ -79,11 +80,13 @@ type declaration =
   | Model of model_declaration
   | Query of query_declaration
   | Component of component_declaration
+  | Page of page_declaration
 
 type filtered_ast = {
   model_declarations : model_declaration list;
   query_declarations : query_declaration list;
   component_declarations : component_declaration list;
+  page_declarations : page_declaration list;
 }
 
 (* Ast type *)

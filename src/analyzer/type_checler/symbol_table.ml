@@ -150,6 +150,7 @@ module SymbolTableManager = struct
       | Model model -> ModelManager.allocate_model global_table model
       | Query query -> QueryManager.allocate_query global_table query
       | Component _ -> ()
+      | Page _ -> ()
     in
     List.iter
       ~f:(fun declaration -> populate_declaration global_table declaration)

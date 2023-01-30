@@ -46,6 +46,7 @@ rule token =
   | "model"       { MODEL }
   | "query"       { QUERY }
   | "component"   { COMPONENT }
+  | "page"        { PAGE }
   | "render"      { RENDER }
   | "let"         { LET }
   | "now"         { NOW }

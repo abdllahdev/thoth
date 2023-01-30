@@ -2,15 +2,12 @@ model User {
 	id        Int     @id
 	firstName String
 	lastName  String
-	tasks     Task[]
 }
 
 model Task {
 	id        Int      @id
 	title     String
 	isDone    Boolean  @default(false)
-	user      User     @relation(userId, id)
-	userId    Int
 	createdAt DateTime @default(now)
 	updatedAt DateTime @updatedAt
 }
@@ -37,17 +34,20 @@ query deleteTaskById(where: id) : delete
 
 component TaskView(task) {
 	render("
-		<div>
-			{task.id}
-			{task.updatedAt}
+		<div className='text-blue-500 pb-2 divide-black'>
+			Title: { task.title }
+			<div className='divide-y-2'></div>
+			Is Done: { task.isDone ? 'YES' : 'NO' }
+			<div className='divide-y-2 divide-black'></div>
+			Created At: { task.createdAt }
 		</div>
 	")
 }
 
-component Home @on("/") {
+page Home @on("/") {
 	let tasks = getTasks()
 
 	render("
-		{tasks.map((task) => <Task key={task.id} id={task.id} />)}
+		tasks.map((task) => <TaskView key={task.id} task={task} />)
 	")
 }

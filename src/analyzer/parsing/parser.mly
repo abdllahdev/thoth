@@ -25,6 +25,7 @@
 %token          MODEL
 %token          QUERY
 %token          COMPONENT
+%token          PAGE
 %token          LET
 %token          RENDER
 %token          ON
@@ -155,7 +156,7 @@ render_expr:
     { jsx }
   ;
 
-component_route:
+page_route:
   | ON; LEFT_PARAN; route = STRING; RIGHT_PARAN
     { route }
   ;
@@ -174,8 +175,10 @@ declaration:
     { Model($startpos, (parse_id $startpos model_id), model_body) }
   | QUERY; query_id = ID; query_body = query_body; option(SEMICOLON)
     { Query($startpos, (parse_id $startpos query_id), query_body) }
-  | COMPONENT; component_id = ID; args = option(component_args); route = option(component_route); component_body = component_body
-    { Component($startpos, (parse_id $startpos component_id), args, route, component_body) }
+  | COMPONENT; component_id = ID; args = option(component_args); component_body = component_body
+    { Component($startpos, (parse_id $startpos component_id), args, component_body) }
+  | PAGE; component_id = ID; args = option(component_args); route = page_route; component_body = component_body
+    { Page($startpos, (parse_id $startpos component_id), args, route, component_body) }
   ;
 
 ast:
