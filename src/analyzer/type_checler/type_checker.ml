@@ -11,7 +11,7 @@ let check_declaration (global_table : 'a GlobalSymbolTable.t)
     | Model (_, id, body) ->
         let model_table = GlobalSymbolTable.get_table global_table ~key:id in
         check_model global_table model_table id body
-    | Query (loc, id, body) -> check_query global_table loc id body
+    | Query query -> check_query global_table query
     | Component _ -> ()
     | Page _ -> ()
   in

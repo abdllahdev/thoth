@@ -49,10 +49,10 @@ module Query = struct
 
   type model = loc * id
   type permission = loc * id
-  type body = typ * arg list * model list * permission list
 end
 
 module Component = struct
+  type permission = loc * id
   type query_application = loc * id * id list
   type lex_expression = loc * id * query_application
 
@@ -80,11 +80,24 @@ end
 
 type declaration_type = ModelType | QueryType | ComponentType
 type model_declaration = loc * id * Model.body
-type query_declaration = loc * id * Query.body
+
+type query_declaration =
+  loc
+  * id
+  * Query.typ
+  * Query.arg list
+  * Query.model list
+  * Query.permission list option
+
 type component_declaration = loc * id * Component.args * Component.body
 
 type page_declaration =
-  loc * id * Component.args * Component.route * Component.body
+  loc
+  * id
+  * Component.args
+  * Component.route
+  * Component.permission list option
+  * Component.body
 
 (* The different types of declarations in the language *)
 type declaration =

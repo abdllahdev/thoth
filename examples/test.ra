@@ -12,25 +12,25 @@ model Task {
 	updatedAt DateTime @updatedAt
 }
 
-query getTasks(filter: { title, isDone }) : findMany
 @on(Task)
 @permission(isAuth)
+query<findMany> getTasks(filter: { title, isDone })
 
-query createTask(data: { title }) : create
 @on(Task)
 @permission(isAuth)
+query<create> createTask(data: { title })
 
-query getTaskById(where: id) : findUnique
 @on(Task)
 @permission(isAuth)
+query<findUnique> getTaskById(where: id)
 
-query updateTaskById(where: id, data: { title, isDone }) : update
 @on(Task)
 @permission(isAuth, owns)
+query<update> updateTaskById(where: id, data: { title, isDone })
 
-query deleteTaskById(where: id) : delete
 @on(Task)
 @permission(isAuth, owns)
+query<delete> deleteTaskById(where: id)
 
 component TaskView(task) {
 	render(
@@ -40,18 +40,21 @@ component TaskView(task) {
 	)
 }
 
-page Home @at("/") {
+@at("/")
+@permission(isAuth)
+page Home {
 	let tasks = getTasks()
 
 	render(
 		<div>
 			{
-				if (hello == true) then
-					if task then
-				 		for task in tasks =>
-							<div>
-								<div>{ "task dsalkkkfasd fjadsklfjads" }</div>
-							</div>
+				if tasks then
+					for task in tasks =>
+						<div>
+							<div>{ "task dsalkkkfasd fjadsklfjads" }</div>
+						</div>
+				else
+					<div>{ "There are no tasks" }</div>
 			}
 		</div>
 	)

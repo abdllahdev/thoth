@@ -27,7 +27,7 @@ type query_record = {
   typ : Query.typ;
   args : Query.arg list;
   models : Query.model list;
-  permissions : Query.permission list;
+  permissions : Query.permission list option;
 }
 
 module GlobalSymbolTable = struct
@@ -109,21 +109,22 @@ module ModelManager = struct
 end
 
 module QueryManager = struct
-  let allocation_body (local_table : 'a LocalSymbolTable.t) (id : id)
-      (body : Query.body) : unit =
-    let typ, args, models, permissions = body in
+  let allocation_body (local_table : 'a LocalSymbolTable.t) (id : id) info :
+      unit =
+    let typ, args, models, permissions = info in
     let query_body =
       GlobalSymbolTable.QueryInfo { typ; args; models; permissions }
     in
     LocalSymbolTable.allocate local_table ~key:id ~data:query_body
 
-  let allocate_query (global_table : 'a GlobalSymbolTable.t) (loc, id, body) :
-      unit =
+  let allocate_query (global_table : 'a GlobalSymbolTable.t)
+      (query : query_declaration) : unit =
+    let loc, id, typ, args, models, permissions = query in
     if GlobalSymbolTable.contains global_table ~key:id then
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
     let table = LocalSymbolTable.create () in
     let declaration_type = QueryType in
-    allocation_body table id body;
+    allocation_body table id (typ, args, models, permissions);
     GlobalSymbolTable.allocate global_table ~key:id
       ~data:{ declaration_type; table }
 end

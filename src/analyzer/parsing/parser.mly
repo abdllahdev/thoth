@@ -101,7 +101,6 @@ model_body:
   ;
 
 (* Query rules *)
-(* TODO: change the way querier are parsed` *)
 query_arg:
   | arg = ID; COLON; field = ID;
     { parse_query_arg $startpos arg [field] }
@@ -119,16 +118,9 @@ query_models:
     { List.map (fun model -> ($startpos, model)) models }
   ;
 
-query_permissions:
+permissions:
   | PERMISSION; LEFT_PARAN; permissions = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
-    { parse_query_permissions $startpos permissions }
-
-query_body:
-  | args = query_args; COLON; typ = ID; models = query_models;
-    { (parse_query_type $startpos typ, args, models, []) }
-  | args = query_args; COLON; typ = ID; models = query_models; permissions = query_permissions
-    { (parse_query_type $startpos typ, args, models, permissions) }
-  ;
+    { parse_permissions $startpos permissions }
 
 query_application:
   | id = ID; LEFT_PARAN; args = separated_list(COMMA, ID); RIGHT_PARAN; option(SEMICOLON)
@@ -242,12 +234,12 @@ component_args:
 declaration:
   | MODEL; model_id = ID; model_body = model_body
     { Model($startpos, (parse_id $startpos model_id), model_body) }
-  | QUERY; query_id = ID; query_body = query_body; option(SEMICOLON)
-    { Query($startpos, (parse_id $startpos query_id), query_body) }
+  | models = query_models; permissions = option(permissions); QUERY; LT; typ = ID; GT; query_id = ID; args = query_args; option(SEMICOLON)
+    { Query($startpos, (parse_id $startpos query_id), parse_query_type $startpos typ, args, models, permissions) }
   | COMPONENT; component_id = ID; args = option(component_args); component_body = component_body
     { Component($startpos, (parse_id $startpos component_id), args, component_body) }
-  | PAGE; component_id = ID; args = option(component_args); route = page_route; component_body = component_body
-    { Page($startpos, (parse_id $startpos component_id), args, route, component_body) }
+  | route = page_route; permissions = option(permissions); PAGE; component_id = ID; args = option(component_args); component_body = component_body
+    { Page($startpos, (parse_id $startpos component_id), args, route, permissions, component_body) }
   ;
 
 ast:

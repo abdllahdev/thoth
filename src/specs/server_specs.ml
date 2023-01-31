@@ -34,8 +34,7 @@ type server_specs = {
 let group_queries (queries : query_declaration list) :
     query_declaration list list =
   let groups_builder groups query =
-    let _, _, body = query in
-    let _, _, models, _ = body in
+    let _, _, _, _, models, _ = query in
     let model = List.hd_exn models in
     let _, service_name = model in
     (if Hashtbl.mem groups service_name then
@@ -51,8 +50,7 @@ let group_queries (queries : query_declaration list) :
   List.fold_left ~f:groups_builder ~init:groups queries |> Hashtbl.data
 
 let get_model_name (queries : query_declaration list) : string =
-  let _, _, body = List.hd_exn queries in
-  let _, _, models, _ = body in
+  let _, _, _, _, models, _ = List.hd_exn queries in
   let model = List.hd_exn models in
   let _, name = model in
   String.lowercase name
@@ -60,8 +58,7 @@ let get_model_name (queries : query_declaration list) : string =
 let generate_service_specs (queries : query_declaration list) : service_specs =
   let name = get_model_name queries in
   let get_service_function lst query =
-    let _, id, body = query in
-    let typ, _, _, _ = body in
+    let _, id, typ, _, _, _ = query in
     let typ = QueryPrinter.string_of_query_type typ in
     let service_function = { id; typ } in
     service_function :: lst
@@ -75,8 +72,7 @@ let generate_controller_specs (queries : query_declaration list) :
     controller_specs =
   let name = get_model_name queries in
   let get_controller_function lst (query : query_declaration) =
-    let _, id, body = query in
-    let typ, args, _, _ = body in
+    let _, id, typ, args, _, _ = query in
     let typ = QueryPrinter.string_of_query_type typ in
 
     let where =
@@ -112,8 +108,7 @@ let generate_controller_specs (queries : query_declaration list) :
 let generate_routes_specs (queries : query_declaration list) : route_specs =
   let name = get_model_name queries in
   let get_controller_function lst (query : query_declaration) =
-    let _, id, body = query in
-    let typ, args, _, _ = body in
+    let _, id, typ, args, _, _ = query in
     let typ = QueryPrinter.string_of_query_type typ in
 
     let where =

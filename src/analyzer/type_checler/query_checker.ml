@@ -146,8 +146,8 @@ let check_args (global_table : 'a GlobalSymbolTable.t) (loc : loc)
       | Query.Where (loc, field) ->
           check_where_arg global_table loc id model field)
 
-let check_query (global_table : 'a GlobalSymbolTable.t) (loc : loc) (id : id)
-    (body : Query.body) : unit =
-  let typ, args, models, _ = body in
+let check_query (global_table : 'a GlobalSymbolTable.t)
+    (query : query_declaration) : unit =
+  let loc, id, typ, args, models, _ = query in
   check_models global_table id models;
   check_args global_table loc typ id (List.hd_exn models) args

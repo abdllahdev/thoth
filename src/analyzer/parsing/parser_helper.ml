@@ -50,7 +50,7 @@ let parse_query_type (loc : loc) (typ : string) : Query.typ =
   | "delete" -> Query.Delete
   | _ -> raise_name_error (Pprinter.string_of_loc loc) "query type" typ
 
-let parse_query_permissions (loc : loc) (permissions : string list) :
+let parse_permissions (loc : loc) (permissions : string list) :
     Query.permission list =
   let check_permission permission =
     match permission with
