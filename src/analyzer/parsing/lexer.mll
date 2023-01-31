@@ -32,17 +32,31 @@ rule token =
   | ']'           { RIGHT_BRACKET }
   | '('           { LEFT_PARAN }
   | ')'           { RIGHT_PARAN }
-  | '<'           { LT }
-  | '>'           { GT }
   | '/'           { SLASH }
   | '?'           { QUESTION_MARK }
+  | '<'           { LT }
+  | '>'           { GT }
   | '='           { EQUAL }
+  | '!'           { NOT }
+  | "=="          { EQ }
+  | "!="          { NOT_EQ }
+  | "<="          { LT_OR_EQ }
+  | ">="          { GT_OR_EQ }
   | ':'           { COLON }
   | ';'           { SEMICOLON }
   | ','           { COMMA }
+  | '.'           { DOT }
   | '"'           { read_string (Buffer.create 17) lexbuf }
+  | "</"          { CLOSING_TAG }
+  | "&&"          { AND }
+  | "=>"          { ARROW }
   | "true"        { TRUE }
   | "false"       { FALSE }
+  | "if"          { IF }
+  | "then"        { THEN }
+  | "else"        { ELSE }
+  | "for"         { FOR }
+  | "in"          { IN }
   | "model"       { MODEL }
   | "query"       { QUERY }
   | "component"   { COMPONENT }
@@ -52,6 +66,7 @@ rule token =
   | "now"         { NOW }
   | "@on"         { ON }
   | "@permission" { PERMISSION }
+  | "@at"         { AT }
   | attribute     { ATTRIBUTE (Lexing.lexeme lexbuf) }
   | int           { INT (int_of_string (Lexing.lexeme lexbuf))}
   | id            { ID (Lexing.lexeme lexbuf) }

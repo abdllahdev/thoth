@@ -64,8 +64,8 @@ let parse_query_permissions (loc : loc) (permissions : string list) :
   List.map ~f:check_permission permissions
 
 let parse_jsx_element (loc : loc) (opening_id : id) (closing_id : id)
-    (attributes : Component.jsx_element_attribute list option)
+    (attributes : Component.jsx list option)
     (children : Component.jsx list option) : Component.jsx =
   if not (String.equal opening_id closing_id) then
     raise_syntax_error (Pprinter.string_of_loc loc) closing_id
-  else Component.Element (loc, opening_id, attributes, children)
+  else Component.JSXElement (loc, opening_id, attributes, children)

@@ -9,6 +9,18 @@
 %token <string> ATTRIBUTE
 %token          TRUE
 %token          FALSE
+%token          AND
+%token          ARROW
+%token          NOT
+%token          EQ
+%token          NOT_EQ
+%token          LT_OR_EQ
+%token          GT_OR_EQ
+%token          IF
+%token          THEN
+%token          ELSE
+%token          FOR
+%token          IN
 %token          LEFT_BRACE
 %token          RIGHT_BRACE
 %token          LEFT_BRACKET
@@ -18,9 +30,11 @@
 %token          LT
 %token          GT
 %token          SLASH
+%token          CLOSING_TAG
 %token          QUESTION_MARK
 %token          EQUAL
 %token          COMMA
+%token          DOT
 %token          NOW
 %token          MODEL
 %token          QUERY
@@ -29,6 +43,7 @@
 %token          LET
 %token          RENDER
 %token          ON
+%token          AT
 %token          PERMISSION
 %token          COLON
 %token          SEMICOLON
@@ -42,7 +57,6 @@
 %%
 
 (* Model rules *)
-
 model_field_attr_args:
   | str = STRING
     { Model.AttrArgString($startpos, (StringLiteral(String, str))) }
@@ -87,7 +101,7 @@ model_body:
   ;
 
 (* Query rules *)
-
+(* TODO: change the way querier are parsed` *)
 query_arg:
   | arg = ID; COLON; field = ID;
     { parse_query_arg $startpos arg [field] }
@@ -121,54 +135,109 @@ query_application:
     { ($startpos, id, args) }
   ;
 
+(* Component rules *)
 let_expression:
   | LET; id = ID; EQUAL; query_application = query_application;
     { ($startpos, (parse_id $startpos id), query_application) }
   ;
 
-jsx_element_attribute:
-  | id = ID; EQUAL; value = STRING
-    { ($startpos, id, value) }
+jsx_attribute:
+  | id = ID; EQUAL; jsx_expression_declaration = jsx_expression_declaration
+    { Component.JSXAttribute($startpos, id, jsx_expression_declaration) }
+  | id = ID; EQUAL; str = STRING;
+    { Component.JSXAttribute($startpos, id, Component.JSXLiteral($startpos, StringLiteral(String, str))) }
   ;
 
-jsx_element_opening_tag:
-  | LT; id = ID; attributes = option(list(jsx_element_attribute)); GT
+jsx_opening_element:
+  | LT; id = ID; attributes = option(list(jsx_attribute)); GT
     { (id, attributes) }
   ;
 
-jsx_element_closing_tag:
-  | LT; SLASH; id = ID; GT
+jsx_closing_element:
+  | CLOSING_TAG; id = ID; GT
     { id }
   ;
 
+jsx_self_closing_element:
+  | LT; id = ID; attributes = option(list(jsx_attribute)); SLASH; GT
+    { (id, attributes) }
+  ;
+
 jsx_element:
-  | LT; opening_id = ID; GT; jsx_element_list; LT; SLASH; ID; GT
-    { Component.Element($startpos, opening_id, None, None) }
+  | jsx_opening_element = jsx_opening_element; children = option(list(jsx_children)); closing_id = jsx_closing_element
+    { let (opening_id, attributes) = jsx_opening_element in parse_jsx_element $startpos opening_id closing_id attributes children }
+  | jsx_self_closing_element = jsx_self_closing_element
+    { let (id, attributes) = jsx_self_closing_element in Component.JSXElement ($startpos, id, attributes, None) }
   ;
 
-jsx_element_list:
-  | jsx_element jsx_element_list
-    { }
+jsx_children:
+  | jsx_element = jsx_element
+    { jsx_element }
+  | jsx_expression_declaration = jsx_expression_declaration
+    { jsx_expression_declaration }
   ;
 
-render_expr:
-  | RENDER; LEFT_PARAN; jsx = STRING; RIGHT_PARAN
+jsx_expression:
+  | str = STRING
+    { Component.JSXLiteral($startpos, StringLiteral(String, str)) }
+  | number = INT
+    { Component.JSXLiteral($startpos, IntLiteral(Int, number)) }
+  | TRUE
+    { Component.JSXLiteral($startpos, BooleanLiteral(Boolean, true)) }
+  | FALSE
+    { Component.JSXLiteral($startpos, BooleanLiteral(Boolean, false)) }
+  | var = ID
+    { Component.JSXVariableExpression($startpos, var) }
+  | jsx_element = jsx_element
+    { jsx_element }
+  | left_expression = jsx_expression; EQ; right_expression = jsx_expression
+    { Component.JSXEqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = jsx_expression; NOT_EQ; right_expression = jsx_expression
+    { Component.JSXNotEqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = jsx_expression; LT; right_expression = jsx_expression
+    { Component.JSXLtConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = jsx_expression; GT; right_expression = jsx_expression
+    { Component.JSXGtConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = jsx_expression; LT_OR_EQ; right_expression = jsx_expression
+    { Component.JSXLtOrEqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = jsx_expression; GT_OR_EQ; right_expression = jsx_expression
+    { Component.JSXGtOrEqConditionalExpression($startpos, left_expression, right_expression) }
+  | NOT; jsx_expression = jsx_expression
+    { Component.JSXNotConditionalExpression($startpos, jsx_expression) }
+  | IF; conditional_expression = jsx_expression; THEN; then_block = jsx_expression; ELSE; else_block = jsx_expression;
+    { Component.JSXIfElseStatement($startpos, conditional_expression, then_block, else_block) }
+  | IF; conditional_expression = jsx_expression THEN; then_block = jsx_expression;
+    { Component.JSXThenStatement($startpos, conditional_expression, then_block) }
+  | FOR; var = jsx_expression; IN; lst = jsx_expression; ARROW; output = jsx_expression;
+    { Component.JSXLoopStatement ($startpos, var, lst, output) }
+  | LEFT_PARAN; jsx_expression = jsx_expression; RIGHT_PARAN
+    { jsx_expression }
+  ;
+
+jsx_expression_declaration:
+  | LEFT_BRACE; jsx_expression = jsx_expression; RIGHT_BRACE
+    { jsx_expression }
+  ;
+
+render:
+  | RENDER; LEFT_PARAN; jsx = list(jsx_element); RIGHT_PARAN
     { jsx }
   ;
 
 page_route:
-  | ON; LEFT_PARAN; route = STRING; RIGHT_PARAN
+  | AT; LEFT_PARAN; route = STRING; RIGHT_PARAN
     { route }
   ;
 
 component_body:
-  | LEFT_BRACE; let_expressions = option(list(let_expression)); render_expr = option(render_expr); RIGHT_BRACE
-    { (let_expressions, render_expr) }
+  | LEFT_BRACE; let_expressions = option(list(let_expression)); render = render; RIGHT_BRACE
+    { (let_expressions, render) }
   ;
 
 component_args:
   | LEFT_PARAN; args = separated_list(COMMA, ID); RIGHT_PARAN
     { args }
+  ;
 
 declaration:
   | MODEL; model_id = ID; model_body = model_body

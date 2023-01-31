@@ -33,21 +33,26 @@ query deleteTaskById(where: id) : delete
 @permission(isAuth, owns)
 
 component TaskView(task) {
-	render("
-		<div className='text-blue-500 pb-2 divide-black'>
-			Title: { task.title }
-			<div className='divide-y-2'></div>
-			Is Done: { task.isDone ? 'YES' : 'NO' }
-			<div className='divide-y-2 divide-black'></div>
-			Created At: { task.createdAt }
+	render(
+		<div className="text-blue-500 pb-2 divide-black">
+			<div></div>
 		</div>
-	")
+	)
 }
 
-page Home @on("/") {
+page Home @at("/") {
 	let tasks = getTasks()
 
-	render("
-		tasks.map((task) => <TaskView key={task.id} task={task} />)
-	")
+	render(
+		<div>
+			{
+				if (hello == true) then
+					if task then
+				 		for task in tasks =>
+							<div>
+								<div>{ "task dsalkkkfasd fjadsklfjads" }</div>
+							</div>
+			}
+		</div>
+	)
 }

@@ -55,16 +55,27 @@ end
 module Component = struct
   type query_application = loc * id * id list
   type lex_expression = loc * id * query_application
-  type jsx_element_attribute = loc * id * string
 
   type jsx =
-    | Element of loc * id * jsx_element_attribute list option * jsx list option
-    | Text of loc * string
-    | Expression of loc * string
+    | JSXElement of loc * id * jsx list option * jsx list option
+    | JSXAttribute of loc * id * jsx
+    | JSXLiteral of loc * literal
+    | JSXVariableExpression of loc * string
+    | JSXDotExpression of loc * string * jsx
+    | JSXNotConditionalExpression of loc * jsx
+    | JSXEqConditionalExpression of loc * jsx * jsx
+    | JSXNotEqConditionalExpression of loc * jsx * jsx
+    | JSXLtConditionalExpression of loc * jsx * jsx
+    | JSXGtConditionalExpression of loc * jsx * jsx
+    | JSXLtOrEqConditionalExpression of loc * jsx * jsx
+    | JSXGtOrEqConditionalExpression of loc * jsx * jsx
+    | JSXIfElseStatement of loc * jsx * jsx * jsx
+    | JSXThenStatement of loc * jsx * jsx
+    | JSXLoopStatement of loc * jsx * jsx * jsx
 
   type route = string
   type args = string list option
-  type body = lex_expression list option * string option
+  type body = lex_expression list option * jsx list
 end
 
 type declaration_type = ModelType | QueryType | ComponentType
