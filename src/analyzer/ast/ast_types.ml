@@ -54,15 +54,15 @@ end
 module Component = struct
   type permission = loc * id
   type query_application = loc * id * id list
+  type variable_expression = Variable of id | Dot of id * variable_expression
   type let_expression = loc * id * query_application
 
   type jsx =
     | JSXElement of loc * id * jsx list option * jsx list option
     | JSXAttribute of loc * id * jsx
     | JSXLiteral of loc * literal
-    | JSXVariableExpression of loc * id
     | JSXQueryApplication of loc * id * id list
-    | JSXDotExpression of loc * string * jsx
+    | JSXVariableExpression of loc * variable_expression
     | JSXNotConditionalExpression of loc * jsx
     | JSXEqConditionalExpression of loc * jsx * jsx
     | JSXNotEqConditionalExpression of loc * jsx * jsx

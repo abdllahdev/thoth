@@ -48,7 +48,6 @@ rule token =
   | '.'           { DOT }
   | '"'           { read_string (Buffer.create 17) lexbuf }
   | "</"          { CLOSING_TAG }
-  | "&&"          { AND }
   | "=>"          { ARROW }
   | "true"        { TRUE }
   | "false"       { FALSE }

@@ -35,7 +35,9 @@ query<delete> deleteTaskById(where: id)
 component TaskComponent(task: Task) {
 	render(
 		<div className="text-blue-500 pb-2 divide-black">
-			<div></div>
+			<div>{ task.title }</div>
+			<div>{ if task.isDone then "YES" else "NO" }</div>
+			<div>{ task.createdAt }</div>
 		</div>
 	)
 }

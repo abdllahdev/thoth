@@ -127,6 +127,13 @@ query_application:
   ;
 
 (* Component rules *)
+variable_expression:
+  | id = ID; DOT; dot = variable_expression
+    { Component.Dot(id, dot) }
+  | id = ID
+    { Component.Variable(id) }
+  ;
+
 let_expression:
   | LET; id = ID; EQUAL; query_application = query_application;
     { ($startpos, (parse_id $startpos id), query_application) }
@@ -177,8 +184,8 @@ jsx_expression:
     { Component.JSXLiteral($startpos, BooleanLiteral(Boolean, true)) }
   | FALSE
     { Component.JSXLiteral($startpos, BooleanLiteral(Boolean, false)) }
-  | var = ID
-    { Component.JSXVariableExpression($startpos, var) }
+  | variable_expression = variable_expression
+    { Component.JSXVariableExpression($startpos, variable_expression) }
   | query_application =  query_application
     { let (loc, id, args) = query_application in Component.JSXQueryApplication(loc, id, args) }
   | jsx_element = jsx_element
