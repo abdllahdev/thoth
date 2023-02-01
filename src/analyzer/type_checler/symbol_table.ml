@@ -18,22 +18,27 @@ module LocalSymbolTable = struct
     Hashtbl.mem table symbol
 end
 
-type field_record = {
+type field_info = {
   typ : typ;
   field_attrs_table : Model.attr_arg list LocalSymbolTable.t;
 }
 
-type query_record = {
+type query_info = {
   typ : Query.typ;
   args : Query.arg list;
   models : Query.model list;
-  permissions : Query.permission list option;
+  permissions : permission list option;
 }
+
+type component_info = { args : string LocalSymbolTable.t }
+type page_info = { route : Page.route; permissions : permission list option }
 
 module GlobalSymbolTable = struct
   type declaration_info =
-    | ModelInfo of field_record
-    | QueryInfo of query_record
+    | ModelInfo of field_info
+    | QueryInfo of query_info
+    | ComponentInfo of component_info
+    | PageInfo of page_info
 
   type value_record = {
     declaration_type : declaration_type;
@@ -59,9 +64,9 @@ module GlobalSymbolTable = struct
     Hashtbl.mem table symbol
 
   let check_type (table : 'a t) ~key:(symbol : string)
-      (declaraction_type : declaration_type) : bool =
-    if phys_equal (get_declaration_type table ~key:symbol) declaraction_type
-    then true
+      (declaration_type : declaration_type) : bool =
+    if phys_equal (get_declaration_type table ~key:symbol) declaration_type then
+      true
     else false
 end
 
@@ -129,18 +134,56 @@ module QueryManager = struct
       ~data:{ declaration_type; table }
 end
 
+module ComponentManager = struct
+  let allocate_component (global_table : 'a GlobalSymbolTable.t)
+      (component : component_declaration) : unit =
+    let loc, id, _, _ = component in
+    if GlobalSymbolTable.contains global_table ~key:id then
+      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+    let table = LocalSymbolTable.create () in
+    let declaration_type = ComponentType in
+    GlobalSymbolTable.allocate global_table ~key:id
+      ~data:{ declaration_type; table }
+end
+
+module PageManager = struct
+  let allocate_page (global_table : 'a GlobalSymbolTable.t)
+      (page : page_declaration) : unit =
+    let loc, id, _, _, _ = page in
+    if GlobalSymbolTable.contains global_table ~key:id then
+      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+    let table = LocalSymbolTable.create () in
+    let declaration_type = ComponentType in
+    GlobalSymbolTable.allocate global_table ~key:id
+      ~data:{ declaration_type; table }
+end
+
 module SymbolTableManager = struct
   let get_model_info (declaration_info : GlobalSymbolTable.declaration_info) :
-      field_record =
+      field_info =
     (match declaration_info with
-    | ModelInfo field_record -> Some field_record
+    | ModelInfo field_info -> Some field_info
     | _ -> None)
     |> Option.value_exn
 
   let get_query_info (declaration_info : GlobalSymbolTable.declaration_info) :
-      query_record =
+      query_info =
     (match declaration_info with
-    | QueryInfo field_record -> Some field_record
+    | QueryInfo field_info -> Some field_info
+    | _ -> None)
+    |> Option.value_exn
+
+  let get_component_info (declaration_info : GlobalSymbolTable.declaration_info)
+      : component_info =
+    (match declaration_info with
+    | ComponentInfo component_info -> Some component_info
+    | _ -> None)
+    |> Option.value_exn
+
+  let get_page_info (declaration_info : GlobalSymbolTable.declaration_info) :
+      page_info =
+    (match declaration_info with
+    | PageInfo page_info -> Some page_info
     | _ -> None)
     |> Option.value_exn
 
@@ -150,8 +193,9 @@ module SymbolTableManager = struct
       match declaration with
       | Model model -> ModelManager.allocate_model global_table model
       | Query query -> QueryManager.allocate_query global_table query
-      | Component _ -> ()
-      | Page _ -> ()
+      | Component component ->
+          ComponentManager.allocate_component global_table component
+      | Page page -> PageManager.allocate_page global_table page
     in
     List.iter
       ~f:(fun declaration -> populate_declaration global_table declaration)

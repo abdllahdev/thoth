@@ -32,11 +32,11 @@ let check_where_arg (global_table : 'a GlobalSymbolTable.t) (loc : loc)
   let model_table = GlobalSymbolTable.get_table global_table ~key:model_id in
   if not (LocalSymbolTable.contains model_table ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field;
-  let field_record : field_record =
+  let field_info : field_info =
     LocalSymbolTable.lookup model_table ~key:field
     |> SymbolTableManager.get_model_info
   in
-  let field_attrs_table = field_record.field_attrs_table in
+  let field_attrs_table = field_info.field_attrs_table in
   if not (LocalSymbolTable.contains model_table ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field
   else if

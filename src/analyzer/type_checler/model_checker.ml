@@ -42,11 +42,11 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
           1 args_length id
       else
         let arg = List.hd_exn args in
-        let field_record : field_record =
+        let field_info : field_info =
           LocalSymbolTable.lookup model_table ~key:field_id
           |> SymbolTableManager.get_model_info
         in
-        let field_type = get_scalar_type field_record.typ in
+        let field_type = get_scalar_type field_info.typ in
         match arg with
         | Model.AttrArgRef (loc, ref) ->
             raise_type_error
@@ -210,8 +210,8 @@ let check_field_type (global_table : 'a GlobalSymbolTable.t) (model_id : id)
           ~f:
             (fun ~key:_ ~(data : GlobalSymbolTable.declaration_info)
                  (acc : string list) ->
-            let field_record = SymbolTableManager.get_model_info data in
-            let scalar_type = get_scalar_type field_record.typ in
+            let field_info = SymbolTableManager.get_model_info data in
+            let scalar_type = get_scalar_type field_info.typ in
             match scalar_type with CustomType str -> acc @ [ str ] | _ -> acc)
           other_model
       in

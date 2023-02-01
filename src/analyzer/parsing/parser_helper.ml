@@ -50,8 +50,8 @@ let parse_query_type (loc : loc) (typ : string) : Query.typ =
   | "delete" -> Query.Delete
   | _ -> raise_name_error (Pprinter.string_of_loc loc) "query type" typ
 
-let parse_permissions (loc : loc) (permissions : string list) :
-    Query.permission list =
+let parse_permissions (loc : loc) (permissions : string list) : permission list
+    =
   let check_permission permission =
     match permission with
     | "isAuth" -> (loc, "isAuth")
@@ -63,9 +63,9 @@ let parse_permissions (loc : loc) (permissions : string list) :
   in
   List.map ~f:check_permission permissions
 
-let parse_jsx_element (loc : loc) (opening_id : id) (closing_id : id)
-    (attributes : Component.jsx list option)
-    (children : Component.jsx list option) : Component.jsx =
+let parse_xra_element (loc : loc) (opening_id : id) (closing_id : id)
+    (attributes : XRA.xra_expression list option)
+    (children : XRA.xra_expression list option) : XRA.xra_expression =
   if not (String.equal opening_id closing_id) then
     raise_syntax_error (Pprinter.string_of_loc loc) closing_id
-  else Component.JSXElement (loc, opening_id, attributes, children)
+  else XRA.Element (loc, opening_id, attributes, children)

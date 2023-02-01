@@ -129,99 +129,99 @@ query_application:
 (* Component rules *)
 variable_expression:
   | id = ID; DOT; dot = variable_expression
-    { Component.Dot(id, dot) }
+    { XRA.Dot(id, dot) }
   | id = ID
-    { Component.Variable(id) }
+    { XRA.Variable(id) }
   ;
 
 let_expression:
-  | LET; id = ID; EQUAL; jsx_expression = jsx_expression;
-    { ($startpos, (parse_id $startpos id), jsx_expression) }
+  | LET; id = ID; EQUAL; xra_expression = xra_expression;
+    { ($startpos, (parse_id $startpos id), xra_expression) }
   ;
 
-jsx_attribute:
-  | id = ID; EQUAL; jsx_expression_declaration = jsx_expression_declaration
-    { Component.JSXAttribute($startpos, id, jsx_expression_declaration) }
+xra_attribute:
+  | id = ID; EQUAL; xra_expression_declaration = xra_expression_declaration
+    { XRA.Attribute($startpos, id, xra_expression_declaration) }
   | id = ID; EQUAL; str = STRING;
-    { Component.JSXAttribute($startpos, id, Component.JSXLiteral($startpos, StringLiteral(String, str))) }
+    { XRA.Attribute($startpos, id, XRA.Literal($startpos, StringLiteral(String, str))) }
   ;
 
-jsx_opening_element:
-  | LT; id = ID; attributes = option(list(jsx_attribute)); GT
+xra_opening_element:
+  | LT; id = ID; attributes = option(list(xra_attribute)); GT
     { (id, attributes) }
   ;
 
-jsx_closing_element:
+xra_closing_element:
   | CLOSING_TAG; id = ID; GT
     { id }
   ;
 
-jsx_self_closing_element:
-  | LT; id = ID; attributes = option(list(jsx_attribute)); SLASH; GT
+xra_self_closing_element:
+  | LT; id = ID; attributes = option(list(xra_attribute)); SLASH; GT
     { (id, attributes) }
   ;
 
-jsx_element:
-  | jsx_opening_element = jsx_opening_element; children = option(list(jsx_children)); closing_id = jsx_closing_element
-    { let (opening_id, attributes) = jsx_opening_element in parse_jsx_element $startpos opening_id closing_id attributes children }
-  | jsx_self_closing_element = jsx_self_closing_element
-    { let (id, attributes) = jsx_self_closing_element in Component.JSXElement ($startpos, id, attributes, None) }
+xra_element:
+  | xra_opening_element = xra_opening_element; children = option(list(xra_children)); closing_id = xra_closing_element
+    { let (opening_id, attributes) = xra_opening_element in parse_xra_element $startpos opening_id closing_id attributes children }
+  | xra_self_closing_element = xra_self_closing_element
+    { let (id, attributes) = xra_self_closing_element in XRA.Element ($startpos, id, attributes, None) }
   ;
 
-jsx_children:
-  | jsx_element = jsx_element
-    { jsx_element }
-  | jsx_expression_declaration = jsx_expression_declaration
-    { jsx_expression_declaration }
+xra_children:
+  | xra_element = xra_element
+    { xra_element }
+  | xra_expression_declaration = xra_expression_declaration
+    { xra_expression_declaration }
   ;
 
-jsx_expression:
+xra_expression:
   | str = STRING
-    { Component.JSXLiteral($startpos, StringLiteral(String, str)) }
+    { XRA.Literal($startpos, StringLiteral(String, str)) }
   | number = INT
-    { Component.JSXLiteral($startpos, IntLiteral(Int, number)) }
+    { XRA.Literal($startpos, IntLiteral(Int, number)) }
   | TRUE
-    { Component.JSXLiteral($startpos, BooleanLiteral(Boolean, true)) }
+    { XRA.Literal($startpos, BooleanLiteral(Boolean, true)) }
   | FALSE
-    { Component.JSXLiteral($startpos, BooleanLiteral(Boolean, false)) }
+    { XRA.Literal($startpos, BooleanLiteral(Boolean, false)) }
   | variable_expression = variable_expression
-    { Component.JSXVariableExpression($startpos, variable_expression) }
+    { XRA.VariableExpression($startpos, variable_expression) }
   | query_application =  query_application
-    { let (loc, id, args) = query_application in Component.JSXQueryApplication(loc, id, args) }
-  | jsx_element = jsx_element
-    { jsx_element }
-  | left_expression = jsx_expression; EQ; right_expression = jsx_expression
-    { Component.JSXEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = jsx_expression; NOT_EQ; right_expression = jsx_expression
-    { Component.JSXNotEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = jsx_expression; LT; right_expression = jsx_expression
-    { Component.JSXLtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = jsx_expression; GT; right_expression = jsx_expression
-    { Component.JSXGtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = jsx_expression; LT_OR_EQ; right_expression = jsx_expression
-    { Component.JSXLtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = jsx_expression; GT_OR_EQ; right_expression = jsx_expression
-    { Component.JSXGtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | NOT; jsx_expression = jsx_expression
-    { Component.JSXNotConditionalExpression($startpos, jsx_expression) }
-  | IF; conditional_expression = jsx_expression; THEN; then_block = jsx_expression; ELSE; else_block = jsx_expression;
-    { Component.JSXIfElseStatement($startpos, conditional_expression, then_block, else_block) }
-  | IF; conditional_expression = jsx_expression THEN; then_block = jsx_expression;
-    { Component.JSXThenStatement($startpos, conditional_expression, then_block) }
-  | FOR; var = jsx_expression; IN; lst = jsx_expression; ARROW; output = jsx_expression;
-    { Component.JSXLoopStatement ($startpos, var, lst, output) }
-  | LEFT_PARAN; jsx_expression = jsx_expression; RIGHT_PARAN
-    { jsx_expression }
+    { let (loc, id, args) = query_application in XRA.QueryApplication(loc, id, args) }
+  | xra_element = xra_element
+    { xra_element }
+  | left_expression = xra_expression; EQ; right_expression = xra_expression
+    { XRA.EqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = xra_expression; NOT_EQ; right_expression = xra_expression
+    { XRA.NotEqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = xra_expression; LT; right_expression = xra_expression
+    { XRA.LtConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = xra_expression; GT; right_expression = xra_expression
+    { XRA.GtConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = xra_expression; LT_OR_EQ; right_expression = xra_expression
+    { XRA.LtOrEqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = xra_expression; GT_OR_EQ; right_expression = xra_expression
+    { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
+  | NOT; xra_expression = xra_expression
+    { XRA.NotConditionalExpression($startpos, xra_expression) }
+  | IF; conditional_expression = xra_expression; THEN; then_block = xra_expression; ELSE; else_block = xra_expression;
+    { XRA.IfElseStatement($startpos, conditional_expression, then_block, else_block) }
+  | IF; conditional_expression = xra_expression THEN; then_block = xra_expression;
+    { XRA.ThenStatement($startpos, conditional_expression, then_block) }
+  | FOR; var = xra_expression; IN; lst = xra_expression; ARROW; output = xra_expression;
+    { XRA.LoopStatement ($startpos, var, lst, output) }
+  | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
+    { xra_expression }
   ;
 
-jsx_expression_declaration:
-  | LEFT_BRACE; jsx_expression = jsx_expression; RIGHT_BRACE
-    { jsx_expression }
+xra_expression_declaration:
+  | LEFT_BRACE; xra_expression = xra_expression; RIGHT_BRACE
+    { xra_expression }
   ;
 
 render:
-  | RENDER; LEFT_PARAN; jsx = list(jsx_element); RIGHT_PARAN
-    { jsx }
+  | RENDER; LEFT_PARAN; xra = list(xra_element); RIGHT_PARAN
+    { xra }
   ;
 
 page_route:
@@ -250,8 +250,8 @@ declaration:
     { Query($startpos, (parse_id $startpos query_id), parse_query_type $startpos typ, args, models, permissions) }
   | COMPONENT; component_id = ID; args = option(component_args); component_body = component_body
     { Component($startpos, (parse_id $startpos component_id), args, component_body) }
-  | route = page_route; permissions = option(permissions); PAGE; component_id = ID; args = option(component_args); component_body = component_body
-    { Page($startpos, (parse_id $startpos component_id), args, route, permissions, component_body) }
+  | route = page_route; permissions = option(permissions); PAGE; component_id = ID; component_body = component_body
+    { Page($startpos, (parse_id $startpos component_id), route, permissions, component_body) }
   ;
 
 ast:

@@ -25,6 +25,8 @@ type literal =
   | IntLiteral of scalar_type * int
   | BooleanLiteral of scalar_type * bool
 
+type permission = loc * id
+
 (* TODO: add enums to data models *)
 module Model = struct
   type attr_arg =
@@ -48,35 +50,40 @@ module Query = struct
     | Data of loc * string list
 
   type model = loc * id
-  type permission = loc * id
 end
 
-module Component = struct
-  type permission = loc * id
+module XRA = struct
   type query_application = loc * id * id list
   type variable_expression = Variable of id | Dot of id * variable_expression
 
-  type jsx =
-    | JSXElement of loc * id * jsx list option * jsx list option
-    | JSXAttribute of loc * id * jsx
-    | JSXLiteral of loc * literal
-    | JSXQueryApplication of loc * id * id list
-    | JSXVariableExpression of loc * variable_expression
-    | JSXNotConditionalExpression of loc * jsx
-    | JSXEqConditionalExpression of loc * jsx * jsx
-    | JSXNotEqConditionalExpression of loc * jsx * jsx
-    | JSXLtConditionalExpression of loc * jsx * jsx
-    | JSXGtConditionalExpression of loc * jsx * jsx
-    | JSXLtOrEqConditionalExpression of loc * jsx * jsx
-    | JSXGtOrEqConditionalExpression of loc * jsx * jsx
-    | JSXIfElseStatement of loc * jsx * jsx * jsx
-    | JSXThenStatement of loc * jsx * jsx
-    | JSXLoopStatement of loc * jsx * jsx * jsx
+  type xra_expression =
+    | Element of
+        loc * id * xra_expression list option * xra_expression list option
+    | Attribute of loc * id * xra_expression
+    | Literal of loc * literal
+    | QueryApplication of loc * id * id list
+    | VariableExpression of loc * variable_expression
+    | NotConditionalExpression of loc * xra_expression
+    | EqConditionalExpression of loc * xra_expression * xra_expression
+    | NotEqConditionalExpression of loc * xra_expression * xra_expression
+    | LtConditionalExpression of loc * xra_expression * xra_expression
+    | GtConditionalExpression of loc * xra_expression * xra_expression
+    | LtOrEqConditionalExpression of loc * xra_expression * xra_expression
+    | GtOrEqConditionalExpression of loc * xra_expression * xra_expression
+    | IfElseStatement of loc * xra_expression * xra_expression * xra_expression
+    | ThenStatement of loc * xra_expression * xra_expression
+    | LoopStatement of loc * xra_expression * xra_expression * xra_expression
 
-  type let_expression = loc * id * jsx
-  type route = string
+  type let_expression = loc * id * xra_expression
+  type body = let_expression list option * xra_expression list
+end
+
+module Component = struct
   type args = (string * string) list option
-  type body = let_expression list option * jsx list
+end
+
+module Page = struct
+  type route = string
 end
 
 type declaration_type = ModelType | QueryType | ComponentType | PageType
@@ -88,17 +95,12 @@ type query_declaration =
   * Query.typ
   * Query.arg list
   * Query.model list
-  * Query.permission list option
+  * permission list option
 
-type component_declaration = loc * id * Component.args * Component.body
+type component_declaration = loc * id * Component.args * XRA.body
 
 type page_declaration =
-  loc
-  * id
-  * Component.args
-  * Component.route
-  * Component.permission list option
-  * Component.body
+  loc * id * Page.route * permission list option * XRA.body
 
 (* The different types of declarations in the language *)
 type declaration =

@@ -50,16 +50,19 @@ page Home {
 	render(
 		<div>
 			{
-				if tasks then
-					for task in tasks =>
-						<TaskComponent task={ task } />
-				else
-					<div>{ "There are no tasks available" }</div>
+				if tasks.error then
+					<div>{ "An error occured" }</div>
 			}
-
-			<form onSubmit={ createTask() }>
-
-			</form>
+			{
+				if tasks.isLoading then
+					<div>{ "Loading..." }</div>
+				else
+					if tasks.data.length == 0 then
+						<div>{ "There are no tasks available" }</div>
+					else
+						for task in tasks.data =>
+							<TaskComponent task={ task } />
+			}
 		</div>
 	)
 }

@@ -14,7 +14,7 @@
      id : string;
      args : string option;
      let_expressions : let_specs list option;
-     jsx : string;
+     xra : string;
    }
 
    type page_specs = {
@@ -22,7 +22,7 @@
      args : string option;
      route : string;
      let_expressions : let_specs list option;
-     jsx : string;
+     xra : string;
    }
 
    type ui_specs = { pages : page_specs list; components : component_specs list }
@@ -52,10 +52,10 @@
        | Some args -> Some (String.concat ~sep:", " args)
        | None -> None
      in
-     let lets, jsx = body in
+     let lets, xra = body in
      let let_expressions = generate_let_specs lets in
-     let jsx = match jsx with Some jsx -> jsx | None -> "" in
-     { id; args; let_expressions; jsx }
+     let xra = match xra with Some xra -> xra | None -> "" in
+     { id; args; let_expressions; xra }
 
    let generate_page_specs (page : page_declaration) : page_specs =
      let _, id, args, route, body = page in
@@ -64,10 +64,10 @@
        | Some args -> Some (String.concat ~sep:", " args)
        | None -> None
      in
-     let lets, jsx = body in
+     let lets, xra = body in
      let let_expressions = generate_let_specs lets in
-     let jsx = match jsx with Some jsx -> jsx | None -> "" in
-     { id; args; route; let_expressions; jsx }
+     let xra = match xra with Some xra -> xra | None -> "" in
+     { id; args; route; let_expressions; xra }
 
    let generate_ui_specs (pages : page_declaration list)
        (components : component_declaration list) : ui_specs =
