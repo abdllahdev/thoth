@@ -54,13 +54,14 @@ end
 module Component = struct
   type permission = loc * id
   type query_application = loc * id * id list
-  type lex_expression = loc * id * query_application
+  type let_expression = loc * id * query_application
 
   type jsx =
     | JSXElement of loc * id * jsx list option * jsx list option
     | JSXAttribute of loc * id * jsx
     | JSXLiteral of loc * literal
-    | JSXVariableExpression of loc * string
+    | JSXVariableExpression of loc * id
+    | JSXQueryApplication of loc * id * id list
     | JSXDotExpression of loc * string * jsx
     | JSXNotConditionalExpression of loc * jsx
     | JSXEqConditionalExpression of loc * jsx * jsx
@@ -74,11 +75,11 @@ module Component = struct
     | JSXLoopStatement of loc * jsx * jsx * jsx
 
   type route = string
-  type args = string list option
-  type body = lex_expression list option * jsx list
+  type args = (string * string) list option
+  type body = let_expression list option * jsx list
 end
 
-type declaration_type = ModelType | QueryType | ComponentType
+type declaration_type = ModelType | QueryType | ComponentType | PageType
 type model_declaration = loc * id * Model.body
 
 type query_declaration =

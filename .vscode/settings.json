@@ -23,6 +23,15 @@
   "cSpell.enableFiletypes": [
     "ocaml.menhir"
   ],
+  "cSpell.enabledLanguageIds": [
+    "javascript",
+    "javascriptreact",
+    "markdown",
+    "typescript",
+    "typescriptreact",
+    "json",
+    "ocaml"
+],
   "files.associations": {
     "*.prisma": "jinja",
     "*.js": "jinja",

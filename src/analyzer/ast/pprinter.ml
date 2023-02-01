@@ -94,6 +94,7 @@ let string_of_declaration_type (declaration_type : declaration_type) =
   | ModelType -> "Model"
   | QueryType -> "Query"
   | ComponentType -> "Component"
+  | PageType -> "Page"
 
 let string_of_declaration (declaration : declaration) : string =
   match declaration with

@@ -32,7 +32,7 @@ query<update> updateTaskById(where: id, data: { title, isDone })
 @permission(isAuth, owns)
 query<delete> deleteTaskById(where: id)
 
-component TaskView(task) {
+component TaskComponent(task: Task) {
 	render(
 		<div className="text-blue-500 pb-2 divide-black">
 			<div></div>
@@ -50,12 +50,14 @@ page Home {
 			{
 				if tasks then
 					for task in tasks =>
-						<div>
-							<div>{ "task dsalkkkfasd fjadsklfjads" }</div>
-						</div>
+						<TaskComponent task={ task } />
 				else
-					<div>{ "There are no tasks" }</div>
+					<div>{ "There are no tasks available" }</div>
 			}
+
+			<form onSubmit={ createTask() }>
+
+			</form>
 		</div>
 	)
 }

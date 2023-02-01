@@ -9,7 +9,6 @@
 %token <string> ATTRIBUTE
 %token          TRUE
 %token          FALSE
-%token          AND
 %token          ARROW
 %token          NOT
 %token          EQ
@@ -180,6 +179,8 @@ jsx_expression:
     { Component.JSXLiteral($startpos, BooleanLiteral(Boolean, false)) }
   | var = ID
     { Component.JSXVariableExpression($startpos, var) }
+  | query_application =  query_application
+    { let (loc, id, args) = query_application in Component.JSXQueryApplication(loc, id, args) }
   | jsx_element = jsx_element
     { jsx_element }
   | left_expression = jsx_expression; EQ; right_expression = jsx_expression
@@ -226,8 +227,12 @@ component_body:
     { (let_expressions, render) }
   ;
 
+component_arg:
+  | arg = ID; COLON; typ = ID
+    { (arg, typ) }
+
 component_args:
-  | LEFT_PARAN; args = separated_list(COMMA, ID); RIGHT_PARAN
+  | LEFT_PARAN; args = separated_list(COMMA, component_arg); RIGHT_PARAN
     { args }
   ;
 
