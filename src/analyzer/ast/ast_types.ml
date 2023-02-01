@@ -55,7 +55,6 @@ module Component = struct
   type permission = loc * id
   type query_application = loc * id * id list
   type variable_expression = Variable of id | Dot of id * variable_expression
-  type let_expression = loc * id * query_application
 
   type jsx =
     | JSXElement of loc * id * jsx list option * jsx list option
@@ -74,6 +73,7 @@ module Component = struct
     | JSXThenStatement of loc * jsx * jsx
     | JSXLoopStatement of loc * jsx * jsx * jsx
 
+  type let_expression = loc * id * jsx
   type route = string
   type args = (string * string) list option
   type body = let_expression list option * jsx list

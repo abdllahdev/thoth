@@ -135,8 +135,8 @@ variable_expression:
   ;
 
 let_expression:
-  | LET; id = ID; EQUAL; query_application = query_application;
-    { ($startpos, (parse_id $startpos id), query_application) }
+  | LET; id = ID; EQUAL; jsx_expression = jsx_expression;
+    { ($startpos, (parse_id $startpos id), jsx_expression) }
   ;
 
 jsx_attribute:
