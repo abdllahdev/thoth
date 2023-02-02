@@ -18,9 +18,10 @@
     "cnum",
     "concat",
     "Hashtbl",
-    "xra",
+    "lexbuf",
     "lnum",
-    "Pprinter"
+    "Pprinter",
+    "xra"
   ],
   "cSpell.enableFiletypes": [
     "ocaml.menhir"

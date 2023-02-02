@@ -18,11 +18,11 @@ type db_specs = { models : model_specs list }
 
 let generate_attr_arg_specs (arg : Model.attr_arg) : string =
   match arg with
-  | AttrArgString (_, str) -> Fmt.str "'%s'" (string_of_literal str)
-  | AttrArgRef (_, id) -> Fmt.str "[%s]" id
-  | AttrArgBoolean (_, boolean) -> string_of_literal boolean
-  | AttrArgInt (_, number) -> string_of_literal number
-  | AttrArgNow _ -> Fmt.str "now()"
+  | Model.AttrArgString (_, str) -> Fmt.str "'%s'" (string_of_literal str)
+  | Model.AttrArgRef (_, id) -> Fmt.str "[%s]" id
+  | Model.AttrArgBoolean (_, boolean) -> string_of_literal boolean
+  | Model.AttrArgInt (_, number) -> string_of_literal number
+  | Model.AttrArgNow _ -> Fmt.str "now()"
 
 let generate_attr_specs (Model.Attribute (_, id, args)) : string =
   if List.length args > 0 then

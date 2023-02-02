@@ -107,7 +107,7 @@ let generate_controller_specs (queries : query_declaration list) :
 
 let generate_routes_specs (queries : query_declaration list) : route_specs =
   let name = get_model_name queries in
-  let get_controller_function lst (query : query_declaration) =
+  let get_controller_function lst query =
     let _, id, typ, args, _, _ = query in
     let typ = QueryPrinter.string_of_query_type typ in
 

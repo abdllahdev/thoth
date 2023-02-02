@@ -4,8 +4,7 @@ open Ast.Ast_types
 open Environment
 open Error_handler.Handler
 
-let rec check_models (global_env : 'a GlobalEnv.t) (id : id)
-    (models : Query.model list) : unit =
+let rec check_models global_env id models =
   match models with
   | [] -> ()
   | model :: models ->
@@ -23,19 +22,16 @@ let rec check_models (global_env : 'a GlobalEnv.t) (id : id)
               id);
       check_models global_env id models
 
-let check_where_arg (global_env : 'a GlobalEnv.t) (loc : loc) (id : id)
-    (model : Query.model) (field : string) : unit =
+let check_where_arg global_env loc id model field =
   let _, model_id = model in
-  let model_table =
-    GlobalEnv.get_table global_env ~key:model_id |> Option.value_exn
+  let model_env =
+    GlobalEnv.get_value global_env ~key:model_id |> Option.value_exn
   in
-  if not (LocalEnv.contains model_table ~key:field) then
+  if not (LocalEnv.contains model_env ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field;
-  let field_info : ModelEnv.field_info =
-    LocalEnv.lookup model_table ~key:field
-  in
+  let field_info : ModelEnv.field_info = LocalEnv.lookup model_env ~key:field in
   let field_attrs_table = field_info.field_attrs_table in
-  if not (LocalEnv.contains model_table ~key:field) then
+  if not (LocalEnv.contains model_env ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field
   else if
     not
@@ -46,34 +42,31 @@ let check_where_arg (global_env : 'a GlobalEnv.t) (loc : loc) (id : id)
       (Pprinter.string_of_loc loc)
       "UniqueField" field "NonUniqueField" id
 
-let check_filter_arg (global_env : 'a GlobalEnv.t) (loc : loc)
-    (model : Query.model) (fields : string list) : unit =
+let check_filter_arg global_env loc model fields =
   let _, model_id = model in
-  let model_table =
-    GlobalEnv.get_table global_env ~key:model_id |> Option.value_exn
+  let model_env =
+    GlobalEnv.get_value global_env ~key:model_id |> Option.value_exn
   in
   ignore
     (List.map
        ~f:(fun field ->
-         if not (LocalEnv.contains model_table ~key:field) then
+         if not (LocalEnv.contains model_env ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 
-let check_data_arg (global_env : 'a GlobalEnv.t) (loc : loc)
-    (model : Query.model) (fields : string list) : unit =
+let check_data_arg global_env loc model fields =
   let _, model_id = model in
-  let model_table =
-    GlobalEnv.get_table global_env ~key:model_id |> Option.value_exn
+  let model_env =
+    GlobalEnv.get_value global_env ~key:model_id |> Option.value_exn
   in
   ignore
     (List.map
        ~f:(fun field ->
-         if not (LocalEnv.contains model_table ~key:field) then
+         if not (LocalEnv.contains model_env ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 
-let check_args (global_env : 'a GlobalEnv.t) (loc : loc) (typ : Query.typ)
-    (id : id) (model : Query.model) (args : Query.arg list) : unit =
+let check_args global_env loc typ id model args : unit =
   match typ with
   | Query.FindMany -> (
       let arg = List.hd_exn args in
@@ -146,8 +139,7 @@ let check_args (global_env : 'a GlobalEnv.t) (loc : loc) (typ : Query.typ)
       | Query.Where (loc, field) ->
           check_where_arg global_env loc id model field)
 
-let check_query (global_env : 'a GlobalEnv.t) (query : query_declaration) : unit
-    =
+let check_query global_env query =
   let loc, id, typ, args, models, _ = query in
   check_models global_env id models;
   check_args global_env loc typ id (List.hd_exn models) args
