@@ -2,7 +2,7 @@ open Core
 open Ast
 open Ast.Ast_types
 open Error_handler.Handler
-open Symbol_table
+open Environment
 
 let get_custom_scalar_type (scalar_type : scalar_type) : string option =
   match scalar_type with CustomType str -> Some str | _ -> None
@@ -25,8 +25,7 @@ let get_scalar_type (typ : typ) : scalar_type =
       | Optional scalar_type -> scalar_type
       | OptionalList scalar_type -> scalar_type)
 
-let check_field_attr (global_table : 'a GlobalSymbolTable.t)
-    (model_table : GlobalSymbolTable.declaration_info LocalSymbolTable.t)
+let check_field_attr (global_env : 'a GlobalEnv.t) (model_table : 'a LocalEnv.t)
     (field_id : id) (Model.Attribute (loc, id, args)) : unit =
   let args_length = List.length args in
   match id with
@@ -42,9 +41,8 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
           1 args_length id
       else
         let arg = List.hd_exn args in
-        let field_info : field_info =
-          LocalSymbolTable.lookup model_table ~key:field_id
-          |> SymbolTableManager.get_model_info
+        let field_info : ModelEnv.field_info =
+          LocalEnv.lookup model_table ~key:field_id
         in
         let field_type = get_scalar_type field_info.typ in
         match arg with
@@ -96,7 +94,7 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
       (let relation_field = List.nth_exn args 0 in
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
-           if not (LocalSymbolTable.contains model_table ~key:field) then
+           if not (LocalEnv.contains model_table ~key:field) then
              raise_name_error (Pprinter.string_of_loc loc) "field" field
        | Model.AttrArgString (loc, str) ->
            raise_type_error
@@ -124,27 +122,25 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
       match relation_ref with
       | Model.AttrArgRef (loc, ref) ->
           let other_model_id =
-            (LocalSymbolTable.lookup model_table ~key:field_id
-            |> SymbolTableManager.get_model_info)
-              .typ |> get_custom_type |> Option.value_exn
+            (LocalEnv.lookup model_table ~key:field_id).typ |> get_custom_type
+            |> Option.value_exn
           in
 
           let other_model_table =
-            GlobalSymbolTable.get_table global_table ~key:other_model_id
+            GlobalEnv.get_table global_env ~key:other_model_id
+            |> Option.value_exn
           in
 
-          if not (LocalSymbolTable.contains other_model_table ~key:ref) then
+          if not (LocalEnv.contains other_model_table ~key:ref) then
             raise_name_error (Pprinter.string_of_loc loc) "field" ref;
 
           let field_attrs =
-            (LocalSymbolTable.lookup other_model_table ~key:ref
-            |> SymbolTableManager.get_model_info)
-              .field_attrs_table
+            (LocalEnv.lookup other_model_table ~key:ref).field_attrs_table
           in
 
           if
-            (not (LocalSymbolTable.contains field_attrs ~key:"@unique"))
-            && not (LocalSymbolTable.contains field_attrs ~key:"@id")
+            (not (LocalEnv.contains field_attrs ~key:"@unique"))
+            && not (LocalEnv.contains field_attrs ~key:"@id")
           then
             raise_type_error
               (Pprinter.string_of_loc loc)
@@ -173,45 +169,38 @@ let check_field_attr (global_table : 'a GlobalSymbolTable.t)
             "Int" id)
   | _ -> raise_name_error (Pprinter.string_of_loc loc) "attribute" id
 
-let rec check_field_attrs (global_table : 'a GlobalSymbolTable.t)
-    (model_table : GlobalSymbolTable.declaration_info LocalSymbolTable.t)
-    (field_id : id) (field_attrs : Model.attribute list) : unit =
+let rec check_field_attrs (global_env : 'a GlobalEnv.t)
+    (model_table : 'a LocalEnv.t) (field_id : id)
+    (field_attrs : Model.attribute list) : unit =
   match field_attrs with
   | [] -> ()
   | field_attr :: field_attrs ->
-      check_field_attr global_table model_table field_id field_attr;
-      check_field_attrs global_table model_table field_id field_attrs
+      check_field_attr global_env model_table field_id field_attr;
+      check_field_attrs global_env model_table field_id field_attrs
 
-let check_field_type (global_table : 'a GlobalSymbolTable.t) (model_id : id)
+let check_field_type (global_env : 'a GlobalEnv.t) (model_id : id)
     (field_id : id) (field_type : typ) (loc : loc) : unit =
   let custom_type = get_custom_type field_type in
   match custom_type with
   | Some custom_type ->
-      if not (GlobalSymbolTable.contains global_table ~key:custom_type) then
+      if not (GlobalEnv.contains global_env ~key:custom_type) then
         raise_name_error (Pprinter.string_of_loc loc) "type" custom_type;
 
-      if
-        not
-          (GlobalSymbolTable.check_type global_table ~key:custom_type ModelType)
-      then
+      if not (GlobalEnv.check_type global_env ~key:custom_type ModelType) then
         raise_type_error
           (Pprinter.string_of_loc loc)
           "Model" custom_type
           (Pprinter.string_of_declaration_type
-             (GlobalSymbolTable.get_declaration_type global_table
-                ~key:custom_type))
+             (GlobalEnv.get_declaration_type global_env ~key:custom_type))
           field_id;
 
       let other_model =
-        GlobalSymbolTable.get_table global_table ~key:custom_type
+        GlobalEnv.get_table global_env ~key:custom_type |> Option.value_exn
       in
       let all_custom_types =
         Hashtbl.fold ~init:[]
-          ~f:
-            (fun ~key:_ ~(data : GlobalSymbolTable.declaration_info)
-                 (acc : string list) ->
-            let field_info = SymbolTableManager.get_model_info data in
-            let scalar_type = get_scalar_type field_info.typ in
+          ~f:(fun ~key:_ ~(data : ModelEnv.field_info) (acc : string list) ->
+            let scalar_type = get_scalar_type data.typ in
             match scalar_type with CustomType str -> acc @ [ str ] | _ -> acc)
           other_model
       in
@@ -221,24 +210,21 @@ let check_field_type (global_table : 'a GlobalSymbolTable.t) (model_id : id)
           field_id model_id custom_type
   | None -> ()
 
-let check_field (global_table : 'a GlobalSymbolTable.t)
-    (model_table : GlobalSymbolTable.declaration_info LocalSymbolTable.t)
+let check_field (global_env : 'a GlobalEnv.t) (model_table : 'a LocalEnv.t)
     (model_id : id) (field : Model.field) : unit =
   match field with
   | Field (loc, id, field_type, field_attrs) ->
-      check_field_type global_table model_id id field_type loc;
-      check_field_attrs global_table model_table id field_attrs
+      check_field_type global_env model_id id field_type loc;
+      check_field_attrs global_env model_table id field_attrs
 
-let rec check_fields (global_table : 'a GlobalSymbolTable.t)
-    (model_table : GlobalSymbolTable.declaration_info LocalSymbolTable.t)
+let rec check_fields (global_env : 'a GlobalEnv.t) (model_table : 'a LocalEnv.t)
     (model_id : id) (fields : Model.field list) : unit =
   match fields with
   | [] -> ()
   | field :: fields ->
-      check_field global_table model_table model_id field;
-      check_fields global_table model_table model_id fields
+      check_field global_env model_table model_id field;
+      check_fields global_env model_table model_id fields
 
-let check_model (global_table : 'a GlobalSymbolTable.t)
-    (model_table : GlobalSymbolTable.declaration_info LocalSymbolTable.t)
+let check_model (global_env : 'a GlobalEnv.t) (model_table : 'a LocalEnv.t)
     (model_id : id) (fields : Model.field list) : unit =
-  check_fields global_table model_table model_id fields
+  check_fields global_env model_table model_id fields
