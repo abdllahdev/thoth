@@ -10,7 +10,7 @@ let get_component_declaration = function
 
 let get_page_declaration = function Page page -> Some page | _ -> None
 
-let get_filtered_ast (declarations : declaration list) : filtered_ast =
+let get_filtered_ast declarations =
   let model_declarations =
     List.filter_map ~f:get_model_declaration declarations
   in

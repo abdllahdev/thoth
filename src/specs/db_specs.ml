@@ -16,7 +16,7 @@ type db_config = {
 (* TODO: add db config *)
 type db_specs = { models : model_specs list }
 
-let generate_attr_arg_specs (arg : Model.attr_arg) : string =
+let generate_attr_arg_specs arg =
   match arg with
   | Model.AttrArgString (_, str) -> Fmt.str "'%s'" (string_of_literal str)
   | Model.AttrArgRef (_, id) -> Fmt.str "[%s]" id
@@ -24,7 +24,7 @@ let generate_attr_arg_specs (arg : Model.attr_arg) : string =
   | Model.AttrArgInt (_, number) -> string_of_literal number
   | Model.AttrArgNow _ -> Fmt.str "now()"
 
-let generate_attr_specs (Model.Attribute (_, id, args)) : string =
+let generate_attr_specs (Model.Attribute (_, id, args)) =
   if List.length args > 0 then
     match id with
     | "@relation" ->
@@ -45,25 +45,24 @@ let generate_attr_specs (Model.Attribute (_, id, args)) : string =
     | "@id" -> Fmt.str "%s @default(autoincrement())" id
     | _ -> Fmt.str "%s" id
 
-let generate_attrs_specs (field_attrs : Model.attribute list) : string =
+let generate_attrs_specs field_attrs =
   String.concat ~sep:" " (List.map ~f:generate_attr_specs field_attrs)
 
-let generate_field_type_specs (field_type : typ) : string =
+let generate_field_type_specs field_type =
   match field_type with
   | Scalar scalar_type -> string_of_scalar_type scalar_type
   | Composite composite_type -> string_of_composite_type composite_type
 
-let generate_field_specs (Model.Field (_, id, field_type, field_attrs)) :
-    field_specs =
+let generate_field_specs (Model.Field (_, id, field_type, field_attrs)) =
   let field_type = generate_field_type_specs field_type in
   let field_attrs = generate_attrs_specs field_attrs in
   { id; field_type; field_attrs }
 
-let generate_model_specs (model : model_declaration) : model_specs =
+let generate_model_specs model =
   let _, id, body = model in
   let body = List.map ~f:generate_field_specs body in
   { id; body }
 
-let generate_db_specs (models : model_declaration list) : db_specs =
+let generate_db_specs models =
   let models = List.map ~f:generate_model_specs models in
   { models }

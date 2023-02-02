@@ -31,8 +31,7 @@ type server_specs = {
   routes : route_specs list;
 }
 
-let group_queries (queries : query_declaration list) :
-    query_declaration list list =
+let group_queries queries =
   let groups_builder groups query =
     let _, _, _, _, models, _ = query in
     let model = List.hd_exn models in
@@ -49,13 +48,13 @@ let group_queries (queries : query_declaration list) :
   let groups = Hashtbl.create (module String) in
   List.fold_left ~f:groups_builder ~init:groups queries |> Hashtbl.data
 
-let get_model_name (queries : query_declaration list) : string =
+let get_model_name queries =
   let _, _, _, _, models, _ = List.hd_exn queries in
   let model = List.hd_exn models in
   let _, name = model in
   String.lowercase name
 
-let generate_service_specs (queries : query_declaration list) : service_specs =
+let generate_service_specs queries =
   let name = get_model_name queries in
   let get_service_function lst query =
     let _, id, typ, _, _, _ = query in
@@ -68,10 +67,9 @@ let generate_service_specs (queries : query_declaration list) : service_specs =
   in
   { name; service_functions }
 
-let generate_controller_specs (queries : query_declaration list) :
-    controller_specs =
+let generate_controller_specs queries =
   let name = get_model_name queries in
-  let get_controller_function lst (query : query_declaration) =
+  let get_controller_function lst query =
     let _, id, typ, args, _, _ = query in
     let typ = QueryPrinter.string_of_query_type typ in
 
@@ -105,7 +103,7 @@ let generate_controller_specs (queries : query_declaration list) :
   in
   { name; controller_functions }
 
-let generate_routes_specs (queries : query_declaration list) : route_specs =
+let generate_routes_specs queries =
   let name = get_model_name queries in
   let get_controller_function lst query =
     let _, id, typ, args, _, _ = query in
@@ -125,7 +123,7 @@ let generate_routes_specs (queries : query_declaration list) : route_specs =
   let list = List.fold_left ~init:[] ~f:get_controller_function queries in
   { name; list }
 
-let generate_server_specs (queries : query_declaration list) : server_specs =
+let generate_server_specs queries =
   let groups = group_queries queries in
   let services =
     List.map ~f:(fun group -> generate_service_specs group) groups

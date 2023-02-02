@@ -7,7 +7,7 @@ open File_generator
 let string_of_option = function Some str -> str | None -> ""
 let list_of_option = function Some lst -> lst | None -> []
 
-let generate_service (service_specs : service_specs) : unit =
+let generate_service service_specs =
   let { name; service_functions } = service_specs in
   let service_template =
     getcwd () ^ "/templates/server/src/services/template.js"
@@ -38,7 +38,7 @@ let generate_service (service_specs : service_specs) : unit =
   in
   write_file service_file service_code
 
-let generate_services (services : service_specs list) : unit =
+let generate_services services =
   ignore (List.map ~f:generate_service services);
   let names =
     List.map ~f:(fun element -> Jg_types.Tstr element.name) services
@@ -53,8 +53,8 @@ let generate_services (services : service_specs list) : unit =
   let services_index_file = getcwd () ^ "/.out/server/src/services/index.js" in
   write_file services_index_file services_index_code
 
-let generate_controller (controller_sepcs : controller_specs) : unit =
-  let { name; controller_functions } = controller_sepcs in
+let generate_controller controller_specs =
+  let { name; controller_functions } = controller_specs in
   let controller_template =
     getcwd () ^ "/templates/server/src/controllers/template.js"
   in
@@ -99,7 +99,7 @@ let generate_controller (controller_sepcs : controller_specs) : unit =
   in
   write_file controller_file controller_code
 
-let generate_controllers (controllers : controller_specs list) : unit =
+let generate_controllers controllers =
   ignore (List.map ~f:generate_controller controllers);
   let names =
     List.map ~f:(fun element -> Jg_types.Tstr element.name) controllers
@@ -116,7 +116,7 @@ let generate_controllers (controllers : controller_specs list) : unit =
   in
   write_file controller_index_file controllers_index_code
 
-let generate_route (route_specs : route_specs) : unit =
+let generate_route route_specs =
   let { name; list } = route_specs in
   let route_template = getcwd () ^ "/templates/server/src/routes/template.js" in
   let route_code =
@@ -147,7 +147,7 @@ let generate_route (route_specs : route_specs) : unit =
   in
   write_file route_file route_code
 
-let generate_routes (routes : route_specs list) : unit =
+let generate_routes routes =
   ignore (List.map ~f:generate_route routes);
   let names = List.map ~f:(fun element -> Jg_types.Tstr element.name) routes in
   let routes_index_file = getcwd () ^ "/templates/server/src/routes/index.js" in
@@ -165,7 +165,7 @@ let setup_server_folder =
   delete_files "/server/src/controllers/template.js";
   delete_files "/server/src/routes/template.js"
 
-let generate_server (server_specs : server_specs) : unit =
+let generate_server server_specs =
   setup_server_folder;
   let { services; controllers; routes } = server_specs in
   generate_services services;
