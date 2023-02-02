@@ -27,16 +27,17 @@ let rec check_models global_env id models =
 
 let check_where_arg global_env loc id model field =
   let _, model_id = model in
-  let model_env =
-    GlobalEnvironment.get_value global_env ~key:model_id |> Option.value_exn
+  let model_value =
+    GlobalEnvironment.get_value global_env ~key:model_id
+    |> GlobalEnvironment.get_model_value
   in
-  if not (LocalEnvironment.contains model_env ~key:field) then
+  if not (LocalEnvironment.contains model_value ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field;
-  let field_info : ModelEnvironment.field_info =
-    LocalEnvironment.lookup model_env ~key:field
+  let field_info : GlobalEnvironment.field_value =
+    LocalEnvironment.lookup model_value ~key:field
   in
   let field_attrs_table = field_info.field_attrs_table in
-  if not (LocalEnvironment.contains model_env ~key:field) then
+  if not (LocalEnvironment.contains model_value ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field
   else if
     not
@@ -49,25 +50,27 @@ let check_where_arg global_env loc id model field =
 
 let check_filter_arg global_env loc model fields =
   let _, model_id = model in
-  let model_env =
-    GlobalEnvironment.get_value global_env ~key:model_id |> Option.value_exn
+  let model_value =
+    GlobalEnvironment.get_value global_env ~key:model_id
+    |> GlobalEnvironment.get_model_value
   in
   ignore
     (List.map
        ~f:(fun field ->
-         if not (LocalEnvironment.contains model_env ~key:field) then
+         if not (LocalEnvironment.contains model_value ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 
 let check_data_arg global_env loc model fields =
   let _, model_id = model in
-  let model_env =
-    GlobalEnvironment.get_value global_env ~key:model_id |> Option.value_exn
+  let model_value =
+    GlobalEnvironment.get_value global_env ~key:model_id
+    |> GlobalEnvironment.get_model_value
   in
   ignore
     (List.map
        ~f:(fun field ->
-         if not (LocalEnvironment.contains model_env ~key:field) then
+         if not (LocalEnvironment.contains model_value ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 

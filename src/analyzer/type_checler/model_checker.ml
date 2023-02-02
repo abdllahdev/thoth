@@ -41,7 +41,7 @@ let check_field_attr global_env model_env field_id
           1 args_length id
       else
         let arg = List.hd_exn args in
-        let field_info : ModelEnvironment.field_info =
+        let field_info : GlobalEnvironment.field_value =
           LocalEnvironment.lookup model_env ~key:field_id
         in
         let field_type = get_scalar_type field_info.typ in
@@ -126,10 +126,9 @@ let check_field_attr global_env model_env field_id
             |> get_custom_type |> Option.value_exn
           in
 
-          let other_model_table : ModelEnvironment.field_info LocalEnvironment.t
-              =
+          let other_model_table =
             GlobalEnvironment.get_value global_env ~key:other_model_id
-            |> Option.value_exn
+            |> GlobalEnvironment.get_model_value
           in
 
           if not (LocalEnvironment.contains other_model_table ~key:ref) then
@@ -197,12 +196,12 @@ let check_field_type global_env model_id field_id field_type loc : unit =
 
       let other_model =
         GlobalEnvironment.get_value global_env ~key:custom_type
-        |> Option.value_exn
+        |> GlobalEnvironment.get_model_value
       in
       let all_custom_types =
         Hashtbl.fold ~init:[]
           ~f:
-            (fun ~key:_ ~(data : ModelEnvironment.field_info)
+            (fun ~key:_ ~(data : GlobalEnvironment.field_value)
                  (acc : string list) ->
             let scalar_type = get_scalar_type data.typ in
             match scalar_type with CustomType str -> acc @ [ str ] | _ -> acc)

@@ -17,6 +17,8 @@
   "cSpell.words": [
     "cnum",
     "concat",
+    "curr",
+    "getcwd",
     "Hashtbl",
     "lexbuf",
     "lnum",
