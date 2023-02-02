@@ -32,30 +32,28 @@ module GlobalEnvironment = struct
   type declaration_value =
     | ModelValue of model_value
     | QueryValue of query_value
+    | ComponentValue
+    | PageValue
 
-  type value = {
-    declaration_type : declaration_type;
-    declaration_value : declaration_value;
-  }
-
-  type t = (string, value) Hashtbl.t
+  type t = (string, declaration_value) Hashtbl.t
 
   let create () = Hashtbl.create ~size:17 (module String)
 
   let allocate table ~key:symbol ~data:value =
     Hashtbl.add_exn table ~key:symbol ~data:value
 
-  let get_value table ~key:symbol =
-    (Hashtbl.find_exn table symbol).declaration_value
-
-  let get_declaration_type table ~key:symbol =
-    (Hashtbl.find_exn table symbol).declaration_type
-
+  let lookup table ~key:symbol = Hashtbl.find_exn table symbol
   let contains table ~key:symbol = Hashtbl.mem table symbol
 
-  let check_type table ~key:symbol declaration_type =
-    if phys_equal (get_declaration_type table ~key:symbol) declaration_type then
-      true
+  let infer_type declaration_value =
+    match declaration_value with
+    | ModelValue _ -> ModelType
+    | QueryValue _ -> QueryType
+    | ComponentValue -> ComponentType
+    | PageValue -> PageType
+
+  let check_type declaration_value declaration_type =
+    if phys_equal (infer_type declaration_value) declaration_type then true
     else false
 
   let get_model_value declaration_value =
@@ -105,10 +103,8 @@ module ModelEnvironment = struct
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
     let table = LocalEnvironment.create () in
     allocate_fields table body;
-    let declaration_type = ModelType in
     let declaration_value = GlobalEnvironment.ModelValue table in
-    GlobalEnvironment.allocate global_env ~key:id
-      ~data:{ declaration_type; declaration_value }
+    GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 end
 
 module QueryEnvironment = struct
@@ -116,12 +112,10 @@ module QueryEnvironment = struct
     let loc, id, typ, args, models, _ = query in
     if GlobalEnvironment.contains global_env ~key:id then
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
-    let declaration_type = QueryType in
     let declaration_value =
       GlobalEnvironment.QueryValue { typ; args; models }
     in
-    GlobalEnvironment.allocate global_env ~key:id
-      ~data:{ declaration_type; declaration_value }
+    GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 end
 
 module XRAEnvironment = struct
@@ -143,13 +137,18 @@ module XRAEnvironment = struct
 end
 
 module EnvironmentManager = struct
+  let allocate (global_env : GlobalEnvironment.t) loc id declaration_value =
+    if GlobalEnvironment.contains global_env ~key:id then
+      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+    GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
+
   let populate global_env (Ast declarations) =
     let populate_declaration global_env declaration =
       match declaration with
       | Model model -> ModelEnvironment.allocate global_env model
       | Query query -> QueryEnvironment.allocate global_env query
-      | Component (_, _, _, _) -> ()
-      | Page (_, _, _, _, _) -> ()
+      | Component (loc, id, _, _) -> allocate global_env loc id ComponentValue
+      | Page (loc, id, _, _, _) -> allocate global_env loc id PageValue
     in
     List.iter
       ~f:(fun declaration -> populate_declaration global_env declaration)

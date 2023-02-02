@@ -11,24 +11,23 @@ let rec check_models global_env id models =
       (match model with
       | loc, model_id ->
           if not (GlobalEnvironment.contains global_env ~key:model_id) then
-            raise_name_error (Pprinter.string_of_loc loc) "model" model_id
-          else if
-            not
-              (GlobalEnvironment.check_type global_env ~key:model_id ModelType)
-          then
+            raise_name_error (Pprinter.string_of_loc loc) "model" model_id;
+          let declaration_value =
+            GlobalEnvironment.lookup global_env ~key:model_id
+          in
+          if not (GlobalEnvironment.check_type declaration_value ModelType) then
             raise_type_error
               (Pprinter.string_of_loc loc)
               "Model" model_id
               (Pprinter.string_of_declaration_type
-                 (GlobalEnvironment.get_declaration_type global_env
-                    ~key:model_id))
+                 (GlobalEnvironment.infer_type declaration_value))
               id);
       check_models global_env id models
 
 let check_where_arg global_env loc id model field =
   let _, model_id = model in
   let model_value =
-    GlobalEnvironment.get_value global_env ~key:model_id
+    GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
   if not (LocalEnvironment.contains model_value ~key:field) then
@@ -51,7 +50,7 @@ let check_where_arg global_env loc id model field =
 let check_filter_arg global_env loc model fields =
   let _, model_id = model in
   let model_value =
-    GlobalEnvironment.get_value global_env ~key:model_id
+    GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
   ignore
@@ -64,7 +63,7 @@ let check_filter_arg global_env loc model fields =
 let check_data_arg global_env loc model fields =
   let _, model_id = model in
   let model_value =
-    GlobalEnvironment.get_value global_env ~key:model_id
+    GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
   ignore

@@ -127,7 +127,7 @@ let check_field_attr global_env model_env field_id
           in
 
           let other_model_table =
-            GlobalEnvironment.get_value global_env ~key:other_model_id
+            GlobalEnvironment.lookup global_env ~key:other_model_id
             |> GlobalEnvironment.get_model_value
           in
 
@@ -184,18 +184,19 @@ let check_field_type global_env model_id field_id field_type loc : unit =
       if not (GlobalEnvironment.contains global_env ~key:custom_type) then
         raise_name_error (Pprinter.string_of_loc loc) "type" custom_type;
 
-      if
-        not (GlobalEnvironment.check_type global_env ~key:custom_type ModelType)
-      then
+      let declaration_value =
+        GlobalEnvironment.lookup global_env ~key:custom_type
+      in
+      if not (GlobalEnvironment.check_type declaration_value ModelType) then
         raise_type_error
           (Pprinter.string_of_loc loc)
           "Model" custom_type
           (Pprinter.string_of_declaration_type
-             (GlobalEnvironment.get_declaration_type global_env ~key:custom_type))
+             (GlobalEnvironment.infer_type declaration_value))
           field_id;
 
       let other_model =
-        GlobalEnvironment.get_value global_env ~key:custom_type
+        GlobalEnvironment.lookup global_env ~key:custom_type
         |> GlobalEnvironment.get_model_value
       in
       let all_custom_types =
