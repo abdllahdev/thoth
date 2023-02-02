@@ -6,7 +6,7 @@ open Error_handler.Handler
 module LocalEnv = struct
   type 'a t = (string, 'a) Hashtbl.t
 
-  let create () : 'a t = Hashtbl.create ~size:10 (module String)
+  let create () : 'a t = Hashtbl.create ~size:17 (module String)
 
   let allocate table ~key:symbol ~data:value =
     Hashtbl.add_exn table ~key:symbol ~data:value
@@ -23,7 +23,7 @@ module GlobalEnv = struct
 
   type 'a t = (string, 'a value_record) Hashtbl.t
 
-  let create () = Hashtbl.create ~size:10 (module String)
+  let create () = Hashtbl.create ~size:17 (module String)
 
   let allocate table ~key:symbol ~data:value =
     Hashtbl.add_exn table ~key:symbol ~data:value
@@ -83,7 +83,21 @@ module ModelEnv = struct
 end
 
 module XRAEnv = struct
-  type xra_env = (string, string * string) Hashtbl.t Stack.t
+  type scope = (string, string * string) Hashtbl.t
+  type env = scope list
+
+  let create_scope () = Hashtbl.create ~size:17 (module String)
+  let create_env () = [ create_scope () ]
+
+  let rec lookup env loc symbol =
+    match env with
+    | [] -> raise_name_error (Pprinter.string_of_loc loc) "variable" symbol
+    | scope :: env ->
+        if Hashtbl.mem scope symbol then Hashtbl.find_exn scope symbol
+        else lookup env loc symbol
+
+  let shrink env = match env with [] -> () | _ :: tail -> tail |> ignore
+  let extend env scope = scope :: env |> ignore
 end
 
 module EnvironmentManager = struct

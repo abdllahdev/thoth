@@ -15,10 +15,10 @@ let parse_file (filename : string) =
 
 let () =
   let filename = getcwd () ^ "/examples/test.ra" in
-  print_string (Fmt.str "Parsing %s\n" filename);
+  Fmt.str "Parsing %s\n" filename |> print_string;
   match parse_file filename with
   | Ok ast ->
       Type_checker.run_type_checker ast;
-      let app_specs = Specs.App_specs.generate_app_specs ast in
-      Generator.App_generator.generate_app app_specs
-  | Error error -> print_string (Core.Error.to_string_hum error)
+      Specs.App_specs.generate_app_specs ast
+      |> Generator.App_generator.generate_app
+  | Error error -> Core.Error.to_string_hum error |> print_string

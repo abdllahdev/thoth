@@ -48,7 +48,14 @@ module ModelEnv : sig
 end
 
 module XRAEnv : sig
-  type xra_env = (string, string * string) Base.Hashtbl.t Base.Stack.t
+  type scope = (string, string * string) Base.Hashtbl.t
+  type env = scope list
+
+  val create_scope : unit -> scope
+  val create_env : unit -> env
+  val lookup : env -> Ast.Ast_types.loc -> Ast.Ast_types.id -> string * string
+  val shrink : env -> unit
+  val extend : env -> scope -> unit
 end
 
 module EnvironmentManager : sig
