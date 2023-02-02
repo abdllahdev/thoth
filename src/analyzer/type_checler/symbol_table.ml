@@ -27,18 +27,16 @@ type query_info = {
   typ : Query.typ;
   args : Query.arg list;
   models : Query.model list;
-  permissions : permission list option;
 }
 
-type component_info = { args : string LocalSymbolTable.t }
-type page_info = { route : Page.route; permissions : permission list option }
+type xra_info = Variable of string | ForLoopStatement of string
 
 module GlobalSymbolTable = struct
   type declaration_info =
     | ModelInfo of field_info
     | QueryInfo of query_info
-    | ComponentInfo of component_info
-    | PageInfo of page_info
+    | ComponentInfo of xra_info
+    | PageInfo of xra_info
 
   type value_record = {
     declaration_type : declaration_type;
@@ -116,10 +114,8 @@ end
 module QueryManager = struct
   let allocation_body (local_table : 'a LocalSymbolTable.t) (id : id) info :
       unit =
-    let typ, args, models, permissions = info in
-    let query_body =
-      GlobalSymbolTable.QueryInfo { typ; args; models; permissions }
-    in
+    let typ, args, models, _ = info in
+    let query_body = GlobalSymbolTable.QueryInfo { typ; args; models } in
     LocalSymbolTable.allocate local_table ~key:id ~data:query_body
 
   let allocate_query (global_table : 'a GlobalSymbolTable.t)
@@ -134,7 +130,40 @@ module QueryManager = struct
       ~data:{ declaration_type; table }
 end
 
-module ComponentManager = struct
+module ComponentAndPageManager = struct
+  (* let allocate_xra_expression (local_table : 'a LocalSymbolTable.t)
+         (xra_expression : XRA.xra_expression) : unit =
+       match xra_expression with
+       | Element (_, id, attrs, chlidren) -> ()
+       | Attribute (_, id, value) -> ()
+       | Literal (_, _) -> ()
+       | QueryApplication (_, id, args) -> ()
+       | VariableExpression (_, id) -> ()
+       | DotExpression (_, dot_expression) -> ()
+       | NotConditionalExpression (_, condition) -> ()
+       | EqConditionalExpression (_, right_expression, left_expression) -> ()
+       | NotEqConditionalExpression (_, right_expression, left_expression) -> ()
+       | LtConditionalExpression (_, right_expression, left_expression) -> ()
+       | GtConditionalExpression (_, right_expression, left_expression) -> ()
+       | LtOrEqConditionalExpression (_, right_expression, left_expression) -> ()
+       | GtOrEqConditionalExpression (_, right_expression, left_expression) -> ()
+       | IfElseStatement (_, condition, then_block, else_block) -> ()
+       | IfThenStatement (_, condition, then_block) -> ()
+       | ForLoopStatement (_, element, lst, loop_block) -> ()
+
+     let allocate_let_expressions (local_table : 'a LocalSymbolTable.t)
+         (let_expressions : XRA.let_expression list option) : unit =
+       match let_expressions with
+       | Some let_expressions ->
+           let allocate_let_expression let_expression =
+             let _, id, xra_expression = let_expression in
+             let xra_expression_table = allocate_xra_expression xra_expression in
+             LocalSymbolTable.allocate local_table ~key:id
+               ~data:xra_expression_table
+           in
+           List.map ~f:allocate_let_expression let_expressions
+       | None -> () *)
+
   let allocate_component (global_table : 'a GlobalSymbolTable.t)
       (component : component_declaration) : unit =
     let loc, id, _, _ = component in
@@ -144,16 +173,14 @@ module ComponentManager = struct
     let declaration_type = ComponentType in
     GlobalSymbolTable.allocate global_table ~key:id
       ~data:{ declaration_type; table }
-end
 
-module PageManager = struct
   let allocate_page (global_table : 'a GlobalSymbolTable.t)
       (page : page_declaration) : unit =
     let loc, id, _, _, _ = page in
     if GlobalSymbolTable.contains global_table ~key:id then
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
     let table = LocalSymbolTable.create () in
-    let declaration_type = ComponentType in
+    let declaration_type = PageType in
     GlobalSymbolTable.allocate global_table ~key:id
       ~data:{ declaration_type; table }
 end
@@ -174,16 +201,16 @@ module SymbolTableManager = struct
     |> Option.value_exn
 
   let get_component_info (declaration_info : GlobalSymbolTable.declaration_info)
-      : component_info =
+      : xra_info =
     (match declaration_info with
-    | ComponentInfo component_info -> Some component_info
+    | ComponentInfo xra_info -> Some xra_info
     | _ -> None)
     |> Option.value_exn
 
   let get_page_info (declaration_info : GlobalSymbolTable.declaration_info) :
-      page_info =
+      xra_info =
     (match declaration_info with
-    | PageInfo page_info -> Some page_info
+    | PageInfo xra_info -> Some xra_info
     | _ -> None)
     |> Option.value_exn
 
@@ -194,8 +221,8 @@ module SymbolTableManager = struct
       | Model model -> ModelManager.allocate_model global_table model
       | Query query -> QueryManager.allocate_query global_table query
       | Component component ->
-          ComponentManager.allocate_component global_table component
-      | Page page -> PageManager.allocate_page global_table page
+          ComponentAndPageManager.allocate_component global_table component
+      | Page page -> ComponentAndPageManager.allocate_page global_table page
     in
     List.iter
       ~f:(fun declaration -> populate_declaration global_table declaration)

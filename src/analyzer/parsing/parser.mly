@@ -127,6 +127,17 @@ query_application:
   ;
 
 (* Component rules *)
+literal_expression:
+  | str = STRING
+    { XRA.Literal(StringLiteral(String, str)) }
+  | number = INT
+    { XRA.Literal(IntLiteral(Int, number)) }
+  | TRUE
+    { XRA.Literal(BooleanLiteral(Boolean, true)) }
+  | FALSE
+    { XRA.Literal(BooleanLiteral(Boolean, false)) }
+  ;
+
 variable_expression:
   | id = ID; DOT; dot = variable_expression
     { XRA.Dot(id, dot) }
@@ -134,16 +145,17 @@ variable_expression:
     { XRA.Variable(id) }
   ;
 
-let_expression:
-  | LET; id = ID; EQUAL; xra_expression = xra_expression;
-    { ($startpos, (parse_id $startpos id), xra_expression) }
-  ;
+basic_expression:
+  | literal_expression = literal_expression
+    { literal_expression }
+  | variable_expression = variable_expression
+    { variable_expression }
 
 xra_attribute:
   | id = ID; EQUAL; xra_expression_declaration = xra_expression_declaration
     { XRA.Attribute($startpos, id, xra_expression_declaration) }
   | id = ID; EQUAL; str = STRING;
-    { XRA.Attribute($startpos, id, XRA.Literal($startpos, StringLiteral(String, str))) }
+    { XRA.Attribute($startpos, id, XRA.BasicExpression($startpos, XRA.Literal(StringLiteral(String, str)))) }
   ;
 
 xra_opening_element:
@@ -175,41 +187,38 @@ xra_children:
     { xra_expression_declaration }
   ;
 
+xra_conditional_expression:
+  | left_expression = basic_expression; EQ; right_expression = basic_expression
+    { XRA.EqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = basic_expression; NOT_EQ; right_expression = basic_expression
+    { XRA.NotEqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = basic_expression; LT; right_expression = basic_expression
+    { XRA.LtConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = basic_expression; GT; right_expression = basic_expression
+    { XRA.GtConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = basic_expression; LT_OR_EQ; right_expression = basic_expression
+    { XRA.LtOrEqConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = basic_expression; GT_OR_EQ; right_expression = basic_expression
+    { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
+  | NOT; basic_expression = basic_expression
+    { XRA.NotConditionalExpression($startpos, basic_expression) }
+  | basic_expression = basic_expression
+    { XRA.LiteralConditionalExpression($startpos, basic_expression) }
+  ;
+
 xra_expression:
-  | str = STRING
-    { XRA.Literal($startpos, StringLiteral(String, str)) }
-  | number = INT
-    { XRA.Literal($startpos, IntLiteral(Int, number)) }
-  | TRUE
-    { XRA.Literal($startpos, BooleanLiteral(Boolean, true)) }
-  | FALSE
-    { XRA.Literal($startpos, BooleanLiteral(Boolean, false)) }
-  | variable_expression = variable_expression
-    { XRA.VariableExpression($startpos, variable_expression) }
+  | basic_expression = basic_expression
+    { XRA.BasicExpression($startpos, basic_expression) }
   | query_application =  query_application
     { let (loc, id, args) = query_application in XRA.QueryApplication(loc, id, args) }
   | xra_element = xra_element
     { xra_element }
-  | left_expression = xra_expression; EQ; right_expression = xra_expression
-    { XRA.EqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_expression; NOT_EQ; right_expression = xra_expression
-    { XRA.NotEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_expression; LT; right_expression = xra_expression
-    { XRA.LtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_expression; GT; right_expression = xra_expression
-    { XRA.GtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_expression; LT_OR_EQ; right_expression = xra_expression
-    { XRA.LtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_expression; GT_OR_EQ; right_expression = xra_expression
-    { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | NOT; xra_expression = xra_expression
-    { XRA.NotConditionalExpression($startpos, xra_expression) }
-  | IF; conditional_expression = xra_expression; THEN; then_block = xra_expression; ELSE; else_block = xra_expression;
+  | IF; conditional_expression = xra_conditional_expression; THEN; then_block = xra_expression; ELSE; else_block = xra_expression;
     { XRA.IfElseStatement($startpos, conditional_expression, then_block, else_block) }
-  | IF; conditional_expression = xra_expression THEN; then_block = xra_expression;
-    { XRA.ThenStatement($startpos, conditional_expression, then_block) }
-  | FOR; var = xra_expression; IN; lst = xra_expression; ARROW; output = xra_expression;
-    { XRA.LoopStatement ($startpos, var, lst, output) }
+  | IF; conditional_expression = xra_conditional_expression THEN; then_block = xra_expression;
+    { XRA.IfThenStatement($startpos, conditional_expression, then_block) }
+  | FOR; var = ID; IN; lst = variable_expression; ARROW; output = xra_expression;
+    { XRA.ForLoopStatement ($startpos, var, lst, output) }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
   ;
@@ -219,7 +228,12 @@ xra_expression_declaration:
     { xra_expression }
   ;
 
-render:
+let_expression:
+  | LET; id = ID; EQUAL; xra_expression = xra_expression
+    { XRA.LetExpression($startpos, (parse_id $startpos id), xra_expression) }
+  ;
+
+render_expression:
   | RENDER; LEFT_PARAN; xra = list(xra_element); RIGHT_PARAN
     { xra }
   ;
@@ -230,8 +244,8 @@ page_route:
   ;
 
 component_body:
-  | LEFT_BRACE; let_expressions = option(list(let_expression)); render = render; RIGHT_BRACE
-    { (let_expressions, render) }
+  | LEFT_BRACE; let_expressions = option(list(let_expression)) render_expression = render_expression; RIGHT_BRACE
+    { (let_expressions, render_expression) }
   ;
 
 component_arg:
