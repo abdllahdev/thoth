@@ -3,7 +3,7 @@ open Ast
 open Ast.Ast_types
 open Error_handler.Handler
 
-module LocalEnv = struct
+module LocalEnvironment = struct
   type 'a t = (string, 'a) Hashtbl.t
 
   let create () : 'a t = Hashtbl.create ~size:17 (module String)
@@ -15,7 +15,7 @@ module LocalEnv = struct
   let contains table ~key:symbol = Hashtbl.mem table symbol
 end
 
-module GlobalEnv = struct
+module GlobalEnvironment = struct
   type 'a value_record = {
     declaration_type : declaration_type;
     value : 'a option;
@@ -41,10 +41,10 @@ module GlobalEnv = struct
     else false
 end
 
-module ModelEnv = struct
+module ModelEnvironment = struct
   type field_info = {
     typ : typ;
-    field_attrs_table : Model.attr_arg list LocalEnv.t;
+    field_attrs_table : Model.attr_arg list LocalEnvironment.t;
   }
 
   let rec allocate_field_attrs local_env field_id attrs =
@@ -53,9 +53,9 @@ module ModelEnv = struct
     | attr :: attrs ->
         (match attr with
         | Model.Attribute (loc, id, args) ->
-            if LocalEnv.contains local_env ~key:id then
+            if LocalEnvironment.contains local_env ~key:id then
               raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
-            LocalEnv.allocate local_env ~key:id ~data:args);
+            LocalEnvironment.allocate local_env ~key:id ~data:args);
         allocate_field_attrs local_env field_id attrs
 
   let rec allocate_fields local_env body =
@@ -64,25 +64,26 @@ module ModelEnv = struct
     | field :: fields ->
         (match field with
         | Model.Field (loc, id, typ, field_attrs) ->
-            if LocalEnv.contains local_env ~key:id then
+            if LocalEnvironment.contains local_env ~key:id then
               raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
-            let field_attrs_table = LocalEnv.create () in
+            let field_attrs_table = LocalEnvironment.create () in
             allocate_field_attrs field_attrs_table id field_attrs;
             let field = { typ; field_attrs_table } in
-            LocalEnv.allocate local_env ~key:id ~data:field);
+            LocalEnvironment.allocate local_env ~key:id ~data:field);
         allocate_fields local_env fields
 
-  let allocate_model (global_env : 'a GlobalEnv.t) (loc, id, body) =
-    if GlobalEnv.contains global_env ~key:id then
+  let allocate_model (global_env : 'a GlobalEnvironment.t) (loc, id, body) =
+    if GlobalEnvironment.contains global_env ~key:id then
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
-    let table = LocalEnv.create () in
+    let table = LocalEnvironment.create () in
     allocate_fields table body;
     let declaration_type = ModelType in
     let value = Some table in
-    GlobalEnv.allocate global_env ~key:id ~data:{ declaration_type; value }
+    GlobalEnvironment.allocate global_env ~key:id
+      ~data:{ declaration_type; value }
 end
 
-module XRAEnv = struct
+module XRAEnvironment = struct
   type scope = (string, string * string) Hashtbl.t
   type env = scope list
 
@@ -101,16 +102,17 @@ module XRAEnv = struct
 end
 
 module EnvironmentManager = struct
-  let allocate (global_env : 'a GlobalEnv.t) loc id declaration_type =
-    if GlobalEnv.contains global_env ~key:id then
+  let allocate (global_env : 'a GlobalEnvironment.t) loc id declaration_type =
+    if GlobalEnvironment.contains global_env ~key:id then
       raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
     let value = None in
-    GlobalEnv.allocate global_env ~key:id ~data:{ declaration_type; value }
+    GlobalEnvironment.allocate global_env ~key:id
+      ~data:{ declaration_type; value }
 
-  let populate (global_env : 'a GlobalEnv.t) (Ast declarations) : unit =
+  let populate (global_env : 'a GlobalEnvironment.t) (Ast declarations) : unit =
     let populate_declaration global_env declaration =
       match declaration with
-      | Model model -> ModelEnv.allocate_model global_env model
+      | Model model -> ModelEnvironment.allocate_model global_env model
       | Query (loc, id, _, _, _, _) -> allocate global_env loc id QueryType
       | Component (loc, id, _, _) -> allocate global_env loc id ComponentType
       | Page (loc, id, _, _, _) -> allocate global_env loc id PageType

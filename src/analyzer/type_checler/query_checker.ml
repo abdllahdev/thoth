@@ -10,33 +10,38 @@ let rec check_models global_env id models =
   | model :: models ->
       (match model with
       | loc, model_id ->
-          if not (GlobalEnv.contains global_env ~key:model_id) then
+          if not (GlobalEnvironment.contains global_env ~key:model_id) then
             raise_name_error (Pprinter.string_of_loc loc) "model" model_id
-          else if not (GlobalEnv.check_type global_env ~key:model_id ModelType)
+          else if
+            not
+              (GlobalEnvironment.check_type global_env ~key:model_id ModelType)
           then
             raise_type_error
               (Pprinter.string_of_loc loc)
               "Model" model_id
               (Pprinter.string_of_declaration_type
-                 (GlobalEnv.get_declaration_type global_env ~key:model_id))
+                 (GlobalEnvironment.get_declaration_type global_env
+                    ~key:model_id))
               id);
       check_models global_env id models
 
 let check_where_arg global_env loc id model field =
   let _, model_id = model in
   let model_env =
-    GlobalEnv.get_value global_env ~key:model_id |> Option.value_exn
+    GlobalEnvironment.get_value global_env ~key:model_id |> Option.value_exn
   in
-  if not (LocalEnv.contains model_env ~key:field) then
+  if not (LocalEnvironment.contains model_env ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field;
-  let field_info : ModelEnv.field_info = LocalEnv.lookup model_env ~key:field in
+  let field_info : ModelEnvironment.field_info =
+    LocalEnvironment.lookup model_env ~key:field
+  in
   let field_attrs_table = field_info.field_attrs_table in
-  if not (LocalEnv.contains model_env ~key:field) then
+  if not (LocalEnvironment.contains model_env ~key:field) then
     raise_name_error (Pprinter.string_of_loc loc) "field" field
   else if
     not
-      (LocalEnv.contains field_attrs_table ~key:"@unique"
-      || LocalEnv.contains field_attrs_table ~key:"@id")
+      (LocalEnvironment.contains field_attrs_table ~key:"@unique"
+      || LocalEnvironment.contains field_attrs_table ~key:"@id")
   then
     raise_type_error
       (Pprinter.string_of_loc loc)
@@ -45,24 +50,24 @@ let check_where_arg global_env loc id model field =
 let check_filter_arg global_env loc model fields =
   let _, model_id = model in
   let model_env =
-    GlobalEnv.get_value global_env ~key:model_id |> Option.value_exn
+    GlobalEnvironment.get_value global_env ~key:model_id |> Option.value_exn
   in
   ignore
     (List.map
        ~f:(fun field ->
-         if not (LocalEnv.contains model_env ~key:field) then
+         if not (LocalEnvironment.contains model_env ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 
 let check_data_arg global_env loc model fields =
   let _, model_id = model in
   let model_env =
-    GlobalEnv.get_value global_env ~key:model_id |> Option.value_exn
+    GlobalEnvironment.get_value global_env ~key:model_id |> Option.value_exn
   in
   ignore
     (List.map
        ~f:(fun field ->
-         if not (LocalEnv.contains model_env ~key:field) then
+         if not (LocalEnvironment.contains model_env ~key:field) then
            raise_name_error (Pprinter.string_of_loc loc) "field" field)
        fields)
 

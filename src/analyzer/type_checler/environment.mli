@@ -1,5 +1,5 @@
-module LocalEnv : sig
-  type 'a t = (string, 'a) Base.Hashtbl.t
+module LocalEnvironment : sig
+  type 'a t = (string, 'a) Core.Hashtbl.t
 
   val create : unit -> 'a t
   val allocate : 'a t -> key:string -> data:'a -> unit
@@ -7,13 +7,13 @@ module LocalEnv : sig
   val contains : 'a t -> key:string -> bool
 end
 
-module GlobalEnv : sig
+module GlobalEnvironment : sig
   type 'a value_record = {
     declaration_type : Ast.Ast_types.declaration_type;
     value : 'a option;
   }
 
-  type 'a t = (string, 'a value_record) Base.Hashtbl.t
+  type 'a t = (string, 'a value_record) Core.Hashtbl.t
 
   val create : unit -> 'a t
   val allocate : 'a t -> key:string -> data:'a value_record -> unit
@@ -26,29 +26,29 @@ module GlobalEnv : sig
   val check_type : 'a t -> key:string -> Ast.Ast_types.declaration_type -> bool
 end
 
-module ModelEnv : sig
+module ModelEnvironment : sig
   type field_info = {
     typ : Ast.Ast_types.typ;
-    field_attrs_table : Ast.Ast_types.Model.attr_arg list LocalEnv.t;
+    field_attrs_table : Ast.Ast_types.Model.attr_arg list LocalEnvironment.t;
   }
 
   val allocate_field_attrs :
-    Ast.Ast_types.Model.attr_arg list LocalEnv.t ->
+    Ast.Ast_types.Model.attr_arg list LocalEnvironment.t ->
     string ->
     Ast.Ast_types.Model.attribute list ->
     unit
 
   val allocate_fields :
-    field_info LocalEnv.t -> Ast.Ast_types.Model.body -> unit
+    field_info LocalEnvironment.t -> Ast.Ast_types.Model.body -> unit
 
   val allocate_model :
-    field_info LocalEnv.t GlobalEnv.t ->
+    field_info LocalEnvironment.t GlobalEnvironment.t ->
     Lexing.position * string * Ast.Ast_types.Model.body ->
     unit
 end
 
-module XRAEnv : sig
-  type scope = (string, string * string) Base.Hashtbl.t
+module XRAEnvironment : sig
+  type scope = (string, string * string) Core.Hashtbl.t
   type env = scope list
 
   val create_scope : unit -> scope
@@ -60,12 +60,14 @@ end
 
 module EnvironmentManager : sig
   val allocate :
-    'a GlobalEnv.t ->
+    'a GlobalEnvironment.t ->
     Lexing.position ->
     string ->
     Ast.Ast_types.declaration_type ->
     unit
 
   val populate :
-    ModelEnv.field_info LocalEnv.t GlobalEnv.t -> Ast.Ast_types.ast -> unit
+    ModelEnvironment.field_info LocalEnvironment.t GlobalEnvironment.t ->
+    Ast.Ast_types.ast ->
+    unit
 end

@@ -9,7 +9,7 @@ let check_declaration global_env declarations =
     match declaration with
     | Model (_, id, body) ->
         let model_env =
-          GlobalEnv.get_value global_env ~key:id |> Option.value_exn
+          GlobalEnvironment.get_value global_env ~key:id |> Option.value_exn
         in
         check_model global_env model_env id body
     | Query query -> check_query global_env query
@@ -19,6 +19,6 @@ let check_declaration global_env declarations =
   List.iter ~f:(fun declaration -> check_declaration declaration) declarations
 
 let run_type_checker (Ast declarations) : unit =
-  let global_env = GlobalEnv.create () in
+  let global_env = GlobalEnvironment.create () in
   EnvironmentManager.populate global_env (Ast declarations);
   check_declaration global_env declarations

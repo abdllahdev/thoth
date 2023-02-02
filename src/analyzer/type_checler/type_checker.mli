@@ -1,5 +1,6 @@
 val check_declaration :
-  Environment.ModelEnv.field_info Environment.LocalEnv.t Environment.GlobalEnv.t ->
+  Environment.ModelEnvironment.field_info Environment.LocalEnvironment.t
+  Environment.GlobalEnvironment.t ->
   Ast.Ast_types.declaration list ->
   unit
 

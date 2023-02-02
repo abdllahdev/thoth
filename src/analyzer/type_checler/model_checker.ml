@@ -41,8 +41,8 @@ let check_field_attr global_env model_env field_id
           1 args_length id
       else
         let arg = List.hd_exn args in
-        let field_info : ModelEnv.field_info =
-          LocalEnv.lookup model_env ~key:field_id
+        let field_info : ModelEnvironment.field_info =
+          LocalEnvironment.lookup model_env ~key:field_id
         in
         let field_type = get_scalar_type field_info.typ in
         match arg with
@@ -94,7 +94,7 @@ let check_field_attr global_env model_env field_id
       (let relation_field = List.nth_exn args 0 in
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
-           if not (LocalEnv.contains model_env ~key:field) then
+           if not (LocalEnvironment.contains model_env ~key:field) then
              raise_name_error (Pprinter.string_of_loc loc) "field" field
        | Model.AttrArgString (loc, str) ->
            raise_type_error
@@ -122,25 +122,27 @@ let check_field_attr global_env model_env field_id
       match relation_ref with
       | Model.AttrArgRef (loc, ref) ->
           let other_model_id =
-            (LocalEnv.lookup model_env ~key:field_id).typ |> get_custom_type
+            (LocalEnvironment.lookup model_env ~key:field_id).typ
+            |> get_custom_type |> Option.value_exn
+          in
+
+          let other_model_table : ModelEnvironment.field_info LocalEnvironment.t
+              =
+            GlobalEnvironment.get_value global_env ~key:other_model_id
             |> Option.value_exn
           in
 
-          let other_model_table : ModelEnv.field_info LocalEnv.t =
-            GlobalEnv.get_value global_env ~key:other_model_id
-            |> Option.value_exn
-          in
-
-          if not (LocalEnv.contains other_model_table ~key:ref) then
+          if not (LocalEnvironment.contains other_model_table ~key:ref) then
             raise_name_error (Pprinter.string_of_loc loc) "field" ref;
 
           let field_attrs =
-            (LocalEnv.lookup other_model_table ~key:ref).field_attrs_table
+            (LocalEnvironment.lookup other_model_table ~key:ref)
+              .field_attrs_table
           in
 
           if
-            (not (LocalEnv.contains field_attrs ~key:"@unique"))
-            && not (LocalEnv.contains field_attrs ~key:"@id")
+            (not (LocalEnvironment.contains field_attrs ~key:"@unique"))
+            && not (LocalEnvironment.contains field_attrs ~key:"@id")
           then
             raise_type_error
               (Pprinter.string_of_loc loc)
@@ -180,23 +182,28 @@ let check_field_type global_env model_id field_id field_type loc : unit =
   let custom_type = get_custom_type field_type in
   match custom_type with
   | Some custom_type ->
-      if not (GlobalEnv.contains global_env ~key:custom_type) then
+      if not (GlobalEnvironment.contains global_env ~key:custom_type) then
         raise_name_error (Pprinter.string_of_loc loc) "type" custom_type;
 
-      if not (GlobalEnv.check_type global_env ~key:custom_type ModelType) then
+      if
+        not (GlobalEnvironment.check_type global_env ~key:custom_type ModelType)
+      then
         raise_type_error
           (Pprinter.string_of_loc loc)
           "Model" custom_type
           (Pprinter.string_of_declaration_type
-             (GlobalEnv.get_declaration_type global_env ~key:custom_type))
+             (GlobalEnvironment.get_declaration_type global_env ~key:custom_type))
           field_id;
 
       let other_model =
-        GlobalEnv.get_value global_env ~key:custom_type |> Option.value_exn
+        GlobalEnvironment.get_value global_env ~key:custom_type
+        |> Option.value_exn
       in
       let all_custom_types =
         Hashtbl.fold ~init:[]
-          ~f:(fun ~key:_ ~(data : ModelEnv.field_info) (acc : string list) ->
+          ~f:
+            (fun ~key:_ ~(data : ModelEnvironment.field_info)
+                 (acc : string list) ->
             let scalar_type = get_scalar_type data.typ in
             match scalar_type with CustomType str -> acc @ [ str ] | _ -> acc)
           other_model
