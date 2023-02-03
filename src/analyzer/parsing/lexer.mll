@@ -47,6 +47,8 @@ rule token =
   | '.'           { DOT }
   | '"'           { read_string (Buffer.create 17) lexbuf }
   | "</"          { CLOSING_TAG }
+  | "<>"          { FRAGMENT_OPENING }
+  | "</>"         { FRAGMENT_CLOSING }
   | "=>"          { ARROW }
   | "true"        { TRUE }
   | "false"       { FALSE }
@@ -62,6 +64,18 @@ rule token =
   | "render"      { RENDER }
   | "let"         { LET }
   | "now"         { NOW }
+  | "findMany"    { FIND_MANY }
+  | "findUnique"   { FIND_UNIQUE }
+  | "create"      { CREATE }
+  | "update"      { UPDATE }
+  | "delete"      { DELETE }
+  | "fetch"       { FETCH }
+  | "as"          { AS }
+  | "onError"     { ON_ERROR }
+  | "onLoading"   { ON_LOADING }
+  | "onSuccess"   { ON_SUCCESS }
+  | "formFields"    { FORM_DATA }
+  | "formButton"  { FORM_BUTTON }
   | "@on"         { ON }
   | "@permission" { PERMISSION }
   | "@at"         { AT }

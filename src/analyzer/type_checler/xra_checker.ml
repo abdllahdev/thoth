@@ -27,30 +27,13 @@ let rec check_expressions global_env xra_env expressions =
     | None -> ()
   in
 
-  let check_query_application loc id _ =
-    if not (GlobalEnvironment.contains global_env ~key:id) then
-      raise_undefined_error loc "query" id;
-    let query =
-      GlobalEnvironment.lookup global_env ~key:id
-      |> GlobalEnvironment.get_query_value
-    in
-    if
-      not
-        (phys_equal query.typ Query.FindMany
-        || phys_equal query.typ Query.FindUnique)
-    then
-      raise_bad_assignment_error loc id
-        (Fmt.str "%sQuery"
-           (String.capitalize
-              (Pprinter.QueryPrinter.string_of_query_type query.typ)))
-  in
+  let check_dot_expression _ = () in
 
+  (* TODO: check dot expressions *)
   let rec check_expression expression =
     match expression with
     | XRA.Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
-    (* TODO: check query arguments *)
-    | XRA.QueryApplication (loc, id, args) ->
-        check_query_application loc id args
+    | XRA.DotExpression dot_expression -> check_dot_expression dot_expression
     | XRA.Element (loc, id, attributes, children) ->
         check_element loc id attributes children
     | XRA.Attribute (_, _, expression) -> check_expression expression

@@ -53,14 +53,13 @@ end
 
 module XRA = struct
   type query_application = loc * id * id list
+  type dot_expression = Dot of loc * id * dot_expression option
 
   type expression =
     | Literal of literal
     | Variable of loc * id
-    | Dot of loc * id * expression
-    | QueryApplication of loc * id * id list
-    | Element of loc * id * expression list option * expression list option
-    | Attribute of loc * id * expression
+    | DotExpression of dot_expression
+    | LetExpression of loc * id * expression
     | LiteralConditionalExpression of loc * expression
     | NotConditionalExpression of loc * expression
     | EqConditionalExpression of loc * expression * expression
@@ -72,13 +71,31 @@ module XRA = struct
     | IfThenElseStatement of loc * expression * expression * expression
     | IfThenStatement of loc * expression * expression
     | ForLoopStatement of loc * id * expression * expression
-    | LetExpression of loc * id * expression
+    | Element of loc * id * expression list option * expression list option
+    | Fragment of loc * expression list option
+    | Attribute of loc * id * expression
 
   type body = expression list option * expression list
 end
 
 module Component = struct
   type arg = string * string
+  type query_id = id
+
+  type component_type =
+    | General
+    | Fetch of loc * query_id * string
+    | Create of loc * query_id
+    | Update of loc * query_id
+    | Delete of loc * query_id
+
+  type component_body =
+    | GeneralBody of XRA.body
+    | FetchBody of
+        XRA.expression list * XRA.expression list * XRA.expression list
+    | CreateBody of (string * XRA.expression) list * XRA.expression
+    | UpdateBody of (string * XRA.expression) list * XRA.expression
+    | DeleteBody of XRA.expression
 end
 
 module Page = struct
@@ -96,7 +113,12 @@ type query_declaration =
   * Query.model list
   * permission list option
 
-type component_declaration = loc * id * Component.arg list option * XRA.body
+type component_declaration =
+  loc
+  * id
+  * Component.component_type
+  * Component.arg list option
+  * Component.component_body
 
 type page_declaration =
   loc * id * Page.route * permission list option * XRA.body

@@ -18,8 +18,8 @@ let parse_id loc id =
       "delete";
     ]
   in
-  if List.exists ~f:(fun x -> String.equal x (String.lowercase id)) keywords
-  then raise_reserved_keyword_error loc id
+  if List.exists ~f:(fun x -> String.equal x id) keywords then
+    raise_reserved_keyword_error loc id
   else id
 
 let parse_declaration_id loc id declaration_type =
@@ -43,15 +43,6 @@ let parse_query_arg loc arg fields =
   | "where" -> Query.Where (loc, List.hd_exn fields)
   | "data" -> Query.Data (loc, fields)
   | _ -> raise_undefined_error loc "query argument" arg
-
-let parse_query_type loc typ =
-  match typ with
-  | "findMany" -> Query.FindMany
-  | "findUnique" -> Query.FindUnique
-  | "create" -> Query.Create
-  | "update" -> Query.Update
-  | "delete" -> Query.Delete
-  | _ -> raise_undefined_error loc "query type" typ
 
 let parse_permissions loc permissions =
   let check_permission permission =

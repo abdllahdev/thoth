@@ -41,6 +41,20 @@
 %token          PAGE
 %token          LET
 %token          RENDER
+%token          FIND_MANY
+%token          FIND_UNIQUE
+%token          CREATE
+%token          UPDATE
+%token          DELETE
+%token          FETCH
+%token          ON_ERROR
+%token          ON_LOADING
+%token          ON_SUCCESS
+%token          FORM_DATA
+%token          FORM_BUTTON
+%token          AS
+%token          FRAGMENT_OPENING
+%token          FRAGMENT_CLOSING
 %token          ON
 %token          AT
 %token          PERMISSION
@@ -120,6 +134,26 @@ model_body:
   ;
 
 (* Query rules *)
+query_attributes:
+  | permissions = option(permissions); models = query_models
+    { (permissions, models) }
+  | models = query_models; permissions = option(permissions)
+    { (permissions, models) }
+  ;
+
+query_type:
+  | LT; FIND_MANY; GT
+    { Query.FindMany }
+  | LT; FIND_UNIQUE; GT
+    { Query.FindUnique }
+  | LT; CREATE; GT
+    { Query.Create }
+  | LT; UPDATE; GT
+    { Query.Update }
+  | LT; DELETE; GT
+    { Query.Delete }
+  ;
+
 query_arg:
   | arg = ID; COLON; field = ID;
     { parse_query_arg $startpos arg [field] }
@@ -141,24 +175,26 @@ permissions:
   | PERMISSION; LEFT_PARAN; permissions = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
     { parse_permissions $startpos permissions }
 
-query_application:
-  | id = ID; LEFT_PARAN; args = separated_list(COMMA, ID); RIGHT_PARAN; option(SEMICOLON)
-    { ($startpos, id, args) }
+(* xra rules *)
+xra_dot_expression:
+  | id = ID; DOT; dot = option(xra_dot_expression)
+    { XRA.Dot($startpos, id, dot) }
+  | id = ID;
+    { XRA.Dot($startpos, id, None) }
   ;
 
-(* Component rules *)
-variable_expression:
-  | id = ID; DOT; dot = variable_expression
-    { XRA.Dot($startpos, id, dot) }
+xra_variable_expression:
+  | xra_dot_expression = xra_dot_expression
+    { XRA.DotExpression(xra_dot_expression) }
   | id = ID
     { XRA.Variable($startpos, id) }
   ;
 
-basic_expression:
+xra_basic_expression:
   | literal = literal
     { XRA.Literal(literal) }
-  | variable_expression = variable_expression
-    { variable_expression }
+  | xra_variable_expression = xra_variable_expression
+    { xra_variable_expression }
   ;
 
 xra_attribute:
@@ -184,10 +220,16 @@ xra_self_closing_element:
   ;
 
 xra_element:
-  | xra_opening_element = xra_opening_element; children = option(list(xra_children)); closing_id = xra_closing_element
-    { let (opening_id, attributes) = xra_opening_element in parse_xra_element $startpos opening_id closing_id attributes children }
+  | xra_opening_element = xra_opening_element;
+    children = option(list(xra_children));
+    closing_id = xra_closing_element
+    { let (opening_id, attributes) = xra_opening_element in
+      parse_xra_element $startpos opening_id closing_id attributes children }
   | xra_self_closing_element = xra_self_closing_element
-    { let (id, attributes) = xra_self_closing_element in XRA.Element ($startpos, id, attributes, None) }
+    { let (id, attributes) = xra_self_closing_element
+      in XRA.Element ($startpos, id, attributes, None) }
+  | FRAGMENT_OPENING; children = option(list(xra_children)); FRAGMENT_CLOSING
+    { XRA.Fragment($startpos, children) }
   ;
 
 xra_children:
@@ -198,40 +240,41 @@ xra_children:
   ;
 
 xra_conditional_expression:
-  | left_expression = basic_expression; EQ; right_expression = basic_expression
+  | left_expression = xra_basic_expression; EQ; right_expression = xra_basic_expression
     { XRA.EqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = basic_expression; NOT_EQ; right_expression = basic_expression
+  | left_expression = xra_basic_expression; NOT_EQ; right_expression = xra_basic_expression
     { XRA.NotEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = basic_expression; LT; right_expression = basic_expression
+  | left_expression = xra_basic_expression; LT; right_expression = xra_basic_expression
     { XRA.LtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = basic_expression; GT; right_expression = basic_expression
+  | left_expression = xra_basic_expression; GT; right_expression = xra_basic_expression
     { XRA.GtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = basic_expression; LT_OR_EQ; right_expression = basic_expression
+  | left_expression = xra_basic_expression; LT_OR_EQ; right_expression = xra_basic_expression
     { XRA.LtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = basic_expression; GT_OR_EQ; right_expression = basic_expression
+  | left_expression = xra_basic_expression; GT_OR_EQ; right_expression = xra_basic_expression
     { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | NOT; variable_expression = variable_expression
-    { XRA.NotConditionalExpression($startpos, variable_expression) }
+  | NOT; xra_variable_expression = xra_variable_expression
+    { XRA.NotConditionalExpression($startpos, xra_variable_expression) }
   | NOT; boolean = boolean
     { XRA.NotConditionalExpression($startpos, XRA.Literal(boolean)) }
-  | variable_expression = variable_expression
-    { XRA.LiteralConditionalExpression($startpos, variable_expression) }
+  | xra_variable_expression = xra_variable_expression
+    { XRA.LiteralConditionalExpression($startpos, xra_variable_expression) }
   | boolean = boolean
     { XRA.LiteralConditionalExpression($startpos, XRA.Literal(boolean)) }
   ;
 
 xra_expression:
-  | basic_expression = basic_expression
-    { basic_expression }
-  | query_application =  query_application
-    { let (loc, id, args) = query_application in XRA.QueryApplication(loc, id, args) }
+  | xra_basic_expression = xra_basic_expression
+    { xra_basic_expression }
   | xra_element = xra_element
     { xra_element }
-  | IF; conditional_expression = xra_conditional_expression; THEN; then_block = xra_expression; ELSE; else_block = xra_expression;
+  | IF; conditional_expression = xra_conditional_expression;
+    THEN; then_block = xra_expression;
+    ELSE; else_block = xra_expression;
     { XRA.IfThenElseStatement($startpos, conditional_expression, then_block, else_block) }
-  | IF; conditional_expression = xra_conditional_expression THEN; then_block = xra_expression;
+  | IF; conditional_expression = xra_conditional_expression
+    THEN; then_block = xra_expression;
     { XRA.IfThenStatement($startpos, conditional_expression, then_block) }
-  | FOR; var = ID; IN; lst = variable_expression; ARROW; output = xra_expression;
+  | FOR; var = ID; IN; lst = xra_variable_expression; ARROW; output = xra_expression;
     { XRA.ForLoopStatement ($startpos, var, lst, output) }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
@@ -252,34 +295,157 @@ xra_render_expression:
     { xra }
   ;
 
-page_route:
+xra_general_body:
+  | LEFT_BRACE;
+    xra_let_expression = option(list(xra_let_expression));
+    xra_render_expression = xra_render_expression;
+    RIGHT_BRACE
+    { (xra_let_expression, xra_render_expression) }
+  ;
+
+xra_component_type:
+  | LT; CREATE; COLON; query_id = ID; GT
+    { Component.Create($startpos, query_id) }
+  | LT; UPDATE; COLON; query_id = ID; GT
+    { Component.Update($startpos, query_id) }
+  | LT; DELETE; COLON; query_id = ID; GT
+    { Component.Delete($startpos, query_id) }
+  | LT; FETCH; COLON; query_id = ID; AS; variable = ID; GT
+    { Component.Fetch($startpos, query_id, variable) }
+  ;
+
+xra_component_arg:
+  | arg = ID; COLON; typ = ID
+    { (parse_id $startpos arg, typ) }
+  ;
+
+xra_component_args:
+  | LEFT_PARAN; args = separated_list(COMMA, xra_component_arg); RIGHT_PARAN
+    { args }
+  ;
+
+xra_fetch_component_declarations:
+  | ON_ERROR; ARROW; xra_render_expression = xra_render_expression
+    { (xra_render_expression) }
+  | ON_LOADING; ARROW; xra_render_expression = xra_render_expression
+    { (xra_render_expression) }
+  | ON_SUCCESS; ARROW; xra_render_expression = xra_render_expression
+    { (xra_render_expression) }
+  ;
+
+xra_action_component_form_field:
+  | id = ID; COLON; xra_element = xra_element
+    { (id, xra_element) }
+  ;
+
+xra_action_component_form_fields:
+  | FORM_DATA;
+    ARROW;
+    LEFT_BRACE;
+    fields = separated_nonempty_list(COMMA, xra_action_component_form_field);
+    RIGHT_BRACE
+    { fields }
+  ;
+
+xra_action_component_submit_button:
+  | FORM_BUTTON; ARROW; xra_element = xra_element
+    { xra_element }
+  ;
+
+xra_component:
+  | COMPONENT;
+    component_id = ID;
+    args = option(xra_component_args);
+    xra_general_body = xra_general_body
+    { Component(
+        $startpos,
+        component_id,
+        Component.General,
+        args,
+        Component.GeneralBody(xra_general_body)) }
+  | COMPONENT;
+    xra_component_type = xra_component_type;
+    component_id = ID;
+    LEFT_BRACE;
+    on_error = xra_fetch_component_declarations;
+    on_loading = xra_fetch_component_declarations;
+    on_success = xra_fetch_component_declarations;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        xra_component_type,
+        None,
+        Component.FetchBody(on_error, on_loading, on_success)) }
+  | COMPONENT;
+    xra_component_type = xra_component_type;
+    component_id = ID;
+    LEFT_BRACE;
+    fromFields = xra_action_component_form_fields;
+    submitButton = xra_action_component_submit_button;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        xra_component_type,
+        None,
+        Component.CreateBody(fromFields, submitButton)) }
+  | COMPONENT;
+    xra_component_type = xra_component_type;
+    component_id = ID;
+    LEFT_BRACE;
+    fromFields = xra_action_component_form_fields;
+    submitButton = xra_action_component_submit_button;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        xra_component_type,
+        None,
+        Component.UpdateBody(fromFields, submitButton)) }
+  | COMPONENT;
+    xra_component_type = xra_component_type;
+    component_id = ID;
+    LEFT_BRACE;
+    submitButton = xra_action_component_submit_button;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        xra_component_type,
+        None,
+        Component.DeleteBody(submitButton)) }
+  ;
+
+xra_page_route:
   | AT; LEFT_PARAN; route = STRING; RIGHT_PARAN
     { route }
   ;
 
-xra_body:
-  | LEFT_BRACE; xra_let_expression = option(list(xra_let_expression)) xra_render_expression = xra_render_expression; RIGHT_BRACE
-    { (xra_let_expression, xra_render_expression) }
-  ;
-
-component_arg:
-  | arg = ID; COLON; typ = ID
-    { (parse_id $startpos arg, typ) }
-
-component_args:
-  | LEFT_PARAN; args = separated_list(COMMA, component_arg); RIGHT_PARAN
-    { args }
+xra_page_attributes:
+  | route = xra_page_route; permissions = option(permissions)
+    { (permissions, route) }
+  | permissions = option(permissions); route = xra_page_route
+    { (permissions, route) }
   ;
 
 declaration:
   | MODEL; model_id = ID; model_body = model_body
     { Model($startpos, (parse_declaration_id $startpos model_id "Model"), model_body) }
-  | models = query_models; permissions = option(permissions); QUERY; LT; typ = ID; GT; query_id = ID; args = query_args; option(SEMICOLON)
-    { Query($startpos, (parse_id $startpos query_id), parse_query_type $startpos typ, args, models, permissions) }
-  | COMPONENT; component_id = ID; args = option(component_args); xra_body = xra_body
-    { Component($startpos, (parse_declaration_id $startpos component_id "Component"), args, xra_body) }
-  | route = page_route; permissions = option(permissions); PAGE; component_id = ID; xra_body = xra_body
-    { Page($startpos, (parse_declaration_id $startpos component_id "Page"), route, permissions, xra_body) }
+  | query_attributes = query_attributes;
+    QUERY; typ = query_type; query_id = ID; args = query_args; option(SEMICOLON)
+    { let (permissions, models) = query_attributes in
+      Query($startpos, (parse_id $startpos query_id), typ, args, models, permissions) }
+  | xra_component = xra_component
+    { xra_component }
+  | xra_page_attributes = xra_page_attributes; PAGE; page_id = ID; xra_general_body = xra_general_body
+    { let (permissions, route) = xra_page_attributes in
+      Page(
+        $startpos,
+        (parse_declaration_id $startpos page_id "Page"),
+        route,
+        permissions,
+        xra_general_body) }
   ;
 
 ast:

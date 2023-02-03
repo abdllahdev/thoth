@@ -28,7 +28,10 @@ module GlobalEnvironment = struct
     models : Query.model list;
   }
 
-  type component_value = { args : Component.arg list option }
+  type component_value = {
+    component_type : Component.component_type;
+    args : Component.arg list option;
+  }
 
   type declaration_value =
     | ModelValue of model_value
@@ -153,8 +156,8 @@ module EnvironmentManager = struct
       match declaration with
       | Model model -> ModelEnvironment.allocate global_env model
       | Query query -> QueryEnvironment.allocate global_env query
-      | Component (loc, id, args, _) ->
-          allocate global_env loc id (ComponentValue { args })
+      | Component (loc, id, component_type, args, _) ->
+          allocate global_env loc id (ComponentValue { component_type; args })
       | Page (loc, id, _, _, _) -> allocate global_env loc id PageValue
     in
     List.iter

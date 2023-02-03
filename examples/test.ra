@@ -42,27 +42,40 @@ component TaskComponent(task: Task) {
 	)
 }
 
+component<fetch:getTasks as tasks> TasksComponent {
+	onError => render(
+		<div>{ "An error occured" }</div>
+	)
+
+	onLoading => render(
+		<div>{ "Loading..." }</div>
+	)
+
+	onSuccess => render(
+		<>
+			{
+				for task in tasks =>
+					<TaskComponent task={ task } />
+			}
+		</>
+	)
+}
+
+component<create:creatTask> TaskCreateForm {
+	formFields => {
+		title: <input type="text" />
+	}
+
+	formButton => <button>{ "Submit" }</button>
+}
+
 @at("/")
 @permission(isAuth)
 page Home {
-	let tasks = getTasks()
-
 	render(
 		<div>
-			{
-				if tasks.error then
-					<div>{ "An error occured" }</div>
-			}
-			{
-				if tasks.isLoading then
-					<div>{ "Loading..." }</div>
-				else
-					if tasks.data.length == 0 then
-						<div>{ "There are no tasks available" }</div>
-					else
-						for task in tasks.data =>
-							<TaskComponent task={ task } />
-			}
+			<TasksComponent />
+			<TaskCreateForm />
 		</div>
 	)
 }
