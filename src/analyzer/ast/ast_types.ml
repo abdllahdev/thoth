@@ -54,29 +54,23 @@ end
 module XRA = struct
   type query_application = loc * id * id list
 
-  type basic_expression =
+  type expression =
     | Literal of literal
     | Variable of loc * id
-    | Dot of loc * id * basic_expression
-
-  type conditional_expression =
-    | LiteralConditionalExpression of loc * basic_expression
-    | NotConditionalExpression of loc * basic_expression
-    | EqConditionalExpression of loc * basic_expression * basic_expression
-    | NotEqConditionalExpression of loc * basic_expression * basic_expression
-    | LtConditionalExpression of loc * basic_expression * basic_expression
-    | GtConditionalExpression of loc * basic_expression * basic_expression
-    | LtOrEqConditionalExpression of loc * basic_expression * basic_expression
-    | GtOrEqConditionalExpression of loc * basic_expression * basic_expression
-
-  type expression =
+    | Dot of loc * id * expression
     | Element of loc * id * expression list option * expression list option
     | Attribute of loc * id * expression
     | QueryApplication of loc * id * id list
-    | BasicExpression of basic_expression
-    | IfThenElseStatement of
-        loc * conditional_expression * expression * expression
-    | IfThenStatement of loc * conditional_expression * expression
+    | LiteralConditionalExpression of loc * expression
+    | NotConditionalExpression of loc * expression
+    | EqConditionalExpression of loc * expression * expression
+    | NotEqConditionalExpression of loc * expression * expression
+    | LtConditionalExpression of loc * expression * expression
+    | GtConditionalExpression of loc * expression * expression
+    | LtOrEqConditionalExpression of loc * expression * expression
+    | GtOrEqConditionalExpression of loc * expression * expression
+    | IfThenElseStatement of loc * expression * expression * expression
+    | IfThenStatement of loc * expression * expression
     | ForLoopStatement of loc * id * expression * expression
     | LetExpression of loc * id * expression
 

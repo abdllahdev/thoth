@@ -29,10 +29,7 @@ let rec check_expressions global_env xra_env expressions =
 
   let rec check_expression expression =
     match expression with
-    | XRA.BasicExpression basic_expression -> (
-        match basic_expression with
-        | Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
-        | _ -> ())
+    | XRA.Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
     | XRA.Element (loc, id, attributes, children) ->
         check_element loc id attributes children
     | XRA.Attribute (_, _, expression) -> check_expression expression

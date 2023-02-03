@@ -159,12 +159,13 @@ basic_expression:
     { XRA.Literal(literal) }
   | variable_expression = variable_expression
     { variable_expression }
+  ;
 
 xra_attribute:
   | id = ID; EQUAL; xra_expression_declaration = xra_expression_declaration
     { XRA.Attribute($startpos, id, xra_expression_declaration) }
   | id = ID; EQUAL; str = STRING;
-    { XRA.Attribute($startpos, id, XRA.BasicExpression(XRA.Literal(StringLiteral($startpos, str)))) }
+    { XRA.Attribute($startpos, id, XRA.Literal(StringLiteral($startpos, str))) }
   ;
 
 xra_opening_element:
@@ -209,15 +210,19 @@ xra_conditional_expression:
     { XRA.LtOrEqConditionalExpression($startpos, left_expression, right_expression) }
   | left_expression = basic_expression; GT_OR_EQ; right_expression = basic_expression
     { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | NOT; basic_expression = basic_expression
-    { XRA.NotConditionalExpression($startpos, basic_expression) }
-  | basic_expression = basic_expression
-    { XRA.LiteralConditionalExpression($startpos, basic_expression) }
+  | NOT; variable_expression = variable_expression
+    { XRA.NotConditionalExpression($startpos, variable_expression) }
+  | NOT; boolean = boolean
+    { XRA.NotConditionalExpression($startpos, XRA.Literal(boolean)) }
+  | variable_expression = variable_expression
+    { XRA.LiteralConditionalExpression($startpos, variable_expression) }
+  | boolean = boolean
+    { XRA.LiteralConditionalExpression($startpos, XRA.Literal(boolean)) }
   ;
 
 xra_expression:
   | basic_expression = basic_expression
-    { XRA.BasicExpression(basic_expression) }
+    { basic_expression }
   | query_application =  query_application
     { let (loc, id, args) = query_application in XRA.QueryApplication(loc, id, args) }
   | xra_element = xra_element
@@ -227,7 +232,7 @@ xra_expression:
   | IF; conditional_expression = xra_conditional_expression THEN; then_block = xra_expression;
     { XRA.IfThenStatement($startpos, conditional_expression, then_block) }
   | FOR; var = ID; IN; lst = variable_expression; ARROW; output = xra_expression;
-    { XRA.ForLoopStatement ($startpos, var, XRA.BasicExpression(lst), output) }
+    { XRA.ForLoopStatement ($startpos, var, lst, output) }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
   ;
