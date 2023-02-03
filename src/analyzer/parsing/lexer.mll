@@ -1,7 +1,6 @@
 {
   open Lexing
   open Parser
-  open Ast.Pprinter
   open Error_handler.Handler
 
   let next_line lexbuf =
@@ -72,7 +71,7 @@ rule token =
   | whitespace    { token lexbuf }
   | newline       { next_line lexbuf; token lexbuf }
   | eof           { EOF }
-  | _             { raise_syntax_error (string_of_loc lexbuf.lex_curr_p) (Lexing.lexeme lexbuf) }
+  | _             { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
 
 and read_string buf = parse
   | '"'           { STRING (Buffer.contents buf) }
@@ -84,5 +83,5 @@ and read_string buf = parse
   | '\\' 'r'      { Buffer.add_char buf '\r'; read_string buf lexbuf }
   | '\\' 't'      { Buffer.add_char buf '\t'; read_string buf lexbuf }
   | [^ '"' '\\']+ { Buffer.add_string buf (Lexing.lexeme lexbuf); read_string buf lexbuf }
-  | _             { raise_syntax_error (string_of_loc lexbuf.lex_curr_p) (Lexing.lexeme lexbuf) }
-  | eof           { raise_syntax_error (string_of_loc lexbuf.lex_curr_p) (Lexing.lexeme lexbuf) }
+  | _             { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
+  | eof           { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }

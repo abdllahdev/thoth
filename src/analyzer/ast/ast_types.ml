@@ -11,6 +11,7 @@ type scalar_type =
   | Bytes
   | Json
   | DateTime
+  | Reference
   | CustomType of string
 
 type composite_type =
@@ -21,18 +22,16 @@ type composite_type =
 type typ = Scalar of scalar_type | Composite of composite_type
 
 type literal =
-  | StringLiteral of scalar_type * string
-  | IntLiteral of scalar_type * int
-  | BooleanLiteral of scalar_type * bool
+  | StringLiteral of loc * string
+  | IntLiteral of loc * int
+  | BooleanLiteral of loc * bool
 
 type permission = loc * id
 
 (* TODO: add enums to data models *)
 module Model = struct
   type attr_arg =
-    | AttrArgString of loc * literal
-    | AttrArgBoolean of loc * literal
-    | AttrArgInt of loc * literal
+    | AttrArgLiteral of literal
     | AttrArgNow of loc
     | AttrArgRef of loc * id
 
@@ -57,8 +56,8 @@ module XRA = struct
 
   type basic_expression =
     | Literal of literal
-    | Variable of id
-    | Dot of id * basic_expression
+    | Variable of loc * id
+    | Dot of loc * id * basic_expression
 
   type conditional_expression =
     | LiteralConditionalExpression of loc * basic_expression
@@ -74,10 +73,10 @@ module XRA = struct
     | Element of loc * id * expression list option * expression list option
     | Attribute of loc * id * expression
     | QueryApplication of loc * id * id list
-    | BasicExpression of loc * basic_expression
+    | BasicExpression of basic_expression
     | IfElseStatement of loc * conditional_expression * expression * expression
     | IfThenStatement of loc * conditional_expression * expression
-    | ForLoopStatement of loc * id * basic_expression * expression
+    | ForLoopStatement of loc * id * expression * expression
     | LetExpression of loc * id * expression
 
   type body = expression list option * expression list

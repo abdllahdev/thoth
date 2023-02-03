@@ -25,99 +25,94 @@ let get_scalar_type (typ : typ) : scalar_type =
       | Optional scalar_type -> scalar_type
       | OptionalList scalar_type -> scalar_type)
 
+let is_custom_type scalar_type =
+  match scalar_type with CustomType _ -> true | _ -> false
+
+let check_attribute_argument id literal expected_type =
+  match expected_type with
+  | String -> (
+      match literal with
+      | BooleanLiteral (loc, boolean) ->
+          raise_type_error loc "Reference" (string_of_bool boolean) "Boolean" id
+      | IntLiteral (loc, number) ->
+          raise_type_error loc "Reference" (string_of_int number) "Int" id
+      | _ -> ())
+  | Int -> (
+      match literal with
+      | BooleanLiteral (loc, boolean) ->
+          raise_type_error loc "Reference" (string_of_bool boolean) "Boolean" id
+      | StringLiteral (loc, str) ->
+          raise_type_error loc "Reference" str "Int" id
+      | _ -> ())
+  | Boolean -> (
+      match literal with
+      | StringLiteral (loc, str) ->
+          raise_type_error loc "Reference" str "Int" id
+      | IntLiteral (loc, number) ->
+          raise_type_error loc "Reference" (string_of_int number) "Int" id
+      | _ -> ())
+  | Reference -> (
+      match literal with
+      | StringLiteral (loc, str) ->
+          raise_type_error loc "Reference" str "Int" id
+      | IntLiteral (loc, number) ->
+          raise_type_error loc "Reference" (string_of_int number) "Int" id
+      | BooleanLiteral (loc, boolean) ->
+          raise_type_error loc "Reference" (string_of_bool boolean) "Boolean" id
+      )
+  | _ -> ()
+
 let check_field_attr global_env model_env field_id
     (Model.Attribute (loc, id, args)) =
   let args_length = List.length args in
+  let field_info : GlobalEnvironment.field_value =
+    LocalEnvironment.lookup model_env ~key:field_id
+  in
+  let field_type = get_scalar_type field_info.typ in
   match id with
   | "@id" | "@unique" | "@ignore" | "@updatedAt" ->
-      if args_length >= 1 then
-        raise_argument_number_error
-          (Pprinter.string_of_loc loc)
-          0 args_length id
+      if args_length >= 1 then raise_argument_number_error loc 0 args_length id
   | "@default" -> (
+      (match field_type with
+      | DateTime -> ()
+      | Int -> ()
+      | String -> ()
+      | Boolean -> ()
+      | _ -> raise_attribute_error loc field_type id);
+
       if args_length > 1 || equal_int args_length 0 then
-        raise_argument_number_error
-          (Pprinter.string_of_loc loc)
-          1 args_length id
+        raise_argument_number_error loc 1 args_length id
       else
         let arg = List.hd_exn args in
-        let field_info : GlobalEnvironment.field_value =
-          LocalEnvironment.lookup model_env ~key:field_id
-        in
-        let field_type = get_scalar_type field_info.typ in
         match arg with
         | Model.AttrArgRef (loc, ref) ->
-            raise_type_error
-              (Pprinter.string_of_loc loc)
+            raise_type_error loc
               (Pprinter.string_of_scalar_type field_type)
               ref "Reference" id
         | Model.AttrArgNow loc -> (
             match field_type with
             | DateTime -> ()
             | _ ->
-                raise_type_error
-                  (Pprinter.string_of_loc loc)
+                raise_type_error loc
                   (Pprinter.string_of_scalar_type field_type)
                   "now" "DateTime" id)
-        | Model.AttrArgString (loc, str) -> (
-            match field_type with
-            | String -> ()
-            | _ ->
-                raise_type_error
-                  (Pprinter.string_of_loc loc)
-                  (Pprinter.string_of_scalar_type field_type)
-                  (Pprinter.string_of_literal str)
-                  "String" id)
-        | Model.AttrArgBoolean (loc, boolean) -> (
-            match field_type with
-            | Boolean -> ()
-            | _ ->
-                raise_type_error
-                  (Pprinter.string_of_loc loc)
-                  (Pprinter.string_of_scalar_type field_type)
-                  (Pprinter.string_of_literal boolean)
-                  "Boolean" id)
-        | Model.AttrArgInt (loc, number) -> (
-            match field_type with
-            | Int -> ()
-            | _ ->
-                raise_type_error
-                  (Pprinter.string_of_loc loc)
-                  (Pprinter.string_of_scalar_type field_type)
-                  (Pprinter.string_of_literal number)
-                  "Int" id))
+        | Model.AttrArgLiteral literal ->
+            check_attribute_argument id literal field_type)
   | "@relation" -> (
+      if not (is_custom_type field_type) then
+        raise_attribute_error loc field_type id;
+
       if not (equal args_length 2) then
-        raise_argument_number_error
-          (Pprinter.string_of_loc loc)
-          2 args_length id;
+        raise_argument_number_error loc 2 args_length id;
       (let relation_field = List.nth_exn args 0 in
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
            if not (LocalEnvironment.contains model_env ~key:field) then
-             raise_name_error (Pprinter.string_of_loc loc) "field" field
-       | Model.AttrArgString (loc, str) ->
-           raise_type_error
-             (Pprinter.string_of_loc loc)
-             "Reference"
-             (Pprinter.string_of_literal str)
-             "String" id
-       | Model.AttrArgBoolean (loc, boolean) ->
-           raise_type_error
-             (Pprinter.string_of_loc loc)
-             "Reference"
-             (Pprinter.string_of_literal boolean)
-             "Boolean" id
+             raise_name_error loc "field" field
        | Model.AttrArgNow loc ->
-           raise_type_error
-             (Pprinter.string_of_loc loc)
-             "Reference" "now" "DateTime" id
-       | Model.AttrArgInt (loc, number) ->
-           raise_type_error
-             (Pprinter.string_of_loc loc)
-             "Reference"
-             (Pprinter.string_of_literal number)
-             "Int" id);
+           raise_type_error loc "Reference" "now" "DateTime" id
+       | Model.AttrArgLiteral literal ->
+           check_attribute_argument id literal Reference);
       let relation_ref = List.nth_exn args 1 in
       match relation_ref with
       | Model.AttrArgRef (loc, ref) ->
@@ -132,7 +127,7 @@ let check_field_attr global_env model_env field_id
           in
 
           if not (LocalEnvironment.contains other_model_table ~key:ref) then
-            raise_name_error (Pprinter.string_of_loc loc) "field" ref;
+            raise_name_error loc "field" ref;
 
           let field_attrs =
             (LocalEnvironment.lookup other_model_table ~key:ref)
@@ -142,33 +137,12 @@ let check_field_attr global_env model_env field_id
           if
             (not (LocalEnvironment.contains field_attrs ~key:"@unique"))
             && not (LocalEnvironment.contains field_attrs ~key:"@id")
-          then
-            raise_type_error
-              (Pprinter.string_of_loc loc)
-              "UniqueField" ref "NonUniqueField" id
-      | Model.AttrArgString (loc, str) ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "Reference"
-            (Pprinter.string_of_literal str)
-            "String" id
-      | Model.AttrArgBoolean (loc, boolean) ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "Reference"
-            (Pprinter.string_of_literal boolean)
-            "Boolean" id
+          then raise_type_error loc "UniqueField" ref "NonUniqueField" id
+      | Model.AttrArgLiteral literal ->
+          check_attribute_argument id literal Reference
       | Model.AttrArgNow loc ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "Reference" "now" "DateTime" id
-      | Model.AttrArgInt (loc, number) ->
-          raise_type_error
-            (Pprinter.string_of_loc loc)
-            "Reference"
-            (Pprinter.string_of_literal number)
-            "Int" id)
-  | _ -> raise_name_error (Pprinter.string_of_loc loc) "attribute" id
+          raise_type_error loc "Reference" "now" "DateTime" id)
+  | _ -> raise_name_error loc "attribute" id
 
 let rec check_field_attrs global_env model_env field_id field_attrs =
   match field_attrs with
@@ -182,15 +156,13 @@ let check_field_type global_env model_id field_id field_type loc : unit =
   match custom_type with
   | Some custom_type ->
       if not (GlobalEnvironment.contains global_env ~key:custom_type) then
-        raise_name_error (Pprinter.string_of_loc loc) "type" custom_type;
+        raise_name_error loc "type" custom_type;
 
       let declaration_value =
         GlobalEnvironment.lookup global_env ~key:custom_type
       in
       if not (GlobalEnvironment.check_type declaration_value ModelType) then
-        raise_type_error
-          (Pprinter.string_of_loc loc)
-          "Model" custom_type
+        raise_type_error loc "Model" custom_type
           (Pprinter.string_of_declaration_type
              (GlobalEnvironment.infer_type declaration_value))
           field_id;
@@ -209,9 +181,7 @@ let check_field_type global_env model_id field_id field_type loc : unit =
           other_model
       in
       if not (List.mem all_custom_types model_id ~equal:equal_string) then
-        raise_relation_error
-          (Pprinter.string_of_loc loc)
-          field_id model_id custom_type
+        raise_relation_error loc field_id model_id custom_type
   | None -> ()
 
 let check_field global_env model_env model_id field =

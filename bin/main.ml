@@ -4,8 +4,7 @@ open Core
 let parse_with_error (lexbuf : Lexing.lexbuf) =
   try Ok (Parsing.Parser.ast Parsing.Lexer.token lexbuf)
   with Parsing.Parser.Error ->
-    Error_handler.Handler.raise_syntax_error
-      (Ast.Pprinter.string_of_loc lexbuf.lex_curr_p)
+    Error_handler.Handler.raise_syntax_error lexbuf.lex_curr_p
       (Lexing.lexeme lexbuf)
 
 let parse_file (filename : string) =

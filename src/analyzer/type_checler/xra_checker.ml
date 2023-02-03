@@ -4,9 +4,9 @@ open Environment
 let rec check_expressions global_env xra_env expressions =
   let check_expression expression =
     match expression with
-    | XRA.BasicExpression (loc, basic_expression) -> (
+    | XRA.BasicExpression basic_expression -> (
         match basic_expression with
-        | Variable id -> XRAEnvironment.lookup xra_env loc id
+        | Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
         | _ -> ())
     | XRA.Element (_, _, attributes, children) -> (
         (match attributes with
@@ -15,6 +15,7 @@ let rec check_expressions global_env xra_env expressions =
         match children with
         | Some children -> check_expressions global_env xra_env children
         | None -> ())
+    | XRA.ForLoopStatement (_, _, _, _) -> ()
     | _ -> ()
   in
   match expressions with

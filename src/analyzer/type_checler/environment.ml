@@ -1,5 +1,4 @@
 open Core
-open Ast
 open Ast.Ast_types
 open Error_handler.Handler
 
@@ -79,7 +78,7 @@ module ModelEnvironment = struct
         (match attr with
         | Model.Attribute (loc, id, args) ->
             if LocalEnvironment.contains local_env ~key:id then
-              raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+              raise_multi_definitions_error loc id;
             LocalEnvironment.allocate local_env ~key:id ~data:args);
         allocate_field_attrs local_env field_id attrs
 
@@ -90,7 +89,7 @@ module ModelEnvironment = struct
         (match field with
         | Model.Field (loc, id, typ, field_attrs) ->
             if LocalEnvironment.contains local_env ~key:id then
-              raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+              raise_multi_definitions_error loc id;
             let field_attrs_table = LocalEnvironment.create () in
             allocate_field_attrs field_attrs_table id field_attrs;
             let field : GlobalEnvironment.field_value =
@@ -102,7 +101,7 @@ module ModelEnvironment = struct
   let allocate (global_env : GlobalEnvironment.t) model =
     let loc, id, body = model in
     if GlobalEnvironment.contains global_env ~key:id then
-      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+      raise_multi_definitions_error loc id;
     let table = LocalEnvironment.create () in
     allocate_fields table body;
     let declaration_value = GlobalEnvironment.ModelValue table in
@@ -113,7 +112,7 @@ module QueryEnvironment = struct
   let allocate (global_env : GlobalEnvironment.t) query =
     let loc, id, typ, args, models, _ = query in
     if GlobalEnvironment.contains global_env ~key:id then
-      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+      raise_multi_definitions_error loc id;
     let declaration_value =
       GlobalEnvironment.QueryValue { typ; args; models }
     in
@@ -131,11 +130,11 @@ module XRAEnvironment = struct
     | [] -> ()
     | scope :: _ ->
         if not (Hashtbl.mem scope key) then Hashtbl.add_exn scope ~key ~data
-        else raise_multi_definitions_error (Pprinter.string_of_loc loc) key
+        else raise_multi_definitions_error loc key
 
   let rec lookup env loc id =
     match env with
-    | [] -> raise_name_error (Pprinter.string_of_loc loc) "variable" id
+    | [] -> raise_name_error loc "variable" id
     | scope :: env -> if not (Hashtbl.mem scope id) then lookup env loc id
 
   let shrink env = match env with [] -> () | _ :: tail -> tail |> ignore
@@ -145,7 +144,7 @@ end
 module EnvironmentManager = struct
   let allocate (global_env : GlobalEnvironment.t) loc id declaration_value =
     if GlobalEnvironment.contains global_env ~key:id then
-      raise_multi_definitions_error (Pprinter.string_of_loc loc) id;
+      raise_multi_definitions_error loc id;
     GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 
   let populate global_env (Ast declarations) =

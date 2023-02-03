@@ -13,6 +13,7 @@ let string_of_scalar_type scalar_type =
   | Boolean -> "Boolean"
   | DateTime -> "DateTime"
   | Bytes -> "Bytes"
+  | Reference -> "Reference"
   | CustomType custom_type -> custom_type
 
 let string_of_composite_type composite_type =
@@ -31,11 +32,10 @@ let string_of_literal literal =
 module ModelPrinter = struct
   let string_of_field_attr_arg arg =
     match arg with
-    | Model.AttrArgString (_, str) -> Fmt.str "\"%s\"" (string_of_literal str)
-    | Model.AttrArgBoolean (_, boolean) -> string_of_literal boolean
+    | Model.AttrArgLiteral literal ->
+        Fmt.str "\"%s\"" (string_of_literal literal)
     | Model.AttrArgRef (_, ref) -> Fmt.str "%s" ref
     | Model.AttrArgNow _ -> "now()"
-    | Model.AttrArgInt (_, num) -> string_of_literal num
 
   let rec string_of_field_attr_args args =
     match args with

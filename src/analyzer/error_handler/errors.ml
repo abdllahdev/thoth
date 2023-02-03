@@ -5,3 +5,4 @@ exception TypeError of string
 exception MultiDefinitionsError of string
 exception ArgumentNumberError of string
 exception RelationError of string
+exception AttributeError of string

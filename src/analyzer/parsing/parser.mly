@@ -55,20 +55,25 @@
 
 %%
 
+literal:
+  | str = STRING
+    { StringLiteral($startpos, str) }
+  | number = INT
+    { IntLiteral($startpos, number) }
+  | TRUE
+    { BooleanLiteral($startpos, true) }
+  | FALSE
+    { BooleanLiteral($startpos, false) }
+  ;
+
 (* Model rules *)
 model_field_attr_args:
-  | str = STRING
-    { Model.AttrArgString($startpos, (StringLiteral(String, str))) }
+  | literal = literal
+   { Model.AttrArgLiteral(literal) }
   | NOW
     { Model.AttrArgNow($startpos) }
   | ref = ID
     { Model.AttrArgRef($startpos, ref) }
-  | TRUE
-    { Model.AttrArgBoolean($startpos, (BooleanLiteral(Boolean, true))) }
-  | FALSE
-    { Model.AttrArgBoolean($startpos, (BooleanLiteral(Boolean, false))) }
-  | number = INT
-    { Model.AttrArgInt($startpos, (IntLiteral(Int, number))) }
   ;
 
 model_field_attr:
@@ -127,27 +132,16 @@ query_application:
   ;
 
 (* Component rules *)
-literal_expression:
-  | str = STRING
-    { XRA.Literal(StringLiteral(String, str)) }
-  | number = INT
-    { XRA.Literal(IntLiteral(Int, number)) }
-  | TRUE
-    { XRA.Literal(BooleanLiteral(Boolean, true)) }
-  | FALSE
-    { XRA.Literal(BooleanLiteral(Boolean, false)) }
-  ;
-
 variable_expression:
   | id = ID; DOT; dot = variable_expression
-    { XRA.Dot(id, dot) }
+    { XRA.Dot($startpos, id, dot) }
   | id = ID
-    { XRA.Variable(id) }
+    { XRA.Variable($startpos, id) }
   ;
 
 basic_expression:
-  | literal_expression = literal_expression
-    { literal_expression }
+  | literal = literal
+    { XRA.Literal(literal) }
   | variable_expression = variable_expression
     { variable_expression }
 
@@ -155,7 +149,7 @@ xra_attribute:
   | id = ID; EQUAL; xra_expression_declaration = xra_expression_declaration
     { XRA.Attribute($startpos, id, xra_expression_declaration) }
   | id = ID; EQUAL; str = STRING;
-    { XRA.Attribute($startpos, id, XRA.BasicExpression($startpos, XRA.Literal(StringLiteral(String, str)))) }
+    { XRA.Attribute($startpos, id, XRA.BasicExpression(XRA.Literal(StringLiteral($startpos, str)))) }
   ;
 
 xra_opening_element:
@@ -208,7 +202,7 @@ xra_conditional_expression:
 
 xra_expression:
   | basic_expression = basic_expression
-    { XRA.BasicExpression($startpos, basic_expression) }
+    { XRA.BasicExpression(basic_expression) }
   | query_application =  query_application
     { let (loc, id, args) = query_application in XRA.QueryApplication(loc, id, args) }
   | xra_element = xra_element
@@ -218,7 +212,7 @@ xra_expression:
   | IF; conditional_expression = xra_conditional_expression THEN; then_block = xra_expression;
     { XRA.IfThenStatement($startpos, conditional_expression, then_block) }
   | FOR; var = ID; IN; lst = variable_expression; ARROW; output = xra_expression;
-    { XRA.ForLoopStatement ($startpos, var, lst, output) }
+    { XRA.ForLoopStatement ($startpos, var, XRA.BasicExpression(lst), output) }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
   ;

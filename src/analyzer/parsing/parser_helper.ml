@@ -1,5 +1,4 @@
 open Core
-open Ast
 open Ast.Ast_types
 open Error_handler.Handler
 
@@ -20,7 +19,7 @@ let parse_id loc id =
     ]
   in
   if List.exists ~f:(fun x -> String.equal x id) keywords then
-    raise_reserved_keyword_error id (Pprinter.string_of_loc loc)
+    raise_reserved_keyword_error loc id
   else id
 
 let parse_field_type field_type =
@@ -38,7 +37,7 @@ let parse_query_arg loc arg fields =
   | "filter" -> Query.Filter (loc, fields)
   | "where" -> Query.Where (loc, List.hd_exn fields)
   | "data" -> Query.Data (loc, fields)
-  | _ -> raise_name_error (Pprinter.string_of_loc loc) "query argument" arg
+  | _ -> raise_name_error loc "query argument" arg
 
 let parse_query_type loc typ =
   match typ with
@@ -47,21 +46,18 @@ let parse_query_type loc typ =
   | "create" -> Query.Create
   | "update" -> Query.Update
   | "delete" -> Query.Delete
-  | _ -> raise_name_error (Pprinter.string_of_loc loc) "query type" typ
+  | _ -> raise_name_error loc "query type" typ
 
 let parse_permissions loc permissions =
   let check_permission permission =
     match permission with
     | "isAuth" -> (loc, "isAuth")
     | "owns" -> (loc, "owns")
-    | _ ->
-        raise_name_error
-          (Pprinter.string_of_loc loc)
-          "query permission" permission
+    | _ -> raise_name_error loc "query permission" permission
   in
   List.map ~f:check_permission permissions
 
 let parse_xra_element loc opening_id closing_id attributes children =
   if not (String.equal opening_id closing_id) then
-    raise_syntax_error (Pprinter.string_of_loc loc) closing_id
+    raise_syntax_error loc closing_id
   else XRA.Element (loc, opening_id, attributes, children)
