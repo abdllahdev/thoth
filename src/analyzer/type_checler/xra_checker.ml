@@ -2,7 +2,7 @@ open Ast.Ast_types
 open Environment
 
 let rec check_expressions global_env xra_env expressions =
-  let check_expression expression =
+  let rec check_expression expression =
     match expression with
     | XRA.BasicExpression basic_expression -> (
         match basic_expression with
@@ -15,7 +15,16 @@ let rec check_expressions global_env xra_env expressions =
         match children with
         | Some children -> check_expressions global_env xra_env children
         | None -> ())
-    | XRA.ForLoopStatement (_, _, _, _) -> ()
+    | XRA.Attribute (_, _, expression) -> check_expression expression
+    | XRA.IfThenElseStatement (_, _, then_block, else_block) ->
+        check_expression then_block;
+        check_expression else_block
+    | XRA.IfThenStatement (_, _, then_block) -> check_expression then_block
+    | XRA.ForLoopStatement (loc, id, _, for_block) ->
+        XRAEnvironment.extend xra_env;
+        XRAEnvironment.allocate xra_env loc ~key:id ~data:"var";
+        check_expression for_block;
+        XRAEnvironment.shrink xra_env
     | _ -> ()
   in
   match expressions with

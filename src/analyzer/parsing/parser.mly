@@ -208,7 +208,7 @@ xra_expression:
   | xra_element = xra_element
     { xra_element }
   | IF; conditional_expression = xra_conditional_expression; THEN; then_block = xra_expression; ELSE; else_block = xra_expression;
-    { XRA.IfElseStatement($startpos, conditional_expression, then_block, else_block) }
+    { XRA.IfThenElseStatement($startpos, conditional_expression, then_block, else_block) }
   | IF; conditional_expression = xra_conditional_expression THEN; then_block = xra_expression;
     { XRA.IfThenStatement($startpos, conditional_expression, then_block) }
   | FOR; var = ID; IN; lst = variable_expression; ARROW; output = xra_expression;

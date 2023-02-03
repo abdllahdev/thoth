@@ -74,7 +74,8 @@ module XRA = struct
     | Attribute of loc * id * expression
     | QueryApplication of loc * id * id list
     | BasicExpression of basic_expression
-    | IfElseStatement of loc * conditional_expression * expression * expression
+    | IfThenElseStatement of
+        loc * conditional_expression * expression * expression
     | IfThenStatement of loc * conditional_expression * expression
     | ForLoopStatement of loc * id * expression * expression
     | LetExpression of loc * id * expression

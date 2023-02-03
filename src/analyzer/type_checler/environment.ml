@@ -121,24 +121,26 @@ end
 
 module XRAEnvironment = struct
   type scope = (string, string) Hashtbl.t
-  type t = scope list
+  type t = scope list ref
 
-  let create_env () = [ Hashtbl.create ~size:17 (module String) ]
+  let create_scope () = Hashtbl.create ~size:17 (module String)
+  let create_env () = ref [ create_scope () ]
 
   let allocate env loc ~key ~data =
-    match env with
+    match !env with
     | [] -> ()
     | scope :: _ ->
         if not (Hashtbl.mem scope key) then Hashtbl.add_exn scope ~key ~data
         else raise_multi_definitions_error loc key
 
   let rec lookup env loc id =
-    match env with
+    let env_ref = env in
+    match !env with
     | [] -> raise_name_error loc "variable" id
-    | scope :: env -> if not (Hashtbl.mem scope id) then lookup env loc id
+    | scope :: _ -> if not (Hashtbl.mem scope id) then lookup env_ref loc id
 
-  let shrink env = match env with [] -> () | _ :: tail -> tail |> ignore
-  let extend env scope = scope :: env |> ignore
+  let shrink env = match !env with [] -> () | _ :: tail -> env := tail
+  let extend env = create_scope () :: !env |> ignore
 end
 
 module EnvironmentManager = struct
