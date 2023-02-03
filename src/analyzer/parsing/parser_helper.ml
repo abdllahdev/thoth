@@ -18,9 +18,14 @@ let parse_id loc id =
       "delete";
     ]
   in
-  if List.exists ~f:(fun x -> String.equal x id) keywords then
-    raise_reserved_keyword_error loc id
+  if List.exists ~f:(fun x -> String.equal x (String.lowercase id)) keywords
+  then raise_reserved_keyword_error loc id
   else id
+
+let parse_declaration_id loc id declaration_type =
+  let first_char = String.nget id 0 in
+  if Char.is_uppercase first_char then parse_id loc id
+  else raise_name_error loc declaration_type
 
 let parse_field_type field_type =
   match field_type with
@@ -37,7 +42,7 @@ let parse_query_arg loc arg fields =
   | "filter" -> Query.Filter (loc, fields)
   | "where" -> Query.Where (loc, List.hd_exn fields)
   | "data" -> Query.Data (loc, fields)
-  | _ -> raise_name_error loc "query argument" arg
+  | _ -> raise_unbound_value_error loc "query argument" arg
 
 let parse_query_type loc typ =
   match typ with
@@ -46,14 +51,14 @@ let parse_query_type loc typ =
   | "create" -> Query.Create
   | "update" -> Query.Update
   | "delete" -> Query.Delete
-  | _ -> raise_name_error loc "query type" typ
+  | _ -> raise_unbound_value_error loc "query type" typ
 
 let parse_permissions loc permissions =
   let check_permission permission =
     match permission with
     | "isAuth" -> (loc, "isAuth")
     | "owns" -> (loc, "owns")
-    | _ -> raise_name_error loc "query permission" permission
+    | _ -> raise_unbound_value_error loc "query permission" permission
   in
   List.map ~f:check_permission permissions
 

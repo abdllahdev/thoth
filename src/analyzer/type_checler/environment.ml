@@ -136,7 +136,7 @@ module XRAEnvironment = struct
   let rec lookup env loc id =
     let env_ref = env in
     match !env with
-    | [] -> raise_name_error loc "variable" id
+    | [] -> raise_unbound_value_error loc "variable" id
     | scope :: _ -> if not (Hashtbl.mem scope id) then lookup env_ref loc id
 
   let shrink env = match !env with [] -> () | _ :: tail -> env := tail

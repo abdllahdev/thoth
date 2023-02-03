@@ -11,7 +11,7 @@ let rec check_models global_env id models =
       (match model with
       | loc, model_id ->
           if not (GlobalEnvironment.contains global_env ~key:model_id) then
-            raise_name_error loc "model" model_id;
+            raise_unbound_value_error loc "model" model_id;
           let declaration_value =
             GlobalEnvironment.lookup global_env ~key:model_id
           in
@@ -29,13 +29,13 @@ let check_where_arg global_env loc id model field =
     |> GlobalEnvironment.get_model_value
   in
   if not (LocalEnvironment.contains model_value ~key:field) then
-    raise_name_error loc "field" field;
+    raise_unbound_value_error loc "field" field;
   let field_info : GlobalEnvironment.field_value =
     LocalEnvironment.lookup model_value ~key:field
   in
   let field_attrs_table = field_info.field_attrs_table in
   if not (LocalEnvironment.contains model_value ~key:field) then
-    raise_name_error loc "field" field
+    raise_unbound_value_error loc "field" field
   else if
     not
       (LocalEnvironment.contains field_attrs_table ~key:"@unique"
@@ -52,7 +52,7 @@ let check_filter_arg global_env loc model fields =
     (List.map
        ~f:(fun field ->
          if not (LocalEnvironment.contains model_value ~key:field) then
-           raise_name_error loc "field" field)
+           raise_unbound_value_error loc "field" field)
        fields)
 
 let check_data_arg global_env loc model fields =
@@ -65,7 +65,7 @@ let check_data_arg global_env loc model fields =
     (List.map
        ~f:(fun field ->
          if not (LocalEnvironment.contains model_value ~key:field) then
-           raise_name_error loc "field" field)
+           raise_unbound_value_error loc "field" field)
        fields)
 
 let check_args global_env loc typ id model args : unit =

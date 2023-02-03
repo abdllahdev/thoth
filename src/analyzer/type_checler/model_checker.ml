@@ -108,7 +108,7 @@ let check_field_attr global_env model_env field_id
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
            if not (LocalEnvironment.contains model_env ~key:field) then
-             raise_name_error loc "field" field
+             raise_unbound_value_error loc "field" field
        | Model.AttrArgNow loc ->
            raise_type_error loc "Reference" "now" "DateTime" id
        | Model.AttrArgLiteral literal ->
@@ -127,7 +127,7 @@ let check_field_attr global_env model_env field_id
           in
 
           if not (LocalEnvironment.contains other_model_table ~key:ref) then
-            raise_name_error loc "field" ref;
+            raise_unbound_value_error loc "field" ref;
 
           let field_attrs =
             (LocalEnvironment.lookup other_model_table ~key:ref)
@@ -142,7 +142,7 @@ let check_field_attr global_env model_env field_id
           check_attribute_argument id literal Reference
       | Model.AttrArgNow loc ->
           raise_type_error loc "Reference" "now" "DateTime" id)
-  | _ -> raise_name_error loc "attribute" id
+  | _ -> raise_unbound_value_error loc "attribute" id
 
 let rec check_field_attrs global_env model_env field_id field_attrs =
   match field_attrs with
@@ -156,7 +156,7 @@ let check_field_type global_env model_id field_id field_type loc : unit =
   match custom_type with
   | Some custom_type ->
       if not (GlobalEnvironment.contains global_env ~key:custom_type) then
-        raise_name_error loc "type" custom_type;
+        raise_unbound_value_error loc "type" custom_type;
 
       let declaration_value =
         GlobalEnvironment.lookup global_env ~key:custom_type

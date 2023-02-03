@@ -9,10 +9,16 @@ let raise_type_error loc expected_type received_value received_type id =
            '%s' in '%s'"
           (string_of_loc loc) expected_type received_value received_type id))
 
-let raise_name_error loc typ id =
+let raise_unbound_value_error loc typ id =
+  raise
+    (UnboundValueError
+       (Fmt.str "@(%s): Unbound %s '%s'" (string_of_loc loc) typ id))
+
+let raise_name_error loc declaration_type =
   raise
     (NameError
-       (Fmt.str "NameError@(%s): Undefined %s '%s'" (string_of_loc loc) typ id))
+       (Fmt.str "@(%s): %s declaration name must start with a capital character"
+          (string_of_loc loc) declaration_type))
 
 let raise_syntax_error loc value =
   raise

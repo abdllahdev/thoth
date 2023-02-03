@@ -244,7 +244,7 @@ component_body:
 
 component_arg:
   | arg = ID; COLON; typ = ID
-    { (arg, typ) }
+    { (parse_id $startpos arg, typ) }
 
 component_args:
   | LEFT_PARAN; args = separated_list(COMMA, component_arg); RIGHT_PARAN
@@ -253,13 +253,13 @@ component_args:
 
 declaration:
   | MODEL; model_id = ID; model_body = model_body
-    { Model($startpos, (parse_id $startpos model_id), model_body) }
+    { Model($startpos, (parse_declaration_id $startpos model_id "Model"), model_body) }
   | models = query_models; permissions = option(permissions); QUERY; LT; typ = ID; GT; query_id = ID; args = query_args; option(SEMICOLON)
     { Query($startpos, (parse_id $startpos query_id), parse_query_type $startpos typ, args, models, permissions) }
   | COMPONENT; component_id = ID; args = option(component_args); component_body = component_body
-    { Component($startpos, (parse_id $startpos component_id), args, component_body) }
+    { Component($startpos, (parse_declaration_id $startpos component_id "Component"), args, component_body) }
   | route = page_route; permissions = option(permissions); PAGE; component_id = ID; component_body = component_body
-    { Page($startpos, (parse_id $startpos component_id), route, permissions, component_body) }
+    { Page($startpos, (parse_declaration_id $startpos component_id "Page"), route, permissions, component_body) }
   ;
 
 ast:
