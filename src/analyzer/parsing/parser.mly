@@ -183,11 +183,12 @@ xra_dot_expression:
     { XRA.Dot($startpos, id, None) }
   ;
 
+(* TODO: solve this problem, this rule never reduces to ID *)
 xra_variable_expression:
-  | xra_dot_expression = xra_dot_expression
-    { XRA.DotExpression(xra_dot_expression) }
   | id = ID
     { XRA.Variable($startpos, id) }
+  | xra_dot_expression = xra_dot_expression
+    { XRA.DotExpression(xra_dot_expression) }
   ;
 
 xra_basic_expression:
@@ -303,17 +304,6 @@ xra_general_body:
     { (xra_let_expression, xra_render_expression) }
   ;
 
-xra_component_type:
-  | LT; CREATE; COLON; query_id = ID; GT
-    { Component.Create($startpos, query_id) }
-  | LT; UPDATE; COLON; query_id = ID; GT
-    { Component.Update($startpos, query_id) }
-  | LT; DELETE; COLON; query_id = ID; GT
-    { Component.Delete($startpos, query_id) }
-  | LT; FETCH; COLON; query_id = ID; AS; variable = ID; GT
-    { Component.Fetch($startpos, query_id, variable) }
-  ;
-
 xra_component_arg:
   | arg = ID; COLON; typ = ID
     { (parse_id $startpos arg, typ) }
@@ -364,7 +354,7 @@ xra_component:
         args,
         Component.GeneralBody(xra_general_body)) }
   | COMPONENT;
-    xra_component_type = xra_component_type;
+    LT; FETCH; COLON; query_id = ID; AS; variable = ID; GT;
     component_id = ID;
     LEFT_BRACE;
     on_error = xra_fetch_component_declarations;
@@ -374,11 +364,11 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        xra_component_type,
+        Component.Fetch(query_id, variable),
         None,
         Component.FetchBody(on_error, on_loading, on_success)) }
   | COMPONENT;
-    xra_component_type = xra_component_type;
+    LT; CREATE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
     fromFields = xra_action_component_form_fields;
@@ -387,11 +377,11 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        xra_component_type,
+        Component.Create(query_id),
         None,
         Component.CreateBody(fromFields, submitButton)) }
   | COMPONENT;
-    xra_component_type = xra_component_type;
+    LT; UPDATE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
     fromFields = xra_action_component_form_fields;
@@ -400,11 +390,11 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        xra_component_type,
+        Component.Update(query_id),
         None,
         Component.UpdateBody(fromFields, submitButton)) }
   | COMPONENT;
-    xra_component_type = xra_component_type;
+    LT; DELETE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
     submitButton = xra_action_component_submit_button;
@@ -412,7 +402,7 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        xra_component_type,
+        Component.Delete(query_id),
         None,
         Component.DeleteBody(submitButton)) }
   ;

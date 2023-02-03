@@ -29,7 +29,7 @@ module GlobalEnvironment = struct
   }
 
   type component_value = {
-    component_type : Component.component_type;
+    component_type : Component.typ;
     args : Component.arg list option;
   }
 

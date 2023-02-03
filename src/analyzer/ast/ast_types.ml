@@ -82,14 +82,14 @@ module Component = struct
   type arg = string * string
   type query_id = id
 
-  type component_type =
+  type typ =
     | General
-    | Fetch of loc * query_id * string
-    | Create of loc * query_id
-    | Update of loc * query_id
-    | Delete of loc * query_id
+    | Fetch of query_id * string
+    | Create of query_id
+    | Update of query_id
+    | Delete of query_id
 
-  type component_body =
+  type body =
     | GeneralBody of XRA.body
     | FetchBody of
         XRA.expression list * XRA.expression list * XRA.expression list
@@ -114,11 +114,7 @@ type query_declaration =
   * permission list option
 
 type component_declaration =
-  loc
-  * id
-  * Component.component_type
-  * Component.arg list option
-  * Component.component_body
+  loc * id * Component.typ * Component.arg list option * Component.body
 
 type page_declaration =
   loc * id * Page.route * permission list option * XRA.body
