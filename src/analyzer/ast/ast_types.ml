@@ -55,44 +55,36 @@ end
 module XRA = struct
   type query_application = loc * id * id list
 
-  type xra_basic_expression =
+  type basic_expression =
     | Literal of literal
     | Variable of id
-    | Dot of id * xra_basic_expression
+    | Dot of id * basic_expression
 
-  type xra_conditional_expression =
-    | LiteralConditionalExpression of loc * xra_basic_expression
-    | NotConditionalExpression of loc * xra_basic_expression
-    | EqConditionalExpression of
-        loc * xra_basic_expression * xra_basic_expression
-    | NotEqConditionalExpression of
-        loc * xra_basic_expression * xra_basic_expression
-    | LtConditionalExpression of
-        loc * xra_basic_expression * xra_basic_expression
-    | GtConditionalExpression of
-        loc * xra_basic_expression * xra_basic_expression
-    | LtOrEqConditionalExpression of
-        loc * xra_basic_expression * xra_basic_expression
-    | GtOrEqConditionalExpression of
-        loc * xra_basic_expression * xra_basic_expression
+  type conditional_expression =
+    | LiteralConditionalExpression of loc * basic_expression
+    | NotConditionalExpression of loc * basic_expression
+    | EqConditionalExpression of loc * basic_expression * basic_expression
+    | NotEqConditionalExpression of loc * basic_expression * basic_expression
+    | LtConditionalExpression of loc * basic_expression * basic_expression
+    | GtConditionalExpression of loc * basic_expression * basic_expression
+    | LtOrEqConditionalExpression of loc * basic_expression * basic_expression
+    | GtOrEqConditionalExpression of loc * basic_expression * basic_expression
 
-  type xra_expression =
-    | Element of
-        loc * id * xra_expression list option * xra_expression list option
-    | Attribute of loc * id * xra_expression
+  type expression =
+    | Element of loc * id * expression list option * expression list option
+    | Attribute of loc * id * expression
     | QueryApplication of loc * id * id list
-    | BasicExpression of loc * xra_basic_expression
-    | IfElseStatement of
-        loc * xra_conditional_expression * xra_expression * xra_expression
-    | IfThenStatement of loc * xra_conditional_expression * xra_expression
-    | ForLoopStatement of loc * id * xra_basic_expression * xra_expression
-    | LetExpression of loc * id * xra_expression
+    | BasicExpression of loc * basic_expression
+    | IfElseStatement of loc * conditional_expression * expression * expression
+    | IfThenStatement of loc * conditional_expression * expression
+    | ForLoopStatement of loc * id * basic_expression * expression
+    | LetExpression of loc * id * expression
 
-  type body = xra_expression list option * xra_expression list
+  type body = expression list option * expression list
 end
 
 module Component = struct
-  type args = (string * string) list option
+  type arg = string * string
 end
 
 module Page = struct
@@ -110,7 +102,7 @@ type query_declaration =
   * Query.model list
   * permission list option
 
-type component_declaration = loc * id * Component.args * XRA.body
+type component_declaration = loc * id * Component.arg list option * XRA.body
 
 type page_declaration =
   loc * id * Page.route * permission list option * XRA.body

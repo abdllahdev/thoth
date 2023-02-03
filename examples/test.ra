@@ -49,6 +49,7 @@ page Home {
 
 	render(
 		<div>
+			{ task }
 			{
 				if tasks.error then
 					<div>{ "An error occured" }</div>

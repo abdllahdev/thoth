@@ -228,12 +228,12 @@ xra_expression_declaration:
     { xra_expression }
   ;
 
-let_expression:
+xra_let_expression:
   | LET; id = ID; EQUAL; xra_expression = xra_expression
     { XRA.LetExpression($startpos, (parse_id $startpos id), xra_expression) }
   ;
 
-render_expression:
+xra_render_expression:
   | RENDER; LEFT_PARAN; xra = list(xra_element); RIGHT_PARAN
     { xra }
   ;
@@ -244,8 +244,8 @@ page_route:
   ;
 
 component_body:
-  | LEFT_BRACE; let_expressions = option(list(let_expression)) render_expression = render_expression; RIGHT_BRACE
-    { (let_expressions, render_expression) }
+  | LEFT_BRACE; xra_let_expression = option(list(xra_let_expression)) xra_render_expression = xra_render_expression; RIGHT_BRACE
+    { (xra_let_expression, xra_render_expression) }
   ;
 
 component_arg:

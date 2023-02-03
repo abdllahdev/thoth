@@ -227,5 +227,5 @@ let rec check_fields global_env model_env model_id fields =
       check_field global_env model_env model_id field;
       check_fields global_env model_env model_id fields
 
-let check_model global_env model_table model_id fields =
+let check_model global_env model_table (_, model_id, fields) =
   check_fields global_env model_table model_id fields

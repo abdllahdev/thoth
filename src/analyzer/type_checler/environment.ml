@@ -29,10 +29,12 @@ module GlobalEnvironment = struct
     models : Query.model list;
   }
 
+  type component_value = { args : Component.arg list option }
+
   type declaration_value =
     | ModelValue of model_value
     | QueryValue of query_value
-    | ComponentValue
+    | ComponentValue of component_value
     | PageValue
 
   type t = (string, declaration_value) Hashtbl.t
@@ -49,7 +51,7 @@ module GlobalEnvironment = struct
     match declaration_value with
     | ModelValue _ -> ModelType
     | QueryValue _ -> QueryType
-    | ComponentValue -> ComponentType
+    | ComponentValue _ -> ComponentType
     | PageValue -> PageType
 
   let check_type declaration_value declaration_type =
@@ -120,17 +122,21 @@ end
 
 module XRAEnvironment = struct
   type scope = (string, string) Hashtbl.t
-  type env = scope list
+  type t = scope list
 
-  let create_scope () = Hashtbl.create ~size:17 (module String)
-  let create_env () = [ create_scope () ]
+  let create_env () = [ Hashtbl.create ~size:17 (module String) ]
 
-  let rec lookup env loc symbol =
+  let allocate env loc ~key ~data =
     match env with
-    | [] -> raise_name_error (Pprinter.string_of_loc loc) "variable" symbol
-    | scope :: env ->
-        if Hashtbl.mem scope symbol then Hashtbl.find_exn scope symbol
-        else lookup env loc symbol
+    | [] -> ()
+    | scope :: _ ->
+        if not (Hashtbl.mem scope key) then Hashtbl.add_exn scope ~key ~data
+        else raise_multi_definitions_error (Pprinter.string_of_loc loc) key
+
+  let rec lookup env loc id =
+    match env with
+    | [] -> raise_name_error (Pprinter.string_of_loc loc) "variable" id
+    | scope :: env -> if not (Hashtbl.mem scope id) then lookup env loc id
 
   let shrink env = match env with [] -> () | _ :: tail -> tail |> ignore
   let extend env scope = scope :: env |> ignore
@@ -147,7 +153,8 @@ module EnvironmentManager = struct
       match declaration with
       | Model model -> ModelEnvironment.allocate global_env model
       | Query query -> QueryEnvironment.allocate global_env query
-      | Component (loc, id, _, _) -> allocate global_env loc id ComponentValue
+      | Component (loc, id, args, _) ->
+          allocate global_env loc id (ComponentValue { args })
       | Page (loc, id, _, _, _) -> allocate global_env loc id PageValue
     in
     List.iter
