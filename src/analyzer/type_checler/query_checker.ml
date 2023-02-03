@@ -19,7 +19,7 @@ let rec check_models global_env id models =
             raise_type_error loc "Model" model_id
               (Pprinter.string_of_declaration_type
                  (GlobalEnvironment.infer_type declaration_value))
-              id);
+              ~id);
       check_models global_env id models
 
 let check_where_arg global_env loc id model field =
@@ -40,7 +40,7 @@ let check_where_arg global_env loc id model field =
     not
       (LocalEnvironment.contains field_attrs_table ~key:"@unique"
       || LocalEnvironment.contains field_attrs_table ~key:"@id")
-  then raise_type_error loc "UniqueField" field "NonUniqueField" id
+  then raise_type_error loc "UniqueField" field "NonUniqueField" ~id
 
 let check_filter_arg global_env loc model fields =
   let _, model_id = model in
@@ -74,27 +74,27 @@ let check_args global_env loc typ id model args : unit =
       let arg = List.hd_exn args in
       match arg with
       | Query.Where (loc, _) ->
-          raise_type_error loc "FilterArgument" "where" "WhereArgument" id
+          raise_type_error loc "FilterArgument" "where" "WhereArgument" ~id
       | Query.Data (loc, _) ->
-          raise_type_error loc "FilterArgument" "data" "DataArgument" id
+          raise_type_error loc "FilterArgument" "data" "DataArgument" ~id
       | Query.Filter (loc, fields) ->
           check_filter_arg global_env loc model fields)
   | Query.FindUnique -> (
       let arg = List.hd_exn args in
       match arg with
       | Query.Filter (loc, _) ->
-          raise_type_error loc "WhereArgument" "filter" "FilterArgument" id
+          raise_type_error loc "WhereArgument" "filter" "FilterArgument" ~id
       | Query.Data (loc, _) ->
-          raise_type_error loc "WhereArgument" "data" "DataArgument" id
+          raise_type_error loc "WhereArgument" "data" "DataArgument" ~id
       | Query.Where (loc, field) ->
           check_where_arg global_env loc id model field)
   | Query.Create -> (
       let arg = List.hd_exn args in
       match arg with
       | Query.Filter (loc, _) ->
-          raise_type_error loc "DataArgument" "filter" "FilterArgument" id
+          raise_type_error loc "DataArgument" "filter" "FilterArgument" ~id
       | Query.Where (loc, _) ->
-          raise_type_error loc "DataArgument" "where" "WhereArgument" id
+          raise_type_error loc "DataArgument" "where" "WhereArgument" ~id
       | Query.Data (loc, fields) -> check_data_arg global_env loc model fields)
   | Query.Update ->
       let args_length = List.length args in
@@ -106,7 +106,7 @@ let check_args global_env loc typ id model args : unit =
              match arg with
              | Query.Filter (loc, _) ->
                  raise_type_error loc "DataArgument and WhereArgument" "filter"
-                   "FilterArgument" id
+                   "FilterArgument" ~id
              | Query.Where (loc, field) ->
                  check_where_arg global_env loc id model field
              | Query.Data (loc, fields) ->
@@ -116,9 +116,9 @@ let check_args global_env loc typ id model args : unit =
       let arg = List.hd_exn args in
       match arg with
       | Query.Filter (loc, _) ->
-          raise_type_error loc "WhereArgument" "filter" "FilterArgument" id
+          raise_type_error loc "WhereArgument" "filter" "FilterArgument" ~id
       | Query.Data (loc, _) ->
-          raise_type_error loc "WhereArgument" "data" "DataArgument" id
+          raise_type_error loc "WhereArgument" "data" "DataArgument" ~id
       | Query.Where (loc, field) ->
           check_where_arg global_env loc id model field)
 

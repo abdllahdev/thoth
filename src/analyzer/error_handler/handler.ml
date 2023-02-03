@@ -1,13 +1,22 @@
 open Errors
+open Core
 open Ast.Pprinter
 
-let raise_type_error loc expected_type received_value received_type id =
-  raise
-    (TypeError
-       (Fmt.str
-          "@(%s): Excepted an argument of type '%s' but received '%s' of type \
-           '%s' in '%s'"
-          (string_of_loc loc) expected_type received_value received_type id))
+let raise_type_error ?(id = "") loc expected_type received_value received_type =
+  if String.is_empty id then
+    raise
+      (TypeError
+         (Fmt.str
+            "@(%s): Excepted a value of type '%s' but received '%s' of type \
+             '%s'"
+            (string_of_loc loc) expected_type received_value received_type))
+  else
+    raise
+      (TypeError
+         (Fmt.str
+            "@(%s): Excepted a value of type '%s' but received '%s' of type \
+             '%s' in '%s'"
+            (string_of_loc loc) expected_type received_value received_type id))
 
 let raise_unbound_value_error loc typ id =
   raise

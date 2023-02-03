@@ -1,20 +1,40 @@
+open Core
+open Ast
 open Ast.Ast_types
 open Environment
+open Error_handler.Handler
 
 let rec check_expressions global_env xra_env expressions =
+  let check_element loc id attributes children =
+    (let is_component id =
+       let first_char = String.get id 0 in
+       Char.is_uppercase first_char
+     in
+     if is_component id then
+       if not (GlobalEnvironment.contains global_env ~key:id) then
+         raise_unbound_value_error loc "Component" id
+       else
+         let declaration = GlobalEnvironment.lookup global_env ~key:id in
+         let declaration_type = GlobalEnvironment.infer_type declaration in
+         if not (GlobalEnvironment.check_type declaration ComponentType) then
+           raise_type_error loc "Component" id
+             (Pprinter.string_of_declaration_type declaration_type));
+    (match attributes with
+    | Some attributes -> check_expressions global_env xra_env attributes
+    | None -> ());
+    match children with
+    | Some children -> check_expressions global_env xra_env children
+    | None -> ()
+  in
+
   let rec check_expression expression =
     match expression with
     | XRA.BasicExpression basic_expression -> (
         match basic_expression with
         | Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
         | _ -> ())
-    | XRA.Element (_, _, attributes, children) -> (
-        (match attributes with
-        | Some attributes -> check_expressions global_env xra_env attributes
-        | None -> ());
-        match children with
-        | Some children -> check_expressions global_env xra_env children
-        | None -> ())
+    | XRA.Element (loc, id, attributes, children) ->
+        check_element loc id attributes children
     | XRA.Attribute (_, _, expression) -> check_expression expression
     | XRA.IfThenElseStatement (_, _, then_block, else_block) ->
         check_expression then_block;
@@ -27,6 +47,7 @@ let rec check_expressions global_env xra_env expressions =
         XRAEnvironment.shrink xra_env
     | _ -> ()
   in
+
   match expressions with
   | [] -> ()
   | expression :: expressions ->
