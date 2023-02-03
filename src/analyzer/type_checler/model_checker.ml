@@ -64,7 +64,7 @@ let check_attribute_argument id literal expected_type =
             ~id)
   | _ -> ()
 
-let check_field_attr global_env model_env field_id
+let check_field_attr global_env model_env model_id field_id
     (Model.Attribute (loc, id, args)) =
   let args_length = List.length args in
   let field_info : GlobalEnvironment.field_value =
@@ -110,7 +110,8 @@ let check_field_attr global_env model_env field_id
        match relation_field with
        | Model.AttrArgRef (loc, field) ->
            if not (LocalEnvironment.contains model_env ~key:field) then
-             raise_unbound_value_error loc "field" field
+             raise_undefined_error loc "field" field ~declaration_id:model_id
+               ~declaration_type:"model"
        | Model.AttrArgNow loc ->
            raise_type_error loc "Reference" "now" "DateTime" ~id
        | Model.AttrArgLiteral literal ->
@@ -129,7 +130,8 @@ let check_field_attr global_env model_env field_id
           in
 
           if not (LocalEnvironment.contains other_model_table ~key:ref) then
-            raise_unbound_value_error loc "field" ref;
+            raise_undefined_error loc "field" ref ~declaration_id:other_model_id
+              ~declaration_type:"model";
 
           let field_attrs =
             (LocalEnvironment.lookup other_model_table ~key:ref)
@@ -144,21 +146,21 @@ let check_field_attr global_env model_env field_id
           check_attribute_argument id literal Reference
       | Model.AttrArgNow loc ->
           raise_type_error loc "Reference" "now" "DateTime" ~id)
-  | _ -> raise_unbound_value_error loc "attribute" id
+  | _ -> raise_undefined_error loc "attribute" id
 
-let rec check_field_attrs global_env model_env field_id field_attrs =
+let rec check_field_attrs global_env model_env model_id field_id field_attrs =
   match field_attrs with
   | [] -> ()
   | field_attr :: field_attrs ->
-      check_field_attr global_env model_env field_id field_attr;
-      check_field_attrs global_env model_env field_id field_attrs
+      check_field_attr global_env model_env model_id field_id field_attr;
+      check_field_attrs global_env model_env model_id field_id field_attrs
 
 let check_field_type global_env model_id field_id field_type loc : unit =
   let custom_type = get_custom_type field_type in
   match custom_type with
   | Some custom_type ->
       if not (GlobalEnvironment.contains global_env ~key:custom_type) then
-        raise_unbound_value_error loc "type" custom_type;
+        raise_undefined_error loc "model" custom_type;
 
       let declaration_value =
         GlobalEnvironment.lookup global_env ~key:custom_type
@@ -190,7 +192,7 @@ let check_field global_env model_env model_id field =
   match field with
   | Model.Field (loc, id, field_type, field_attrs) ->
       check_field_type global_env model_id id field_type loc;
-      check_field_attrs global_env model_env id field_attrs
+      check_field_attrs global_env model_env model_id id field_attrs
 
 let rec check_fields global_env model_env model_id fields =
   match fields with

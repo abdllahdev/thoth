@@ -18,10 +18,17 @@ let raise_type_error ?(id = "") loc expected_type received_value received_type =
              '%s' in '%s'"
             (string_of_loc loc) expected_type received_value received_type id))
 
-let raise_unbound_value_error loc typ id =
-  raise
-    (UnboundValueError
-       (Fmt.str "@(%s): Unbound %s '%s'" (string_of_loc loc) typ id))
+let raise_undefined_error ?(declaration_id = "") ?(declaration_type = "") loc
+    typ id =
+  if String.is_empty declaration_id then
+    raise
+      (UndefinedError
+         (Fmt.str "@(%s): Undefined %s '%s'" (string_of_loc loc) typ id))
+  else
+    raise
+      (UndefinedError
+         (Fmt.str "@(%s): Undefined %s '%s' in %s '%s'" (string_of_loc loc) typ
+            id declaration_type declaration_id))
 
 let raise_name_error loc declaration_type =
   raise

@@ -55,15 +55,30 @@
 
 %%
 
-literal:
-  | str = STRING
-    { StringLiteral($startpos, str) }
-  | number = INT
-    { IntLiteral($startpos, number) }
+boolean:
   | TRUE
     { BooleanLiteral($startpos, true) }
   | FALSE
     { BooleanLiteral($startpos, false) }
+  ;
+
+number:
+  | number = INT
+    { IntLiteral($startpos, number) }
+  ;
+
+str:
+  | str = STRING
+    { StringLiteral($startpos, str) }
+  ;
+
+literal:
+  | boolean = boolean
+    { boolean }
+  | number = number
+    { number }
+  | str = str
+    { str }
   ;
 
 (* Model rules *)
@@ -237,7 +252,7 @@ page_route:
     { route }
   ;
 
-component_body:
+xra_body:
   | LEFT_BRACE; xra_let_expression = option(list(xra_let_expression)) xra_render_expression = xra_render_expression; RIGHT_BRACE
     { (xra_let_expression, xra_render_expression) }
   ;
@@ -256,10 +271,10 @@ declaration:
     { Model($startpos, (parse_declaration_id $startpos model_id "Model"), model_body) }
   | models = query_models; permissions = option(permissions); QUERY; LT; typ = ID; GT; query_id = ID; args = query_args; option(SEMICOLON)
     { Query($startpos, (parse_id $startpos query_id), parse_query_type $startpos typ, args, models, permissions) }
-  | COMPONENT; component_id = ID; args = option(component_args); component_body = component_body
-    { Component($startpos, (parse_declaration_id $startpos component_id "Component"), args, component_body) }
-  | route = page_route; permissions = option(permissions); PAGE; component_id = ID; component_body = component_body
-    { Page($startpos, (parse_declaration_id $startpos component_id "Page"), route, permissions, component_body) }
+  | COMPONENT; component_id = ID; args = option(component_args); xra_body = xra_body
+    { Component($startpos, (parse_declaration_id $startpos component_id "Component"), args, xra_body) }
+  | route = page_route; permissions = option(permissions); PAGE; component_id = ID; xra_body = xra_body
+    { Page($startpos, (parse_declaration_id $startpos component_id "Page"), route, permissions, xra_body) }
   ;
 
 ast:

@@ -12,7 +12,7 @@ let rec check_expressions global_env xra_env expressions =
      in
      if is_component id then
        if not (GlobalEnvironment.contains global_env ~key:id) then
-         raise_unbound_value_error loc "Component" id
+         raise_undefined_error loc "component" id
        else
          let declaration = GlobalEnvironment.lookup global_env ~key:id in
          let declaration_type = GlobalEnvironment.infer_type declaration in
