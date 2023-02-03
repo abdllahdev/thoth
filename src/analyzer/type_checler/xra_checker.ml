@@ -27,17 +27,53 @@ let rec check_expressions global_env xra_env expressions =
     | None -> ()
   in
 
+  let check_query_application loc id _ =
+    if not (GlobalEnvironment.contains global_env ~key:id) then
+      raise_undefined_error loc "query" id;
+    let query =
+      GlobalEnvironment.lookup global_env ~key:id
+      |> GlobalEnvironment.get_query_value
+    in
+    if
+      not
+        (phys_equal query.typ Query.FindMany
+        || phys_equal query.typ Query.FindUnique)
+    then
+      raise_bad_assignment_error loc id
+        (Fmt.str "%sQuery"
+           (String.capitalize
+              (Pprinter.QueryPrinter.string_of_query_type query.typ)))
+  in
+
   let rec check_expression expression =
     match expression with
     | XRA.Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
+    (* TODO: check query arguments *)
+    | XRA.QueryApplication (loc, id, args) ->
+        check_query_application loc id args
     | XRA.Element (loc, id, attributes, children) ->
         check_element loc id attributes children
     | XRA.Attribute (_, _, expression) -> check_expression expression
-    | XRA.IfThenElseStatement (_, _, then_block, else_block) ->
+    | XRA.LiteralConditionalExpression (_, expression)
+    | XRA.NotConditionalExpression (_, expression) ->
+        check_expression expression
+    | XRA.EqConditionalExpression (_, left_expression, right_expression)
+    | XRA.NotEqConditionalExpression (_, left_expression, right_expression)
+    | XRA.LtConditionalExpression (_, left_expression, right_expression)
+    | XRA.GtConditionalExpression (_, left_expression, right_expression)
+    | XRA.LtOrEqConditionalExpression (_, left_expression, right_expression)
+    | XRA.GtOrEqConditionalExpression (_, left_expression, right_expression) ->
+        check_expression left_expression;
+        check_expression right_expression
+    | XRA.IfThenElseStatement (_, condition, then_block, else_block) ->
+        check_expression condition;
         check_expression then_block;
         check_expression else_block
-    | XRA.IfThenStatement (_, _, then_block) -> check_expression then_block
-    | XRA.ForLoopStatement (loc, id, _, for_block) ->
+    | XRA.IfThenStatement (_, condition, then_block) ->
+        check_expression condition;
+        check_expression then_block
+    | XRA.ForLoopStatement (loc, id, lst, for_block) ->
+        check_expression lst;
         XRAEnvironment.extend xra_env;
         XRAEnvironment.allocate xra_env loc ~key:id ~data:"var";
         check_expression for_block;

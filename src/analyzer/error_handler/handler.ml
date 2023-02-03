@@ -74,3 +74,11 @@ let raise_attribute_error loc field_type attribute =
           (string_of_loc loc)
           (string_of_scalar_type field_type)
           attribute))
+
+let raise_bad_assignment_error loc id typ =
+  raise
+    (BadAssignmentError
+       (Fmt.str
+          "@(%s): The value of '%s' of type '%s' cannot be assigned to a \
+           variable"
+          (string_of_loc loc) id typ))

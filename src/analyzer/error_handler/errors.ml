@@ -7,3 +7,4 @@ exception MultiDefinitionsError of string
 exception ArgumentNumberError of string
 exception RelationError of string
 exception AttributeError of string
+exception BadAssignmentError of string

@@ -58,9 +58,9 @@ module XRA = struct
     | Literal of literal
     | Variable of loc * id
     | Dot of loc * id * expression
+    | QueryApplication of loc * id * id list
     | Element of loc * id * expression list option * expression list option
     | Attribute of loc * id * expression
-    | QueryApplication of loc * id * id list
     | LiteralConditionalExpression of loc * expression
     | NotConditionalExpression of loc * expression
     | EqConditionalExpression of loc * expression * expression
