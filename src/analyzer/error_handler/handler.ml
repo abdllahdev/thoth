@@ -38,8 +38,8 @@ let raise_name_error loc declaration_type =
 
 let raise_syntax_error loc value =
   raise
-    (SyntaxError
-       (Fmt.str "@(%s): Unidentifiable '%s'" (string_of_loc loc) value))
+    (InvalidSyntaxError
+       (Fmt.str "@(%s): Invalid syntax '%s'" (string_of_loc loc) value))
 
 let raise_reserved_keyword_error loc value =
   raise
@@ -80,3 +80,9 @@ let raise_bad_assignment_error loc id =
     (BadAssignmentError
        (Fmt.str "@(%s): The value of '%s' cannot be assigned to a variable"
           (string_of_loc loc) id))
+
+let raise_bad_argument_type_error loc typ =
+  raise
+    (BasArgumentTypeError
+       (Fmt.str "@(%s): Component argument type cannot be of type '%s'"
+          (string_of_loc loc) typ))

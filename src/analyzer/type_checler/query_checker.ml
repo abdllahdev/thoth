@@ -17,8 +17,8 @@ let rec check_models global_env id models =
           in
           if not (GlobalEnvironment.check_type declaration_value ModelType) then
             raise_type_error loc "Model" model_id
-              (Pprinter.string_of_declaration_type
-                 (GlobalEnvironment.infer_type declaration_value))
+              (GlobalEnvironment.infer_type declaration_value
+              |> Pprinter.string_of_declaration_type)
               ~id);
       check_models global_env id models
 

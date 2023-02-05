@@ -18,6 +18,7 @@
     "cnum",
     "concat",
     "curr",
+    "failwith",
     "getcwd",
     "Hashtbl",
     "lexbuf",

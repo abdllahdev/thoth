@@ -8,8 +8,6 @@ type scalar_type =
   | String
   | Int
   | Boolean
-  | Bytes
-  | Json
   | DateTime
   | Reference
   | CustomType of string
@@ -79,15 +77,16 @@ module XRA = struct
 end
 
 module Component = struct
-  type arg = string * string
+  type arg = loc * id * typ
   type query_id = id
 
   type typ =
     | General
-    | Fetch of query_id * string
-    | Create of query_id
-    | Update of query_id
-    | Delete of query_id
+    | FetchMany of loc * query_id * string
+    | FetchOne of loc * query_id * string
+    | Create of loc * query_id
+    | Update of loc * query_id
+    | Delete of loc * query_id
 
   type body =
     | GeneralBody of XRA.body

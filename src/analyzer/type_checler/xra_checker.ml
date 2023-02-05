@@ -1,8 +1,9 @@
 open Core
-open Ast
+open Ast.Pprinter
 open Ast.Ast_types
-open Environment
 open Error_handler.Handler
+open Environment
+open Helper
 
 let rec check_expressions global_env xra_env expressions =
   let check_element loc id attributes children =
@@ -15,10 +16,10 @@ let rec check_expressions global_env xra_env expressions =
          raise_undefined_error loc "component" id
        else
          let declaration = GlobalEnvironment.lookup global_env ~key:id in
-         let declaration_type = GlobalEnvironment.infer_type declaration in
          if not (GlobalEnvironment.check_type declaration ComponentType) then
            raise_type_error loc "Component" id
-             (Pprinter.string_of_declaration_type declaration_type));
+             (GlobalEnvironment.infer_type declaration
+             |> string_of_declaration_type));
     (match attributes with
     | Some attributes -> check_expressions global_env xra_env attributes
     | None -> ());
@@ -27,9 +28,9 @@ let rec check_expressions global_env xra_env expressions =
     | None -> ()
   in
 
-  let check_dot_expression _ = () in
-
   (* TODO: check dot expressions *)
+  let check_dot_expression (XRA.Dot (_, _, _)) = () in
+
   let rec check_expression expression =
     match expression with
     | XRA.Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
@@ -61,6 +62,10 @@ let rec check_expressions global_env xra_env expressions =
         XRAEnvironment.allocate xra_env loc ~key:id ~data:"var";
         check_expression for_block;
         XRAEnvironment.shrink xra_env
+    | XRA.Fragment (_, children) -> (
+        match children with
+        | Some children -> check_expressions global_env xra_env children
+        | None -> ())
     | _ -> ()
   in
 
@@ -94,7 +99,73 @@ let rec check_render_expression global_env xra_env elements =
       check_expressions global_env xra_env [ element ];
       check_render_expression global_env xra_env elements
 
-let check_body global_env xra_env body =
+let check_general_body global_env xra_env body =
   let let_expressions, render_expression = body in
   check_let_expressions global_env xra_env let_expressions;
   check_render_expression global_env xra_env render_expression
+
+let check_component global_env xra_env typ args body =
+  let check_query loc id expected_type =
+    if not (GlobalEnvironment.contains global_env ~key:id) then
+      raise_undefined_error loc "query" id;
+
+    let declaration_value = GlobalEnvironment.lookup global_env ~key:id in
+    if not (GlobalEnvironment.check_type declaration_value QueryType) then
+      raise_type_error loc "Query" id
+        (GlobalEnvironment.infer_type declaration_value
+        |> string_of_declaration_type);
+
+    let query_value = GlobalEnvironment.get_query_value declaration_value in
+    if not (phys_equal query_value.typ expected_type) then
+      raise_type_error loc
+        (Fmt.str "%sQuery" (QueryPrinter.string_of_query_type expected_type))
+        id
+        (Fmt.str "%sQuery" (QueryPrinter.string_of_query_type query_value.typ))
+  in
+
+  (match typ with
+  | Component.General -> ()
+  | Component.FetchMany (loc, id, variable) ->
+      check_query loc id Query.FindMany;
+      XRAEnvironment.allocate xra_env loc ~key:variable ~data:"someType"
+  | Component.FetchOne (loc, id, variable) ->
+      check_query loc id Query.FindUnique;
+      XRAEnvironment.allocate xra_env loc ~key:variable ~data:"someType"
+  | Component.Create (loc, id) -> check_query loc id Query.Create
+  | Component.Update (loc, id) -> check_query loc id Query.Update
+  | Component.Delete (loc, id) -> check_query loc id Query.Update);
+
+  let check_arg arg =
+    let loc, id, typ = arg in
+    let typ = get_scalar_type typ in
+    match typ with
+    | String | Int | Boolean | DateTime -> ()
+    | Reference ->
+        raise_bad_argument_type_error loc (string_of_scalar_type Reference)
+    | CustomType typ ->
+        if not (GlobalEnvironment.contains global_env ~key:typ) then
+          raise_undefined_error loc "model" typ;
+
+        let declaration_value = GlobalEnvironment.lookup global_env ~key:typ in
+        if not (GlobalEnvironment.check_type declaration_value ModelType) then
+          raise_type_error loc "Model" typ
+            (GlobalEnvironment.infer_type declaration_value
+            |> string_of_declaration_type)
+        else XRAEnvironment.allocate xra_env loc ~key:id ~data:typ
+  in
+
+  (match args with Some args -> List.iter ~f:check_arg args | None -> ());
+
+  let check_component_body body =
+    match body with
+    | Component.GeneralBody body -> check_general_body global_env xra_env body
+    | Component.FetchBody (on_error, on_loading, on_success) ->
+        check_expressions global_env xra_env on_error;
+        check_expressions global_env xra_env on_loading;
+        check_expressions global_env xra_env on_success
+    (* TODO: check action component body *)
+    | Component.CreateBody (_, _) | Component.UpdateBody (_, _) -> ()
+    | Component.DeleteBody _ -> ()
+  in
+
+  check_component_body body

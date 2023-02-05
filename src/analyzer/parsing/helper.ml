@@ -27,15 +27,20 @@ let parse_declaration_id loc id declaration_type =
   if Char.is_uppercase first_char then parse_id loc id
   else raise_name_error loc declaration_type
 
-let parse_field_type field_type =
-  match field_type with
-  | "String" -> String
-  | "Int" -> Int
-  | "Boolean" -> Boolean
-  | "Bytes" -> Bytes
-  | "Json" -> Json
-  | "DateTime" -> DateTime
-  | _ -> CustomType field_type
+let parse_type ?(list_modifier = false) ?(optional_modifier = false) typ =
+  let scalar_type =
+    match typ with
+    | "String" -> String
+    | "Int" -> Int
+    | "Boolean" -> Boolean
+    | "DateTime" -> DateTime
+    | _ -> CustomType typ
+  in
+  if list_modifier && optional_modifier then
+    Composite (OptionalList scalar_type)
+  else if list_modifier then Composite (List scalar_type)
+  else if optional_modifier then Composite (Optional scalar_type)
+  else Scalar scalar_type
 
 let parse_query_arg loc arg fields =
   match arg with

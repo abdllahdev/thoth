@@ -1,6 +1,6 @@
 %{
   open Ast.Ast_types
-  open Parser_helper
+  open Helper
 %}
 
 %token <int>    INT
@@ -26,6 +26,7 @@
 %token          RIGHT_BRACKET
 %token          LEFT_PARAN
 %token          RIGHT_PARAN
+%token          LIST_MODIFIER
 %token          LT
 %token          GT
 %token          SLASH
@@ -46,7 +47,8 @@
 %token          CREATE
 %token          UPDATE
 %token          DELETE
-%token          FETCH
+%token          FETCH_MANY
+%token          FETCH_ONE
 %token          ON_ERROR
 %token          ON_LOADING
 %token          ON_SUCCESS
@@ -112,20 +114,20 @@ model_field_attr:
     { Model.Attribute($startpos, attr, args) }
   ;
 
-model_field_type:
-  | field_type = ID; QUESTION_MARK
-    { Composite (Optional (parse_field_type field_type)) }
-  | field_type = ID; LEFT_BRACKET; RIGHT_BRACKET
-    { Composite (List (parse_field_type field_type)) }
-  | field_type = ID; LEFT_BRACKET; RIGHT_BRACKET; QUESTION_MARK
-    { Composite (OptionalList (parse_field_type field_type)) }
-  | field_type = ID
-    { Scalar (parse_field_type field_type) }
+typ:
+  | typ = ID; QUESTION_MARK
+    { parse_type typ ~optional_modifier:true }
+  | typ = ID; LIST_MODIFIER
+    { parse_type typ ~list_modifier:true }
+  | typ = ID; LIST_MODIFIER; QUESTION_MARK
+    { parse_type typ ~list_modifier:true ~optional_modifier:true }
+  | typ = ID
+    { parse_type typ }
   ;
 
 model_field:
-  | id = ID; field_type = model_field_type; attrs = list(model_field_attr); option(SEMICOLON)
-    { Model.Field($startpos, id, field_type, attrs) }
+  | id = ID; typ = typ; attrs = list(model_field_attr); option(SEMICOLON)
+    { Model.Field($startpos, id, typ, attrs) }
   ;
 
 model_body:
@@ -305,8 +307,8 @@ xra_general_body:
   ;
 
 xra_component_arg:
-  | arg = ID; COLON; typ = ID
-    { (parse_id $startpos arg, typ) }
+  | arg = ID; COLON; typ = typ
+    { ($startpos, parse_id $startpos arg, typ) }
   ;
 
 xra_component_args:
@@ -354,7 +356,7 @@ xra_component:
         args,
         Component.GeneralBody(xra_general_body)) }
   | COMPONENT;
-    LT; FETCH; COLON; query_id = ID; AS; variable = ID; GT;
+    LT; FETCH_MANY; COLON; query_id = ID; AS; variable = ID; GT;
     component_id = ID;
     LEFT_BRACE;
     on_error = xra_fetch_component_declarations;
@@ -364,7 +366,21 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        Component.Fetch(query_id, variable),
+        Component.FetchMany($startpos, query_id, variable),
+        None,
+        Component.FetchBody(on_error, on_loading, on_success)) }
+  | COMPONENT;
+    LT; FETCH_ONE; COLON; query_id = ID; AS; variable = ID; GT;
+    component_id = ID;
+    LEFT_BRACE;
+    on_error = xra_fetch_component_declarations;
+    on_loading = xra_fetch_component_declarations;
+    on_success = xra_fetch_component_declarations;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        Component.FetchOne($startpos, query_id, variable),
         None,
         Component.FetchBody(on_error, on_loading, on_success)) }
   | COMPONENT;
@@ -377,7 +393,7 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        Component.Create(query_id),
+        Component.Create($startpos, query_id),
         None,
         Component.CreateBody(fromFields, submitButton)) }
   | COMPONENT;
@@ -390,7 +406,7 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        Component.Update(query_id),
+        Component.Update($startpos, query_id),
         None,
         Component.UpdateBody(fromFields, submitButton)) }
   | COMPONENT;
@@ -402,7 +418,7 @@ xra_component:
     { Component(
         $startpos,
         component_id,
-        Component.Delete(query_id),
+        Component.Delete($startpos, query_id),
         None,
         Component.DeleteBody(submitButton)) }
   ;

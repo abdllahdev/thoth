@@ -25,67 +25,69 @@ let attribute = ('@')(id)
 (* Lexer rules *)
 rule token =
   parse
-  | '{'           { LEFT_BRACE }
-  | '}'           { RIGHT_BRACE }
-  | '['           { LEFT_BRACKET }
-  | ']'           { RIGHT_BRACKET }
-  | '('           { LEFT_PARAN }
-  | ')'           { RIGHT_PARAN }
-  | '/'           { SLASH }
-  | '?'           { QUESTION_MARK }
-  | '<'           { LT }
-  | '>'           { GT }
-  | '='           { EQUAL }
-  | '!'           { NOT }
-  | "=="          { EQ }
-  | "!="          { NOT_EQ }
-  | "<="          { LT_OR_EQ }
-  | ">="          { GT_OR_EQ }
-  | ':'           { COLON }
-  | ';'           { SEMICOLON }
-  | ','           { COMMA }
-  | '.'           { DOT }
-  | '"'           { read_string (Buffer.create 17) lexbuf }
-  | "</"          { CLOSING_TAG }
-  | "<>"          { FRAGMENT_OPENING }
-  | "</>"         { FRAGMENT_CLOSING }
-  | "=>"          { ARROW }
-  | "true"        { TRUE }
-  | "false"       { FALSE }
-  | "if"          { IF }
-  | "then"        { THEN }
-  | "else"        { ELSE }
-  | "for"         { FOR }
-  | "in"          { IN }
-  | "model"       { MODEL }
-  | "query"       { QUERY }
-  | "component"   { COMPONENT }
-  | "page"        { PAGE }
-  | "render"      { RENDER }
-  | "let"         { LET }
-  | "now"         { NOW }
-  | "findMany"    { FIND_MANY }
-  | "findUnique"   { FIND_UNIQUE }
-  | "create"      { CREATE }
-  | "update"      { UPDATE }
-  | "delete"      { DELETE }
-  | "fetch"       { FETCH }
-  | "as"          { AS }
-  | "onError"     { ON_ERROR }
-  | "onLoading"   { ON_LOADING }
-  | "onSuccess"   { ON_SUCCESS }
-  | "formFields"    { FORM_DATA }
-  | "formButton"  { FORM_BUTTON }
-  | "@on"         { ON }
-  | "@permission" { PERMISSION }
-  | "@at"         { AT }
-  | attribute     { ATTRIBUTE (Lexing.lexeme lexbuf) }
-  | int           { INT (int_of_string (Lexing.lexeme lexbuf))}
-  | id            { ID (Lexing.lexeme lexbuf) }
-  | whitespace    { token lexbuf }
-  | newline       { next_line lexbuf; token lexbuf }
-  | eof           { EOF }
-  | _             { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
+  | '{'            { LEFT_BRACE }
+  | '}'            { RIGHT_BRACE }
+  | '['            { LEFT_BRACKET }
+  | ']'            { RIGHT_BRACKET }
+  | '('            { LEFT_PARAN }
+  | ')'            { RIGHT_PARAN }
+  | '/'            { SLASH }
+  | '?'            { QUESTION_MARK }
+  | '<'            { LT }
+  | '>'            { GT }
+  | '='            { EQUAL }
+  | '!'            { NOT }
+  | "=="           { EQ }
+  | "!="           { NOT_EQ }
+  | "<="           { LT_OR_EQ }
+  | ">="           { GT_OR_EQ }
+  | ':'            { COLON }
+  | ';'            { SEMICOLON }
+  | ','            { COMMA }
+  | '.'            { DOT }
+  | '"'            { read_string (Buffer.create 17) lexbuf }
+  | "[]"           { LIST_MODIFIER }
+  | "</"           { CLOSING_TAG }
+  | "<>"           { FRAGMENT_OPENING }
+  | "</>"          { FRAGMENT_CLOSING }
+  | "=>"           { ARROW }
+  | "true"         { TRUE }
+  | "false"        { FALSE }
+  | "if"           { IF }
+  | "then"         { THEN }
+  | "else"         { ELSE }
+  | "for"          { FOR }
+  | "in"           { IN }
+  | "model"        { MODEL }
+  | "query"        { QUERY }
+  | "component"    { COMPONENT }
+  | "page"         { PAGE }
+  | "render"       { RENDER }
+  | "let"          { LET }
+  | "now"          { NOW }
+  | "findMany"     { FIND_MANY }
+  | "findUnique"    { FIND_UNIQUE }
+  | "create"       { CREATE }
+  | "update"       { UPDATE }
+  | "delete"       { DELETE }
+  | "fetchMany"    { FETCH_MANY }
+  | "fetchOne"     { FETCH_ONE }
+  | "as"           { AS }
+  | "onError"      { ON_ERROR }
+  | "onLoading"    { ON_LOADING }
+  | "onSuccess"    { ON_SUCCESS }
+  | "formFields"   { FORM_DATA }
+  | "formButton"   { FORM_BUTTON }
+  | "@on"          { ON }
+  | "@permission"  { PERMISSION }
+  | "@at"          { AT }
+  | attribute      { ATTRIBUTE (Lexing.lexeme lexbuf) }
+  | int            { INT (int_of_string (Lexing.lexeme lexbuf))}
+  | id             { ID (Lexing.lexeme lexbuf) }
+  | whitespace     { token lexbuf }
+  | newline        { next_line lexbuf; token lexbuf }
+  | eof            { EOF }
+  | _              { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
 
 and read_string buf = parse
   | '"'           { STRING (Buffer.contents buf) }

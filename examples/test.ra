@@ -18,11 +18,11 @@ query<findMany> getTasks(filter: { title, isDone })
 
 @on(Task)
 @permission(isAuth)
-query<create> createTask(data: { title })
+query<findUnique> getTaskById(where: id)
 
 @on(Task)
 @permission(isAuth)
-query<findUnique> getTaskById(where: id)
+query<create> createTask(data: { title })
 
 @on(Task)
 @permission(isAuth, owns)
@@ -42,7 +42,7 @@ component TaskComponent(task: Task) {
 	)
 }
 
-component<fetch:getTasks as tasks> TasksComponent {
+component<fetchMany:getTasks as tasks> TasksComponent {
 	onError => render(
 		<div>{ "An error occured" }</div>
 	)
@@ -61,7 +61,7 @@ component<fetch:getTasks as tasks> TasksComponent {
 	)
 }
 
-component<create:creatTask> TaskCreateForm {
+component<create:createTask> TaskCreateForm {
 	formFields => {
 		title: <input type="text" />
 	}

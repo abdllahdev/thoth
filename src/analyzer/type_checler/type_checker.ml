@@ -16,10 +16,12 @@ let check_declaration global_env declarations =
         in
         check_model global_env model_value model
     | Query query -> check_query global_env query
-    | Component _ -> ()
+    | Component (_, _, typ, args, body) ->
+        let xra_env = XRAEnvironment.create_env () in
+        check_component global_env xra_env typ args body
     | Page (_, _, _, _, body) ->
         let xra_env = XRAEnvironment.create_env () in
-        check_body global_env xra_env body
+        check_general_body global_env xra_env body
   in
   List.iter ~f:(fun declaration -> check_declaration declaration) declarations
 

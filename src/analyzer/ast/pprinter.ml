@@ -9,10 +9,8 @@ let string_of_scalar_type scalar_type =
   match scalar_type with
   | String -> "String"
   | Int -> "Int"
-  | Json -> "Json"
   | Boolean -> "Boolean"
   | DateTime -> "DateTime"
-  | Bytes -> "Bytes"
   | Reference -> "Reference"
   | CustomType custom_type -> custom_type
 

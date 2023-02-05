@@ -3,6 +3,7 @@ open Ast
 open Ast.Ast_types
 open Error_handler.Handler
 open Environment
+open Helper
 
 let get_custom_scalar_type scalar_type =
   match scalar_type with CustomType str -> Some str | _ -> None
@@ -15,15 +16,6 @@ let get_custom_type typ =
       | List scalar_type -> get_custom_scalar_type scalar_type
       | Optional scalar_type -> get_custom_scalar_type scalar_type
       | OptionalList scalar_type -> get_custom_scalar_type scalar_type)
-
-let get_scalar_type (typ : typ) : scalar_type =
-  match typ with
-  | Scalar scalar_type -> scalar_type
-  | Composite composite_type -> (
-      match composite_type with
-      | List scalar_type -> scalar_type
-      | Optional scalar_type -> scalar_type
-      | OptionalList scalar_type -> scalar_type)
 
 let is_custom_type scalar_type =
   match scalar_type with CustomType _ -> true | _ -> false
@@ -167,8 +159,8 @@ let check_field_type global_env model_id field_id field_type loc : unit =
       in
       if not (GlobalEnvironment.check_type declaration_value ModelType) then
         raise_type_error loc "Model" custom_type
-          (Pprinter.string_of_declaration_type
-             (GlobalEnvironment.infer_type declaration_value))
+          (GlobalEnvironment.infer_type declaration_value
+          |> Pprinter.string_of_declaration_type)
           ~id:field_id;
 
       let other_model =
