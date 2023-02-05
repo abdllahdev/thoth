@@ -76,7 +76,7 @@ rule token =
   | "onError"      { ON_ERROR }
   | "onLoading"    { ON_LOADING }
   | "onSuccess"    { ON_SUCCESS }
-  | "formFields"   { FORM_DATA }
+  | "formFields"   { FORM_FIELDS }
   | "formButton"   { FORM_BUTTON }
   | "@on"          { ON }
   | "@permission"  { PERMISSION }

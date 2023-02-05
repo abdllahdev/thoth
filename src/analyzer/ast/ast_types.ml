@@ -92,8 +92,8 @@ module Component = struct
     | GeneralBody of XRA.body
     | FetchBody of
         XRA.expression list * XRA.expression list * XRA.expression list
-    | CreateBody of (string * XRA.expression) list * XRA.expression
-    | UpdateBody of (string * XRA.expression) list * XRA.expression
+    | CreateBody of (loc * string * XRA.expression) list * XRA.expression
+    | UpdateBody of (loc * string * XRA.expression) list * XRA.expression
     | DeleteBody of XRA.expression
 end
 

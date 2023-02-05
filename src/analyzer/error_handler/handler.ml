@@ -83,6 +83,14 @@ let raise_bad_assignment_error loc id =
 
 let raise_bad_argument_type_error loc typ =
   raise
-    (BasArgumentTypeError
+    (BadArgumentTypeError
        (Fmt.str "@(%s): Component argument type cannot be of type '%s'"
           (string_of_loc loc) typ))
+
+let raise_element_type_error loc expected_type received_type =
+  raise
+    (ElementTypeError
+       (Fmt.str
+          "@(%s): Expected an element type of '%s' but received an element of \
+           type '%s'"
+          (string_of_loc loc) expected_type received_type))

@@ -104,6 +104,8 @@ let check_general_body global_env xra_env body =
   check_let_expressions global_env xra_env let_expressions;
   check_render_expression global_env xra_env render_expression
 
+let check_page = check_general_body
+
 let check_component global_env xra_env typ args body =
   let check_query loc id expected_type =
     if not (GlobalEnvironment.contains global_env ~key:id) then
@@ -156,16 +158,85 @@ let check_component global_env xra_env typ args body =
 
   (match args with Some args -> List.iter ~f:check_arg args | None -> ());
 
+  let rec check_form_fields form_fields =
+    let query_id =
+      (match typ with
+      | Component.Create (_, id) | Component.Update (_, id) -> Some id
+      | _ -> None)
+      |> Option.value_exn
+    in
+    let query =
+      GlobalEnvironment.lookup global_env ~key:query_id
+      |> GlobalEnvironment.get_query_value
+    in
+
+    match form_fields with
+    | [] -> ()
+    | form_field :: form_fields ->
+        let loc, id, input = form_field in
+
+        let rec check_args args =
+          match args with
+          | [] -> ()
+          | arg :: args ->
+              (match arg with
+              | Query.Data (_, fields) -> (
+                  try
+                    List.find_exn ~f:(fun field -> String.equal id field) fields
+                    |> ignore
+                  with Not_found_s _ ->
+                    raise_undefined_error loc "field" id
+                      ~declaration_type:"query" ~declaration_id:query_id)
+              | _ -> ());
+              check_args args
+        in
+
+        check_args query.args;
+
+        let loc, element_id =
+          (match input with
+          | XRA.Element (loc, id, _, _) -> Some (loc, id)
+          | _ -> None)
+          |> Option.value_exn
+        in
+
+        if
+          not
+            (String.equal element_id "input"
+            || String.equal element_id "select"
+            || String.equal element_id "option"
+            || String.equal element_id "textarea")
+        then
+          raise_element_type_error loc "input, select, option, or textarea"
+            element_id;
+
+        check_form_fields form_fields
+  in
+
+  let check_form_button form_button =
+    let loc, element_id =
+      (match form_button with
+      | XRA.Element (loc, id, _, _) -> Some (loc, id)
+      | _ -> None)
+      |> Option.value_exn
+    in
+
+    if not (String.equal element_id "button") then
+      raise_element_type_error loc "button" element_id
+  in
+
   let check_component_body body =
     match body with
     | Component.GeneralBody body -> check_general_body global_env xra_env body
     | Component.FetchBody (on_error, on_loading, on_success) ->
-        check_expressions global_env xra_env on_error;
-        check_expressions global_env xra_env on_loading;
-        check_expressions global_env xra_env on_success
-    (* TODO: check action component body *)
-    | Component.CreateBody (_, _) | Component.UpdateBody (_, _) -> ()
-    | Component.DeleteBody _ -> ()
+        check_render_expression global_env xra_env on_error;
+        check_render_expression global_env xra_env on_loading;
+        check_render_expression global_env xra_env on_success
+    | Component.CreateBody (form_fields, form_button)
+    | Component.UpdateBody (form_fields, form_button) ->
+        check_form_fields form_fields;
+        check_form_button form_button
+    | Component.DeleteBody form_button -> check_form_button form_button
   in
 
   check_component_body body

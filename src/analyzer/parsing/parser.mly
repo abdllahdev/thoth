@@ -52,7 +52,7 @@
 %token          ON_ERROR
 %token          ON_LOADING
 %token          ON_SUCCESS
-%token          FORM_DATA
+%token          FORM_FIELDS
 %token          FORM_BUTTON
 %token          AS
 %token          FRAGMENT_OPENING
@@ -231,6 +231,17 @@ xra_element:
   | xra_self_closing_element = xra_self_closing_element
     { let (id, attributes) = xra_self_closing_element
       in XRA.Element ($startpos, id, attributes, None) }
+  ;
+
+xra_element_or_fragment:
+  | xra_opening_element = xra_opening_element;
+    children = option(list(xra_children));
+    closing_id = xra_closing_element
+    { let (opening_id, attributes) = xra_opening_element in
+      parse_xra_element $startpos opening_id closing_id attributes children }
+  | xra_self_closing_element = xra_self_closing_element
+    { let (id, attributes) = xra_self_closing_element
+      in XRA.Element ($startpos, id, attributes, None) }
   | FRAGMENT_OPENING; children = option(list(xra_children)); FRAGMENT_CLOSING
     { XRA.Fragment($startpos, children) }
   ;
@@ -268,8 +279,8 @@ xra_conditional_expression:
 xra_expression:
   | xra_basic_expression = xra_basic_expression
     { xra_basic_expression }
-  | xra_element = xra_element
-    { xra_element }
+  | xra_element_or_fragment = xra_element_or_fragment
+    { xra_element_or_fragment }
   | IF; conditional_expression = xra_conditional_expression;
     THEN; then_block = xra_expression;
     ELSE; else_block = xra_expression;
@@ -294,7 +305,7 @@ xra_let_expression:
   ;
 
 xra_render_expression:
-  | RENDER; LEFT_PARAN; xra = list(xra_element); RIGHT_PARAN
+  | RENDER; LEFT_PARAN; xra = list(xra_element_or_fragment); RIGHT_PARAN
     { xra }
   ;
 
@@ -327,11 +338,11 @@ xra_fetch_component_declarations:
 
 xra_action_component_form_field:
   | id = ID; COLON; xra_element = xra_element
-    { (id, xra_element) }
+    { ($startpos, id, xra_element) }
   ;
 
 xra_action_component_form_fields:
-  | FORM_DATA;
+  | FORM_FIELDS;
     ARROW;
     LEFT_BRACE;
     fields = separated_nonempty_list(COMMA, xra_action_component_form_field);
