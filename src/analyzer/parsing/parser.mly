@@ -183,20 +183,17 @@ permissions:
     { parse_permissions $startpos permissions }
 
 (* xra rules *)
-xra_dot_expression:
-  | id = ID; DOT; dot = option(xra_dot_expression)
+(* TODO: solve this problem, this rule never reduces to ID *)
+xra_variable:
+  | dot = xra_variable; DOT; id = ID
     { XRA.Dot($startpos, id, dot) }
   | id = ID;
-    { XRA.Dot($startpos, id, None) }
+    { XRA.Variable($startpos, id) }
   ;
 
-(* TODO: solve this problem, this rule never reduces to ID *)
 xra_variable_expression:
-  | id = ID
-    { XRA.Variable($startpos, id) }
-  | xra_dot_expression = xra_dot_expression
-    { XRA.DotExpression(xra_dot_expression) }
-  ;
+  | xra_variable = xra_variable
+    { XRA.VariableExpression(xra_variable) }
 
 xra_basic_expression:
   | literal = literal

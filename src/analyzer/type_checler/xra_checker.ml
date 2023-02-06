@@ -5,35 +5,72 @@ open Environment
 open Helper
 
 let rec check_expressions global_env xra_env expressions =
+  (* TODO: check dot expressions *)
+  let check_variable_expression variable_expression =
+    match variable_expression with
+    | XRA.Variable (loc, id) ->
+        if not (XRAEnvironment.contains xra_env id) then
+          raise_undefined_error loc "variable" id
+    | XRA.Dot _ -> ()
+  in
+
   let check_element loc id attributes children =
-    (let is_component id =
-       let first_char = String.get id 0 in
-       Char.is_uppercase first_char
-     in
-     if is_component id then
-       if not (GlobalEnvironment.contains global_env ~key:id) then
-         raise_undefined_error loc "component" id
-       else
-         let declaration = GlobalEnvironment.lookup global_env ~key:id in
-         if not (GlobalEnvironment.check_type declaration ComponentDeclaration)
-         then
-           raise_declaration_type_error loc ComponentDeclaration id
-             (GlobalEnvironment.infer_type declaration));
+    let is_component id =
+      let first_char = String.get id 0 in
+      Char.is_uppercase first_char
+    in
+
+    (if is_component id then
+     if not (GlobalEnvironment.contains global_env ~key:id) then
+       raise_undefined_error loc "component" id
+     else
+       let declaration = GlobalEnvironment.lookup global_env ~key:id in
+       if not (GlobalEnvironment.check_type declaration ComponentDeclaration)
+       then
+         raise_declaration_type_error loc ComponentDeclaration id
+           (GlobalEnvironment.infer_type declaration));
+
+    (* TODO: check for the type of arguments *)
+    let check_component_args attributes =
+      if is_component id then
+        let component =
+          GlobalEnvironment.lookup global_env ~key:id
+          |> GlobalEnvironment.get_component_value
+        in
+
+        let args = component.args in
+        match args with
+        | Some args ->
+            let attribute_ids =
+              List.map attributes ~f:(fun attribute ->
+                  (match attribute with
+                  | XRA.Attribute (_, id, _) -> Some id
+                  | _ -> None)
+                  |> Option.value_exn)
+            in
+
+            List.iter args ~f:(fun arg ->
+                let _, arg_id, arg_typ = arg in
+                if not (List.mem attribute_ids arg_id ~equal:String.equal) then
+                  raise_missing_argument_error loc arg_id arg_typ id)
+        | None -> ()
+    in
+
     (match attributes with
-    | Some attributes -> check_expressions global_env xra_env attributes
-    | None -> ());
+    | Some attributes ->
+        check_component_args attributes;
+        check_expressions global_env xra_env attributes
+    | None -> check_component_args []);
+
     match children with
     | Some children -> check_expressions global_env xra_env children
     | None -> ()
   in
 
-  (* TODO: check dot expressions *)
-  let check_dot_expression (XRA.Dot (_, _, _)) = () in
-
   let rec check_expression expression =
     match expression with
-    | XRA.Variable (loc, id) -> XRAEnvironment.lookup xra_env loc id
-    | XRA.DotExpression dot_expression -> check_dot_expression dot_expression
+    | XRA.VariableExpression variable_expression ->
+        check_variable_expression variable_expression
     | XRA.Element (loc, id, attributes, children) ->
         check_element loc id attributes children
     | XRA.Attribute (_, _, expression) -> check_expression expression
@@ -57,8 +94,33 @@ let rec check_expressions global_env xra_env expressions =
         check_expression then_block
     | XRA.ForLoopStatement (loc, id, lst, for_block) ->
         check_expression lst;
+
+        let lst_loc, lst_id =
+          (match lst with
+          | XRA.VariableExpression variable_expression -> (
+              match variable_expression with
+              | Variable (loc, id) -> Some (loc, id)
+              | _ -> None)
+          | _ -> None)
+          |> Option.value_exn
+        in
+
+        let typ = XRAEnvironment.lookup xra_env lst_loc lst_id in
+
+        (match typ with
+        | Composite composite_type -> (
+            match composite_type with
+            | List _ -> ()
+            | _ ->
+                raise_type_error lst_loc (Composite (List (CustomType "List")))
+                  lst_id typ)
+        | Scalar _ ->
+            raise_type_error lst_loc (Composite (List (CustomType "List")))
+              lst_id typ);
+
         XRAEnvironment.extend xra_env;
-        XRAEnvironment.allocate xra_env loc ~key:id ~data:"var";
+        XRAEnvironment.allocate xra_env loc ~key:id
+          ~data:(Scalar (get_scalar_type typ));
         check_expression for_block;
         XRAEnvironment.shrink xra_env
     | XRA.Fragment (_, children) -> (
@@ -74,22 +136,22 @@ let rec check_expressions global_env xra_env expressions =
       check_expression expression;
       check_expressions global_env xra_env expressions
 
-let check_let_expression global_env xra_env let_expression =
-  match let_expression with
-  | XRA.LetExpression (loc, id, expression) ->
-      XRAEnvironment.allocate xra_env loc ~key:id ~data:"let";
-      check_expressions global_env xra_env [ expression ]
-  | _ -> ()
+(* let check_let_expression global_env xra_env let_expression =
+     match let_expression with
+     | XRA.LetExpression (loc, id, expression) ->
+         XRAEnvironment.allocate xra_env loc ~key:id ~data:"let";
+         check_expressions global_env xra_env [ expression ]
+     | _ -> ()
 
-let rec check_let_expressions global_env xra_env let_expressions =
-  match let_expressions with
-  | Some let_expressions -> (
-      match let_expressions with
-      | [] -> ()
-      | let_expression :: let_expressions ->
-          check_let_expression global_env xra_env let_expression;
-          check_let_expressions global_env xra_env (Some let_expressions))
-  | None -> ()
+   let rec check_let_expressions global_env xra_env let_expressions =
+     match let_expressions with
+     | Some let_expressions -> (
+         match let_expressions with
+         | [] -> ()
+         | let_expression :: let_expressions ->
+             check_let_expression global_env xra_env let_expression;
+             check_let_expressions global_env xra_env (Some let_expressions))
+     | None -> () *)
 
 let rec check_render_expression global_env xra_env elements =
   match elements with
@@ -99,8 +161,8 @@ let rec check_render_expression global_env xra_env elements =
       check_render_expression global_env xra_env elements
 
 let check_general_body global_env xra_env body =
-  let let_expressions, render_expression = body in
-  check_let_expressions global_env xra_env let_expressions;
+  let _, render_expression = body in
+  (* check_let_expressions global_env xra_env let_expressions; *)
   check_render_expression global_env xra_env render_expression
 
 let check_page = check_general_body
@@ -125,28 +187,40 @@ let check_component global_env xra_env typ args body =
   | Component.General -> ()
   | Component.FetchMany (loc, id, variable) ->
       check_query loc id Query.FindMany;
-      XRAEnvironment.allocate xra_env loc ~key:variable ~data:"someType"
+      let query_return_type =
+        (GlobalEnvironment.lookup global_env ~key:id
+        |> GlobalEnvironment.get_query_value)
+          .return_type
+      in
+      XRAEnvironment.allocate xra_env loc ~key:variable ~data:query_return_type
   | Component.FetchOne (loc, id, variable) ->
       check_query loc id Query.FindUnique;
-      XRAEnvironment.allocate xra_env loc ~key:variable ~data:"someType"
+      let query_return_type =
+        (GlobalEnvironment.lookup global_env ~key:id
+        |> GlobalEnvironment.get_query_value)
+          .return_type
+      in
+      XRAEnvironment.allocate xra_env loc ~key:variable ~data:query_return_type
   | Component.Create (loc, id) -> check_query loc id Query.Create
   | Component.Update (loc, id) -> check_query loc id Query.Update
   | Component.Delete (loc, id) -> check_query loc id Query.Update);
 
   let check_arg arg =
     let loc, id, typ = arg in
-    let typ = get_scalar_type typ in
-    match typ with
+    let scalar_typ = get_scalar_type typ in
+    match scalar_typ with
     | String | Int | Boolean | DateTime -> ()
     | Reference | Void -> raise_bad_argument_type_error loc (Scalar Reference)
-    | CustomType typ ->
-        if not (GlobalEnvironment.contains global_env ~key:typ) then
-          raise_undefined_error loc "type" typ;
+    | CustomType custom_type ->
+        if not (GlobalEnvironment.contains global_env ~key:custom_type) then
+          raise_undefined_error loc "type" custom_type;
 
-        let declaration_value = GlobalEnvironment.lookup global_env ~key:typ in
+        let declaration_value =
+          GlobalEnvironment.lookup global_env ~key:custom_type
+        in
         if not (GlobalEnvironment.check_type declaration_value ModelDeclaration)
         then
-          raise_declaration_type_error loc ModelDeclaration typ
+          raise_declaration_type_error loc ModelDeclaration custom_type
             (GlobalEnvironment.infer_type declaration_value)
         else XRAEnvironment.allocate xra_env loc ~key:id ~data:typ
   in

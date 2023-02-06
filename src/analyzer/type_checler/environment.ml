@@ -72,6 +72,12 @@ module GlobalEnvironment = struct
     | QueryValue query_value -> Some query_value
     | _ -> None)
     |> Option.value_exn
+
+  let get_component_value declaration_value =
+    (match declaration_value with
+    | ComponentValue component_value -> Some component_value
+    | _ -> None)
+    |> Option.value_exn
 end
 
 module ModelEnvironment = struct
@@ -153,7 +159,15 @@ module XRAEnvironment = struct
   let rec lookup env loc id =
     match !env with
     | [] -> raise_undefined_error loc "variable" id
-    | scope :: env -> if not (Hashtbl.mem scope id) then lookup (ref env) loc id
+    | scope :: env ->
+        if Hashtbl.mem scope id then Hashtbl.find_exn scope id
+        else lookup (ref env) loc id
+
+  let rec contains env id =
+    match !env with
+    | [] -> false
+    | scope :: env ->
+        if Hashtbl.mem scope id then true else contains (ref env) id
 
   let shrink env = match !env with [] -> () | _ :: tail -> env := tail
   let extend env = create_scope () :: !env |> ignore

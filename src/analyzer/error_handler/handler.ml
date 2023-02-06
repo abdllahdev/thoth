@@ -186,3 +186,9 @@ let raise_query_return_type_error loc query_type expected_type received_type =
           (QueryPrinter.string_of_query_type query_type)
           (string_of_type expected_type)
           (string_of_type received_type)))
+
+let raise_missing_argument_error loc arg_id typ id =
+  raise
+    (MissingArgumentError
+       (Fmt.str "@(%s): Missing argument '%s' of type '%s' in '%s"
+          (string_of_loc loc) arg_id (string_of_type typ) id))

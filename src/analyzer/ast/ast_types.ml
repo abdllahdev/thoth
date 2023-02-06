@@ -55,12 +55,14 @@ end
 
 module XRA = struct
   type query_application = loc * id * id list
-  type dot_expression = Dot of loc * id * dot_expression option
+
+  type variable_expression =
+    | Variable of loc * id
+    | Dot of loc * id * variable_expression
 
   type expression =
     | Literal of literal
-    | Variable of loc * id
-    | DotExpression of dot_expression
+    | VariableExpression of variable_expression
     | LetExpression of loc * id * expression
     | LiteralConditionalExpression of loc * expression
     | NotConditionalExpression of loc * expression
