@@ -36,7 +36,7 @@ let generate_attr_specs (Model.Attribute (_, id, args)) =
              ])
     | "@default" ->
         Fmt.str "%s(%s)" id
-          (String.concat ~sep:", " (List.map ~f:generate_attr_arg_specs args))
+          (String.concat ~sep:", " (List.map args ~f:generate_attr_arg_specs))
     | _ -> ""
   else
     match id with
@@ -44,23 +44,18 @@ let generate_attr_specs (Model.Attribute (_, id, args)) =
     | _ -> Fmt.str "%s" id
 
 let generate_attrs_specs field_attrs =
-  String.concat ~sep:" " (List.map ~f:generate_attr_specs field_attrs)
-
-let generate_field_type_specs field_type =
-  match field_type with
-  | Scalar scalar_type -> string_of_scalar_type scalar_type
-  | Composite composite_type -> string_of_composite_type composite_type
+  String.concat ~sep:" " (List.map field_attrs ~f:generate_attr_specs)
 
 let generate_field_specs (Model.Field (_, id, field_type, field_attrs)) =
-  let field_type = generate_field_type_specs field_type in
+  let field_type = string_of_type field_type in
   let field_attrs = generate_attrs_specs field_attrs in
   { id; field_type; field_attrs }
 
 let generate_model_specs model =
   let _, id, body = model in
-  let body = List.map ~f:generate_field_specs body in
+  let body = List.map body ~f:generate_field_specs in
   { id; body }
 
 let generate_db_specs models =
-  let models = List.map ~f:generate_model_specs models in
+  let models = List.map models ~f:generate_model_specs in
   { models }

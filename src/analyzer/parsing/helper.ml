@@ -42,21 +42,14 @@ let parse_type ?(list_modifier = false) ?(optional_modifier = false) typ =
   else if optional_modifier then Composite (Optional scalar_type)
   else Scalar scalar_type
 
-let parse_query_arg loc arg fields =
-  match arg with
-  | "filter" -> Query.Filter (loc, fields)
-  | "where" -> Query.Where (loc, List.hd_exn fields)
-  | "data" -> Query.Data (loc, fields)
-  | _ -> raise_undefined_error loc "query argument" arg
-
 let parse_permissions loc permissions =
   let check_permission permission =
     match permission with
     | "isAuth" -> (loc, "isAuth")
     | "owns" -> (loc, "owns")
-    | _ -> raise_undefined_error loc "query permission" permission
+    | _ -> raise_undefined_error loc "permission" permission
   in
-  List.map ~f:check_permission permissions
+  List.map permissions ~f:check_permission
 
 let parse_xra_element loc opening_id closing_id attributes children =
   if not (String.equal opening_id closing_id) then

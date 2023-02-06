@@ -10,6 +10,7 @@ type scalar_type =
   | Boolean
   | DateTime
   | Reference
+  | Void
   | CustomType of string
 
 type composite_type =
@@ -28,6 +29,8 @@ type permission = loc * id
 
 (* TODO: add enums to data models *)
 module Model = struct
+  type unique_field_type = UniqueField | NonUniqueField
+
   type attr_arg =
     | AttrArgLiteral of literal
     | AttrArgNow of loc
@@ -40,6 +43,7 @@ end
 
 module Query = struct
   type typ = FindUnique | FindMany | Create | Update | Delete
+  type argument_type = WhereArgument | DataArgument | FilterArgument
 
   type arg =
     | Where of loc * string
@@ -101,13 +105,13 @@ module Page = struct
   type route = string
 end
 
-type declaration_type = ModelType | QueryType | ComponentType | PageType
 type model_declaration = loc * id * Model.body
 
 type query_declaration =
   loc
   * id
   * Query.typ
+  * typ option
   * Query.arg list
   * Query.model list
   * permission list option
@@ -119,6 +123,12 @@ type page_declaration =
   loc * id * Page.route * permission list option * XRA.body
 
 (* The different types of declarations in the language *)
+type declaration_type =
+  | ModelDeclaration
+  | QueryDeclaration
+  | ComponentDeclaration
+  | PageDeclaration
+
 type declaration =
   | Model of model_declaration
   | Query of query_declaration

@@ -14,7 +14,7 @@ model Task {
 
 @on(Task)
 @permission(isAuth)
-query<findMany> getTasks(filter: { title, isDone })
+query<findMany> getTasks(filter: { title, isDone }) : Task[]
 
 @on(Task)
 @permission(isAuth)

@@ -5,21 +5,29 @@ let string_of_loc loc =
   Fmt.str "Line:%d, Position:%d" loc.Lexing.pos_lnum
     (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1)
 
-let string_of_scalar_type scalar_type =
-  match scalar_type with
-  | String -> "String"
-  | Int -> "Int"
-  | Boolean -> "Boolean"
-  | DateTime -> "DateTime"
-  | Reference -> "Reference"
-  | CustomType custom_type -> custom_type
+let string_of_type typ =
+  let string_of_scalar_type scalar_type =
+    match scalar_type with
+    | String -> "String"
+    | Int -> "Int"
+    | Boolean -> "Boolean"
+    | DateTime -> "DateTime"
+    | Reference -> "Reference"
+    | Void -> "Void"
+    | CustomType custom_type -> custom_type
+  in
 
-let string_of_composite_type composite_type =
-  match composite_type with
-  | List scalar_type -> Fmt.str "%s[]" (string_of_scalar_type scalar_type)
-  | Optional scalar_type -> Fmt.str "%s?" (string_of_scalar_type scalar_type)
-  | OptionalList scalar_type ->
-      Fmt.str "%s[]?" (string_of_scalar_type scalar_type)
+  let string_of_composite_type composite_type =
+    match composite_type with
+    | List scalar_type -> Fmt.str "%s[]" (string_of_scalar_type scalar_type)
+    | Optional scalar_type -> Fmt.str "%s?" (string_of_scalar_type scalar_type)
+    | OptionalList scalar_type ->
+        Fmt.str "%s[]?" (string_of_scalar_type scalar_type)
+  in
+
+  match typ with
+  | Scalar scalar_type -> string_of_scalar_type scalar_type
+  | Composite composite_type -> string_of_composite_type composite_type
 
 let string_of_literal literal =
   match literal with
@@ -28,6 +36,11 @@ let string_of_literal literal =
   | IntLiteral (_, num) -> Fmt.str "%d" num
 
 module ModelPrinter = struct
+  let string_of_field_unique_type field_unique_type =
+    match field_unique_type with
+    | Model.UniqueField -> "UniqueField"
+    | Model.NonUniqueField -> "NonUniqueField"
+
   let string_of_field_attr_arg arg =
     match arg with
     | Model.AttrArgLiteral literal ->
@@ -54,19 +67,14 @@ module ModelPrinter = struct
     | attr :: attrs ->
         string_of_field_attr attr ^ ", " ^ string_of_field_attrs attrs
 
-  let string_of_field_type field_type =
-    match field_type with
-    | Scalar scalar_type -> string_of_scalar_type scalar_type
-    | Composite composite_type -> string_of_composite_type composite_type
-
   let string_of_field field =
     match field with
     | Model.Field (_, id, field_type, attrs) ->
         if List.length attrs > 0 then
           Fmt.str "\"%s\", %s, %s" id
-            (string_of_field_type field_type)
+            (string_of_type field_type)
             (string_of_field_attrs attrs)
-        else Fmt.str "\"%s\", %s" id (string_of_field_type field_type)
+        else Fmt.str "\"%s\", %s" id (string_of_type field_type)
 
   let rec string_of_fields fields =
     match fields with
@@ -78,6 +86,12 @@ module ModelPrinter = struct
 end
 
 module QueryPrinter = struct
+  let string_of_query_argument_type argument_type =
+    match argument_type with
+    | Query.DataArgument -> "Data"
+    | Query.WhereArgument -> "Where"
+    | Query.FilterArgument -> "Filter"
+
   let string_of_query_type query_type =
     match query_type with
     | Query.Create -> "create"
@@ -89,10 +103,10 @@ end
 
 let string_of_declaration_type declaration_type =
   match declaration_type with
-  | ModelType -> "Model"
-  | QueryType -> "Query"
-  | ComponentType -> "Component"
-  | PageType -> "Page"
+  | ModelDeclaration -> "Model"
+  | QueryDeclaration -> "Query"
+  | ComponentDeclaration -> "Component"
+  | PageDeclaration -> "Page"
 
 let string_of_declaration declaration =
   match declaration with

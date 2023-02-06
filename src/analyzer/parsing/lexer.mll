@@ -60,13 +60,16 @@ rule token =
   | "in"           { IN }
   | "model"        { MODEL }
   | "query"        { QUERY }
+  | "where"        { WHERE }
+  | "data"         { DATA }
+  | "filter"       { FILTER }
   | "component"    { COMPONENT }
   | "page"         { PAGE }
   | "render"       { RENDER }
   | "let"          { LET }
   | "now"          { NOW }
   | "findMany"     { FIND_MANY }
-  | "findUnique"    { FIND_UNIQUE }
+  | "findUnique"   { FIND_UNIQUE }
   | "create"       { CREATE }
   | "update"       { UPDATE }
   | "delete"       { DELETE }

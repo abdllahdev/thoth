@@ -22,14 +22,12 @@ let generate_service service_specs =
                 ("name", Jg_types.Tstr name);
                 ( "service_functions",
                   Jg_types.Tlist
-                    (List.map
-                       ~f:(fun service_function ->
+                    (List.map service_functions ~f:(fun service_function ->
                          Jg_types.Tobj
                            [
                              ("id", Jg_types.Tstr service_function.id);
                              ("type", Jg_types.Tstr service_function.typ);
-                           ])
-                       service_functions) );
+                           ])) );
               ] );
         ]
   in
@@ -39,9 +37,9 @@ let generate_service service_specs =
   write_file service_file service_code
 
 let generate_services services =
-  ignore (List.map ~f:generate_service services);
+  ignore (List.map services ~f:generate_service);
   let names =
-    List.map ~f:(fun element -> Jg_types.Tstr element.name) services
+    List.map services ~f:(fun element -> Jg_types.Tstr element.name)
   in
   let services_index_template =
     getcwd () ^ "/templates/server/src/services/index.js"
@@ -68,7 +66,7 @@ let generate_controller controller_specs =
                 ("name", Jg_types.Tstr name);
                 ( "controller_functions",
                   Jg_types.Tlist
-                    (List.map
+                    (List.map controller_functions
                        ~f:(fun controller_function ->
                          Jg_types.Tobj
                            [
@@ -80,17 +78,14 @@ let generate_controller controller_specs =
                              ( "filters",
                                Jg_types.Tlist
                                  (List.map
-                                    ~f:(fun field -> Jg_types.Tstr field)
-                                    (list_of_option controller_function.filter))
-                             );
+                                    (list_of_option controller_function.filter)
+                                    ~f:(fun field -> Jg_types.Tstr field)) );
                              ( "data",
                                Jg_types.Tlist
                                  (List.map
-                                    ~f:(fun field -> Jg_types.Tstr field)
-                                    (list_of_option controller_function.data))
-                             );
-                           ])
-                       controller_functions) );
+                                    (list_of_option controller_function.data)
+                                    ~f:(fun field -> Jg_types.Tstr field)) );
+                           ])) );
               ] );
         ]
   in
@@ -100,9 +95,9 @@ let generate_controller controller_specs =
   write_file controller_file controller_code
 
 let generate_controllers controllers =
-  ignore (List.map ~f:generate_controller controllers);
+  ignore (List.map controllers ~f:generate_controller);
   let names =
-    List.map ~f:(fun element -> Jg_types.Tstr element.name) controllers
+    List.map controllers ~f:(fun element -> Jg_types.Tstr element.name)
   in
   let controllers_index_template =
     getcwd () ^ "/templates/server/src/controllers/index.js"
@@ -129,16 +124,14 @@ let generate_route route_specs =
                 ("name", Jg_types.Tstr name);
                 ( "list",
                   Jg_types.Tlist
-                    (List.map
-                       ~f:(fun element ->
+                    (List.map list ~f:(fun element ->
                          Jg_types.Tobj
                            [
                              ("id", Jg_types.Tstr element.id);
                              ("type", Jg_types.Tstr element.typ);
                              ( "where",
                                Jg_types.Tstr (string_of_option element.where) );
-                           ])
-                       list) );
+                           ])) );
               ] );
         ]
   in
@@ -148,8 +141,8 @@ let generate_route route_specs =
   write_file route_file route_code
 
 let generate_routes routes =
-  ignore (List.map ~f:generate_route routes);
-  let names = List.map ~f:(fun element -> Jg_types.Tstr element.name) routes in
+  ignore (List.map routes ~f:generate_route);
+  let names = List.map routes ~f:(fun element -> Jg_types.Tstr element.name) in
   let routes_index_file = getcwd () ^ "/templates/server/src/routes/index.js" in
   let routes_index_code =
     Jg_template.from_file routes_index_file

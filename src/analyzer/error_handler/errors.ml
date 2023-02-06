@@ -8,5 +8,10 @@ exception ArgumentNumberError of string
 exception RelationError of string
 exception AttributeError of string
 exception BadAssignmentError of string
-exception BadArgumentTypeError of string
+exception ArgumentTypeError of string
 exception ElementTypeError of string
+exception QueryReturnTypeError of string
+exception QueryArgumentError of string
+exception QueryTypeError of string
+exception UniqueFieldError of string
+exception DeclarationTypeError of string

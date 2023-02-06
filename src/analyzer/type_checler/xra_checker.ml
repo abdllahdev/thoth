@@ -1,5 +1,4 @@
 open Core
-open Ast.Pprinter
 open Ast.Ast_types
 open Error_handler.Handler
 open Environment
@@ -16,10 +15,10 @@ let rec check_expressions global_env xra_env expressions =
          raise_undefined_error loc "component" id
        else
          let declaration = GlobalEnvironment.lookup global_env ~key:id in
-         if not (GlobalEnvironment.check_type declaration ComponentType) then
-           raise_type_error loc "Component" id
-             (GlobalEnvironment.infer_type declaration
-             |> string_of_declaration_type));
+         if not (GlobalEnvironment.check_type declaration ComponentDeclaration)
+         then
+           raise_declaration_type_error loc ComponentDeclaration id
+             (GlobalEnvironment.infer_type declaration));
     (match attributes with
     | Some attributes -> check_expressions global_env xra_env attributes
     | None -> ());
@@ -107,22 +106,19 @@ let check_general_body global_env xra_env body =
 let check_page = check_general_body
 
 let check_component global_env xra_env typ args body =
-  let check_query loc id expected_type =
+  let check_query loc id expected_query_type =
     if not (GlobalEnvironment.contains global_env ~key:id) then
       raise_undefined_error loc "query" id;
 
     let declaration_value = GlobalEnvironment.lookup global_env ~key:id in
-    if not (GlobalEnvironment.check_type declaration_value QueryType) then
-      raise_type_error loc "Query" id
-        (GlobalEnvironment.infer_type declaration_value
-        |> string_of_declaration_type);
+    if not (GlobalEnvironment.check_type declaration_value QueryDeclaration)
+    then
+      raise_declaration_type_error loc QueryDeclaration id
+        (GlobalEnvironment.infer_type declaration_value);
 
     let query_value = GlobalEnvironment.get_query_value declaration_value in
-    if not (phys_equal query_value.typ expected_type) then
-      raise_type_error loc
-        (Fmt.str "%sQuery" (QueryPrinter.string_of_query_type expected_type))
-        id
-        (Fmt.str "%sQuery" (QueryPrinter.string_of_query_type query_value.typ))
+    if not (phys_equal query_value.typ expected_query_type) then
+      raise_query_type_error loc expected_query_type id query_value.typ
   in
 
   (match typ with
@@ -142,17 +138,16 @@ let check_component global_env xra_env typ args body =
     let typ = get_scalar_type typ in
     match typ with
     | String | Int | Boolean | DateTime -> ()
-    | Reference ->
-        raise_bad_argument_type_error loc (string_of_scalar_type Reference)
+    | Reference | Void -> raise_bad_argument_type_error loc (Scalar Reference)
     | CustomType typ ->
         if not (GlobalEnvironment.contains global_env ~key:typ) then
-          raise_undefined_error loc "model" typ;
+          raise_undefined_error loc "type" typ;
 
         let declaration_value = GlobalEnvironment.lookup global_env ~key:typ in
-        if not (GlobalEnvironment.check_type declaration_value ModelType) then
-          raise_type_error loc "Model" typ
-            (GlobalEnvironment.infer_type declaration_value
-            |> string_of_declaration_type)
+        if not (GlobalEnvironment.check_type declaration_value ModelDeclaration)
+        then
+          raise_declaration_type_error loc ModelDeclaration typ
+            (GlobalEnvironment.infer_type declaration_value)
         else XRAEnvironment.allocate xra_env loc ~key:id ~data:typ
   in
 
@@ -186,7 +181,8 @@ let check_component global_env xra_env typ args body =
                     |> ignore
                   with Not_found_s _ ->
                     raise_undefined_error loc "field" id
-                      ~declaration_type:"query" ~declaration_id:query_id)
+                      ~declaration_type:QueryDeclaration
+                      ~declaration_id:query_id)
               | _ -> ());
               check_args args
         in

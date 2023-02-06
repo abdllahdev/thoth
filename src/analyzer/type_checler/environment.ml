@@ -26,6 +26,7 @@ module GlobalEnvironment = struct
     typ : Query.typ;
     args : Query.arg list;
     models : Query.model list;
+    return_type : typ;
   }
 
   type component_value = {
@@ -51,10 +52,10 @@ module GlobalEnvironment = struct
 
   let infer_type declaration_value =
     match declaration_value with
-    | ModelValue _ -> ModelType
-    | QueryValue _ -> QueryType
-    | ComponentValue _ -> ComponentType
-    | PageValue -> PageType
+    | ModelValue _ -> ModelDeclaration
+    | QueryValue _ -> QueryDeclaration
+    | ComponentValue _ -> ComponentDeclaration
+    | PageValue -> PageDeclaration
 
   let check_type declaration_value declaration_type =
     if phys_equal (infer_type declaration_value) declaration_type then true
@@ -113,11 +114,24 @@ end
 
 module QueryEnvironment = struct
   let allocate (global_env : GlobalEnvironment.t) query =
-    let loc, id, typ, args, models, _ = query in
+    let loc, id, typ, return_type, args, models, _ = query in
+
+    let return_type =
+      match return_type with
+      | Some _ | None -> (
+          let _, model_id = List.hd_exn models in
+          match typ with
+          | Query.FindMany -> Composite (List (CustomType model_id))
+          | Query.FindUnique -> Scalar (CustomType model_id)
+          | Query.Create -> Scalar (CustomType model_id)
+          | Query.Update -> Scalar (CustomType model_id)
+          | Query.Delete -> Scalar Void)
+    in
+
     if GlobalEnvironment.contains global_env ~key:id then
       raise_multi_definitions_error loc id;
     let declaration_value =
-      GlobalEnvironment.QueryValue { typ; args; models }
+      GlobalEnvironment.QueryValue { typ; return_type; args; models }
     in
     GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 end

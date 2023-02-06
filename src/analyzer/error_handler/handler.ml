@@ -9,32 +9,113 @@ let raise_type_error ?(id = "") loc expected_type received_value received_type =
          (Fmt.str
             "@(%s): Excepted a value of type '%s' but received '%s' of type \
              '%s'"
-            (string_of_loc loc) expected_type received_value received_type))
+            (string_of_loc loc)
+            (string_of_type expected_type)
+            received_value
+            (string_of_type received_type)))
   else
     raise
       (TypeError
          (Fmt.str
             "@(%s): Excepted a value of type '%s' but received '%s' of type \
              '%s' in '%s'"
-            (string_of_loc loc) expected_type received_value received_type id))
+            (string_of_loc loc)
+            (string_of_type expected_type)
+            received_value
+            (string_of_type received_type)
+            id))
 
-let raise_undefined_error ?(declaration_id = "") ?(declaration_type = "") loc
-    typ id =
-  if String.is_empty declaration_id then
+let raise_declaration_type_error ?(id = "") loc expected_type received_value
+    received_type =
+  if String.is_empty id then
+    raise
+      (DeclarationTypeError
+         (Fmt.str
+            "@(%s): Excepted a declaration of type '%s' but received '%s' of \
+             type '%s'"
+            (string_of_loc loc)
+            (string_of_declaration_type expected_type)
+            received_value
+            (string_of_declaration_type received_type)))
+  else
+    raise
+      (DeclarationTypeError
+         (Fmt.str
+            "@(%s): Excepted a declaration of type '%s' but received '%s' of \
+             type '%s' in '%s'"
+            (string_of_loc loc)
+            (string_of_declaration_type expected_type)
+            received_value
+            (string_of_declaration_type received_type)
+            id))
+
+let raise_unique_field_error ?(id = "") loc expected_type received_value
+    received_type =
+  if String.is_empty id then
+    raise
+      (UniqueFieldError
+         (Fmt.str
+            "@(%s): Excepted a field of type '%s' but received '%s' of type \
+             '%s'"
+            (string_of_loc loc)
+            (ModelPrinter.string_of_field_unique_type expected_type)
+            received_value
+            (ModelPrinter.string_of_field_unique_type received_type)))
+  else
+    raise
+      (UniqueFieldError
+         (Fmt.str
+            "@(%s): Excepted a field of type '%s' but received '%s' of type \
+             '%s' in '%s'"
+            (string_of_loc loc)
+            (ModelPrinter.string_of_field_unique_type expected_type)
+            received_value
+            (ModelPrinter.string_of_field_unique_type received_type)
+            id))
+
+let raise_query_argument_error loc id expected_args received_arg =
+  raise
+    (QueryArgumentError
+       (Fmt.str "@(%s): Excepted a '%s' %s but received a '%s' argument in '%s'"
+          (string_of_loc loc)
+          (String.concat ~sep:", "
+             (List.map expected_args
+                ~f:QueryPrinter.string_of_query_argument_type))
+          (if List.length expected_args > 1 then "argument" else "argument")
+          (QueryPrinter.string_of_query_argument_type received_arg)
+          id))
+
+let raise_query_type_error loc expected_query_type received_query
+    received_query_type =
+  raise
+    (QueryTypeError
+       (Fmt.str
+          "@(%s): Excepted a query of type '%s' but received '%s' of type '%s'"
+          (string_of_loc loc)
+          (QueryPrinter.string_of_query_type expected_query_type)
+          received_query
+          (QueryPrinter.string_of_query_type received_query_type)))
+
+let raise_undefined_error ?(declaration_id = "") ?declaration_type loc
+    declaration id =
+  if String.is_empty declaration_id && Option.is_none declaration_type then
     raise
       (UndefinedError
-         (Fmt.str "@(%s): Undefined %s '%s'" (string_of_loc loc) typ id))
+         (Fmt.str "@(%s): Undefined %s '%s'" (string_of_loc loc) declaration id))
   else
     raise
       (UndefinedError
-         (Fmt.str "@(%s): Undefined %s '%s' in %s '%s'" (string_of_loc loc) typ
-            id declaration_type declaration_id))
+         (Fmt.str "@(%s): Undefined %s '%s' in %s '%s'" (string_of_loc loc)
+            declaration id
+            (string_of_declaration_type (Option.value_exn declaration_type))
+            declaration_id))
 
 let raise_name_error loc declaration_type =
   raise
     (NameError
        (Fmt.str "@(%s): %s declaration name must start with a capital character"
-          (string_of_loc loc) declaration_type))
+          (string_of_loc loc)
+          (string_of_declaration_type declaration_type)))
 
 let raise_syntax_error loc value =
   raise
@@ -72,7 +153,7 @@ let raise_attribute_error loc field_type attribute =
     (AttributeError
        (Fmt.str "@(%s): Field of type '%s' cannot take '%s' attribute"
           (string_of_loc loc)
-          (string_of_scalar_type field_type)
+          (string_of_type field_type)
           attribute))
 
 let raise_bad_assignment_error loc id =
@@ -83,9 +164,9 @@ let raise_bad_assignment_error loc id =
 
 let raise_bad_argument_type_error loc typ =
   raise
-    (BadArgumentTypeError
+    (ArgumentTypeError
        (Fmt.str "@(%s): Component argument type cannot be of type '%s'"
-          (string_of_loc loc) typ))
+          (string_of_loc loc) (string_of_type typ)))
 
 let raise_element_type_error loc expected_type received_type =
   raise
@@ -94,3 +175,14 @@ let raise_element_type_error loc expected_type received_type =
           "@(%s): Expected an element type of '%s' but received an element of \
            type '%s'"
           (string_of_loc loc) expected_type received_type))
+
+let raise_query_return_type_error loc query_type expected_type received_type =
+  raise
+    (QueryReturnTypeError
+       (Fmt.str
+          "@(%s): Query of type '%s' expected a return of type '%s' but \
+           received a return type of '%s'"
+          (string_of_loc loc)
+          (QueryPrinter.string_of_query_type query_type)
+          (string_of_type expected_type)
+          (string_of_type received_type)))

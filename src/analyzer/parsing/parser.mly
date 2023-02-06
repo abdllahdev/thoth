@@ -38,6 +38,9 @@
 %token          NOW
 %token          MODEL
 %token          QUERY
+%token          WHERE
+%token          DATA
+%token          FILTER
 %token          COMPONENT
 %token          PAGE
 %token          LET
@@ -157,10 +160,12 @@ query_type:
   ;
 
 query_arg:
-  | arg = ID; COLON; field = ID;
-    { parse_query_arg $startpos arg [field] }
-  | arg = ID; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
-    { parse_query_arg $startpos arg fields }
+  | WHERE; COLON; field = ID
+    { Query.Where($startpos, field) }
+  | DATA; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
+    { Query.Data($startpos, fields) }
+  | FILTER; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
+    { Query.Filter($startpos, fields) }
   ;
 
 query_args:
@@ -448,18 +453,19 @@ xra_page_attributes:
 
 declaration:
   | MODEL; model_id = ID; model_body = model_body
-    { Model($startpos, (parse_declaration_id $startpos model_id "Model"), model_body) }
+    { Model($startpos, (parse_declaration_id $startpos model_id ModelDeclaration), model_body) }
   | query_attributes = query_attributes;
-    QUERY; typ = query_type; query_id = ID; args = query_args; option(SEMICOLON)
+    QUERY; typ = query_type; query_id = ID; args = query_args;
+    option(COLON); return_type = option(typ); option(SEMICOLON)
     { let (permissions, models) = query_attributes in
-      Query($startpos, (parse_id $startpos query_id), typ, args, models, permissions) }
+      Query($startpos, (parse_id $startpos query_id), typ, return_type, args, models, permissions) }
   | xra_component = xra_component
     { xra_component }
   | xra_page_attributes = xra_page_attributes; PAGE; page_id = ID; xra_general_body = xra_general_body
     { let (permissions, route) = xra_page_attributes in
       Page(
         $startpos,
-        (parse_declaration_id $startpos page_id "Page"),
+        (parse_declaration_id $startpos page_id PageDeclaration),
         route,
         permissions,
         xra_general_body) }
