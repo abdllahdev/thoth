@@ -1,5 +1,6 @@
 open Core
 open Ast.Ast_types
+open Ast.Pprinter
 open Error_handler.Handler
 open Environment
 open Helper
@@ -30,7 +31,6 @@ let rec check_expressions global_env xra_env expressions =
          raise_declaration_type_error loc ComponentDeclaration id
            (GlobalEnvironment.infer_type declaration));
 
-    (* TODO: check for the type of arguments *)
     let check_component_args attributes =
       if is_component id then
         let component =
@@ -41,18 +41,77 @@ let rec check_expressions global_env xra_env expressions =
         let args = component.args in
         match args with
         | Some args ->
+            (* Check passed arguments types *)
+            let attributes_ht = Hashtbl.create ~size:17 (module String) in
             let attribute_ids =
               List.map attributes ~f:(fun attribute ->
                   (match attribute with
-                  | XRA.Attribute (_, id, _) -> Some id
+                  | XRA.Attribute (_, id, value) ->
+                      if Hashtbl.mem attributes_ht id then
+                        raise_multi_definitions_error loc id;
+                      Hashtbl.add_exn attributes_ht ~key:id ~data:value;
+                      Some id
                   | _ -> None)
                   |> Option.value_exn)
             in
 
+            let arg_ids = List.map args ~f:(fun (_, id, _) -> id) in
+
+            List.iter attribute_ids ~f:(fun attribute_id ->
+                if not (List.mem arg_ids attribute_id ~equal:String.equal) then
+                  raise_unexpected_argument_error loc attribute_id id);
+
             List.iter args ~f:(fun arg ->
                 let _, arg_id, arg_typ = arg in
-                if not (List.mem attribute_ids arg_id ~equal:String.equal) then
-                  raise_missing_argument_error loc arg_id arg_typ id)
+                if not (Hashtbl.mem attributes_ht arg_id) then
+                  raise_missing_argument_error loc arg_id arg_typ id;
+
+                let attribute_value = Hashtbl.find_exn attributes_ht arg_id in
+                match attribute_value with
+                | XRA.VariableExpression variable_expression -> (
+                    match variable_expression with
+                    | XRA.Variable (loc, variable_id) ->
+                        let attribute_type =
+                          XRAEnvironment.lookup xra_env loc variable_id
+                        in
+                        if
+                          not
+                            (String.equal
+                               (string_of_type attribute_type)
+                               (string_of_type arg_typ))
+                        then
+                          raise_type_error ~id loc arg_typ variable_id
+                            attribute_type
+                    | _ -> ())
+                | XRA.Literal literal -> (
+                    match literal with
+                    | BooleanLiteral (loc, value) ->
+                        if
+                          not
+                            (String.equal
+                               (string_of_type (Scalar Boolean))
+                               (string_of_type arg_typ))
+                        then
+                          raise_type_error ~id loc arg_typ
+                            (string_of_bool value) (Scalar Boolean)
+                    | StringLiteral (loc, value) ->
+                        if
+                          not
+                            (String.equal
+                               (string_of_type (Scalar String))
+                               (string_of_type arg_typ))
+                        then
+                          raise_type_error ~id loc arg_typ value (Scalar String)
+                    | IntLiteral (loc, value) ->
+                        if
+                          not
+                            (String.equal
+                               (string_of_type (Scalar Int))
+                               (string_of_type arg_typ))
+                        then
+                          raise_type_error ~id loc arg_typ (string_of_int value)
+                            (Scalar Int))
+                | _ -> ())
         | None -> ()
     in
 
@@ -136,6 +195,7 @@ let rec check_expressions global_env xra_env expressions =
       check_expression expression;
       check_expressions global_env xra_env expressions
 
+(* TODO: let declarations *)
 (* let check_let_expression global_env xra_env let_expression =
      match let_expression with
      | XRA.LetExpression (loc, id, expression) ->
@@ -179,8 +239,12 @@ let check_component global_env xra_env typ args body =
         (GlobalEnvironment.infer_type declaration_value);
 
     let query_value = GlobalEnvironment.get_query_value declaration_value in
-    if not (phys_equal query_value.typ expected_query_type) then
-      raise_query_type_error loc expected_query_type id query_value.typ
+    if
+      not
+        (String.equal
+           (QueryPrinter.string_of_query_type query_value.typ)
+           (QueryPrinter.string_of_query_type expected_query_type))
+    then raise_query_type_error loc expected_query_type id query_value.typ
   in
 
   (match typ with
@@ -210,7 +274,7 @@ let check_component global_env xra_env typ args body =
     let scalar_typ = get_scalar_type typ in
     match scalar_typ with
     | String | Int | Boolean | DateTime -> ()
-    | Reference | Void -> raise_bad_argument_type_error loc (Scalar Reference)
+    | Reference | Void -> raise_argument_type_error loc (Scalar Reference)
     | CustomType custom_type ->
         if not (GlobalEnvironment.contains global_env ~key:custom_type) then
           raise_undefined_error loc "type" custom_type;

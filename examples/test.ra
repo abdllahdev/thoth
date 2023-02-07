@@ -63,7 +63,7 @@ component<fetchMany:getTasks as tasks> TasksComponent {
 
 component<create:createTask> TaskCreateForm {
 	formFields => {
-		title: <input type="text" />
+	 title: <input type="text" />
 	}
 
 	formButton => <button>{ "Submit" }</button>

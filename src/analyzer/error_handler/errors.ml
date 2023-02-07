@@ -6,6 +6,7 @@ exception TypeError of string
 exception MultiDefinitionsError of string
 exception ArgumentNumberError of string
 exception ArgumentTypeError of string
+exception UnexpectedArgumentError of string
 exception MissingArgumentError of string
 exception RelationError of string
 exception AttributeError of string

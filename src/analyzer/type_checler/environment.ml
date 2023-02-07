@@ -1,5 +1,6 @@
 open Core
 open Ast.Ast_types
+open Ast.Pprinter
 open Error_handler.Handler
 
 module LocalEnvironment = struct
@@ -58,7 +59,11 @@ module GlobalEnvironment = struct
     | PageValue -> PageDeclaration
 
   let check_type declaration_value declaration_type =
-    if phys_equal (infer_type declaration_value) declaration_type then true
+    if
+      String.equal
+        (string_of_declaration_type (infer_type declaration_value))
+        (string_of_declaration_type declaration_type)
+    then true
     else false
 
   let get_model_value declaration_value =

@@ -162,7 +162,7 @@ let raise_bad_assignment_error loc id =
        (Fmt.str "@(%s): The value of '%s' cannot be assigned to a variable"
           (string_of_loc loc) id))
 
-let raise_bad_argument_type_error loc typ =
+let raise_argument_type_error loc typ =
   raise
     (ArgumentTypeError
        (Fmt.str "@(%s): Component argument type cannot be of type '%s'"
@@ -187,8 +187,14 @@ let raise_query_return_type_error loc query_type expected_type received_type =
           (string_of_type expected_type)
           (string_of_type received_type)))
 
-let raise_missing_argument_error loc arg_id typ id =
+let raise_missing_argument_error loc arg_id arg_typ id =
   raise
     (MissingArgumentError
        (Fmt.str "@(%s): Missing argument '%s' of type '%s' in '%s"
-          (string_of_loc loc) arg_id (string_of_type typ) id))
+          (string_of_loc loc) arg_id (string_of_type arg_typ) id))
+
+let raise_unexpected_argument_error loc arg_id id =
+  raise
+    (UnexpectedArgumentError
+       (Fmt.str "@(%s): Unexpected argument '%s' in '%s" (string_of_loc loc)
+          arg_id id))
