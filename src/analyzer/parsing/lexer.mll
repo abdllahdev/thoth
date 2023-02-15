@@ -27,8 +27,6 @@ rule token =
   parse
   | '{'            { LEFT_BRACE }
   | '}'            { RIGHT_BRACE }
-  | '['            { LEFT_BRACKET }
-  | ']'            { RIGHT_BRACKET }
   | '('            { LEFT_PARAN }
   | ')'            { RIGHT_PARAN }
   | '/'            { SLASH }
@@ -62,7 +60,7 @@ rule token =
   | "query"        { QUERY }
   | "where"        { WHERE }
   | "data"         { DATA }
-  | "filter"       { FILTER }
+  | "search"       { SEARCH }
   | "component"    { COMPONENT }
   | "page"         { PAGE }
   | "render"       { RENDER }

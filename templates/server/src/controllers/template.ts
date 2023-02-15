@@ -1,0 +1,76 @@
+import { Request, Response, NextFunction } from 'express';
+import httpStatus from 'http-status';
+import prismaClient from '../utils/prismaClient';
+import sse from '../utils/sse';
+import ApiError from '../utils/apiError';
+
+{% for func in functions %}
+
+export const {{ func.id }} = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const payload = {
+      {% if func.requires_where and func.requires_search %}
+      where: Object.assign(req.validatedPayload.params, req.validatedPayload.query)
+      {% elif func.requires_where %}
+      where: req.validatedPayload.params,
+      {% elif func.requires_search %}
+      where: req.validatedPayload.query,
+      {% endif %}
+
+      {% if func.requires_data %}
+      data: req.validatedPayload.body,
+      {% endif %}
+    };
+
+    {% if func.type == "update" or func.type == "delete" %}
+    const item = await prismaClient.{{ name | lower }}.findUnique(payload.where);
+    if (!item)
+      throw new ApiError({
+        status: httpStatus.NOT_FOUND,
+        code: 'not_found',
+        error: 'not_found',
+        message: 'Not Found',
+        details: [],
+      });
+    {% endif %}
+
+    {% if func.type != "delete" %}
+    const result =
+    {% endif %}
+    await prismaClient.{{ name | lower }}.{{ func.type }}(payload);
+
+    {% if func.type == "findUnique" %}
+    if (!result)
+      throw new ApiError({
+        status: httpStatus.NOT_FOUND,
+        code: 'not_found',
+        error: 'not_found',
+        message: 'Not Found',
+        details: [],
+      });
+    {% endif %}
+
+    {% if func.type == "create" %}
+    sse.send(result, 'create');
+    {% elif func.type == "update" %}
+    sse.send(result, 'update');
+    {% elif func.type == "delete" %}
+    sse.send(null, 'delete');
+    {% endif %}
+
+    res.status(
+      {% if func.type == "create" %}
+      httpStatus.CREATED
+      {% else %}
+      httpStatus.OK
+      {% endif %}).json({% if func.type != "delete" %}result{%endif%});
+  } catch (err) {
+    next(err);
+  }
+};
+
+{% endfor %}

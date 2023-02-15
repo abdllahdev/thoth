@@ -5,33 +5,31 @@ let string_of_loc loc =
   Fmt.str "Line:%d, Position:%d" loc.Lexing.pos_lnum
     (loc.Lexing.pos_cnum - loc.Lexing.pos_bol + 1)
 
+let string_of_scalar_type scalar_type =
+  match scalar_type with
+  | String -> "String"
+  | Int -> "Int"
+  | Boolean -> "Boolean"
+  | DateTime -> "DateTime"
+  | Reference -> "Reference"
+  | Void -> "Void"
+  | CustomType custom_type -> custom_type
+
+let string_of_composite_type composite_type =
+  match composite_type with
+  | List scalar_type -> Fmt.str "%s[]" (string_of_scalar_type scalar_type)
+  | Optional scalar_type -> Fmt.str "%s?" (string_of_scalar_type scalar_type)
+  | OptionalList scalar_type ->
+      Fmt.str "%s[]?" (string_of_scalar_type scalar_type)
+
 let string_of_type typ =
-  let string_of_scalar_type scalar_type =
-    match scalar_type with
-    | String -> "String"
-    | Int -> "Int"
-    | Boolean -> "Boolean"
-    | DateTime -> "DateTime"
-    | Reference -> "Reference"
-    | Void -> "Void"
-    | CustomType custom_type -> custom_type
-  in
-
-  let string_of_composite_type composite_type =
-    match composite_type with
-    | List scalar_type -> Fmt.str "%s[]" (string_of_scalar_type scalar_type)
-    | Optional scalar_type -> Fmt.str "%s?" (string_of_scalar_type scalar_type)
-    | OptionalList scalar_type ->
-        Fmt.str "%s[]?" (string_of_scalar_type scalar_type)
-  in
-
   match typ with
   | Scalar scalar_type -> string_of_scalar_type scalar_type
   | Composite composite_type -> string_of_composite_type composite_type
 
 let string_of_literal literal =
   match literal with
-  | StringLiteral (_, str) -> str
+  | StringLiteral (_, str) -> Fmt.str "'%s'" str
   | BooleanLiteral (_, boolean) -> Fmt.str "%b" boolean
   | IntLiteral (_, num) -> Fmt.str "%d" num
 
@@ -90,7 +88,7 @@ module QueryPrinter = struct
     match argument_type with
     | Query.DataArgument -> "Data"
     | Query.WhereArgument -> "Where"
-    | Query.FilterArgument -> "Filter"
+    | Query.SearchArgument -> "Search"
 
   let string_of_query_type query_type =
     match query_type with

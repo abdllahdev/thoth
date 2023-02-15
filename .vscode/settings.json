@@ -14,19 +14,6 @@
     "kind": "opam",
     "switch": "default"
   },
-  "cSpell.words": [
-    "cnum",
-    "concat",
-    "curr",
-    "failwith",
-    "getcwd",
-    "Hashtbl",
-    "lexbuf",
-    "lnum",
-    "nget",
-    "Pprinter",
-    "xra"
-  ],
   "cSpell.enableFiletypes": [
     "ocaml.menhir"
   ],

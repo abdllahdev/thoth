@@ -22,8 +22,6 @@
 %token          IN
 %token          LEFT_BRACE
 %token          RIGHT_BRACE
-%token          LEFT_BRACKET
-%token          RIGHT_BRACKET
 %token          LEFT_PARAN
 %token          RIGHT_PARAN
 %token          LIST_MODIFIER
@@ -40,7 +38,7 @@
 %token          QUERY
 %token          WHERE
 %token          DATA
-%token          FILTER
+%token          SEARCH
 %token          COMPONENT
 %token          PAGE
 %token          LET
@@ -164,8 +162,8 @@ query_arg:
     { Query.Where($startpos, field) }
   | DATA; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
     { Query.Data($startpos, fields) }
-  | FILTER; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
-    { Query.Filter($startpos, fields) }
+  | SEARCH; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
+    { Query.Search($startpos, fields) }
   ;
 
 query_args:
@@ -183,7 +181,6 @@ permissions:
     { parse_permissions $startpos permissions }
 
 (* xra rules *)
-(* TODO: solve this problem, this rule never reduces to ID *)
 xra_variable:
   | dot = xra_variable; DOT; id = ID
     { XRA.Dot($startpos, id, dot) }

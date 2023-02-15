@@ -1,166 +1,201 @@
-open Sys
-open Core
 open Jingoo
+open Core
+open Core_unix
+open Md5
 open Specs.Server_specs
 open File_generator
 
 let string_of_option = function Some str -> str | None -> ""
 let list_of_option = function Some lst -> lst | None -> []
 
-let generate_service service_specs =
-  let { name; service_functions } = service_specs in
-  let service_template =
-    getcwd () ^ "/templates/server/src/services/template.js"
-  in
-  let service_code =
-    Jg_template.from_file service_template
-      ~models:
-        [
-          ( "service",
-            Jg_types.Tobj
-              [
-                ("name", Jg_types.Tstr name);
-                ( "service_functions",
-                  Jg_types.Tlist
-                    (List.map service_functions ~f:(fun service_function ->
-                         Jg_types.Tobj
-                           [
-                             ("id", Jg_types.Tstr service_function.id);
-                             ("type", Jg_types.Tstr service_function.typ);
-                           ])) );
-              ] );
-        ]
-  in
-  let service_file =
-    getcwd () ^ "/.out/server/src/services/" ^ name ^ ".service.js"
-  in
-  write_file service_file service_code
-
-let generate_services services =
-  ignore (List.map services ~f:generate_service);
-  let names =
-    List.map services ~f:(fun element -> Jg_types.Tstr element.name)
-  in
-  let services_index_template =
-    getcwd () ^ "/templates/server/src/services/index.js"
-  in
-  let services_index_code =
-    Jg_template.from_file services_index_template
-      ~models:[ ("names", Jg_types.Tlist names) ]
-  in
-  let services_index_file = getcwd () ^ "/.out/server/src/services/index.js" in
-  write_file services_index_file services_index_code
-
-let generate_controller controller_specs =
-  let { name; controller_functions } = controller_specs in
+let generate_controller name controller_functions =
   let controller_template =
-    getcwd () ^ "/templates/server/src/controllers/template.js"
+    getcwd () ^ "/templates/server/src/controllers/template.ts"
   in
   let controller_code =
     Jg_template.from_file controller_template
       ~models:
         [
-          ( "controller",
-            Jg_types.Tobj
-              [
-                ("name", Jg_types.Tstr name);
-                ( "controller_functions",
-                  Jg_types.Tlist
-                    (List.map controller_functions
-                       ~f:(fun controller_function ->
-                         Jg_types.Tobj
-                           [
-                             ("id", Jg_types.Tstr controller_function.id);
-                             ("type", Jg_types.Tstr controller_function.typ);
-                             ( "where",
-                               Jg_types.Tstr
-                                 (string_of_option controller_function.where) );
-                             ( "filters",
-                               Jg_types.Tlist
-                                 (List.map
-                                    (list_of_option controller_function.filter)
-                                    ~f:(fun field -> Jg_types.Tstr field)) );
-                             ( "data",
-                               Jg_types.Tlist
-                                 (List.map
-                                    (list_of_option controller_function.data)
-                                    ~f:(fun field -> Jg_types.Tstr field)) );
-                           ])) );
-              ] );
+          ("name", Jg_types.Tstr name);
+          ( "functions",
+            Jg_types.Tlist
+              (List.map controller_functions ~f:(fun controller_function ->
+                   let { function_id; function_type; required_args } =
+                     controller_function
+                   in
+                   let { requires_where; requires_search; requires_data } =
+                     required_args
+                   in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr function_id);
+                       ("type", Jg_types.Tstr function_type);
+                       ("requires_where", Jg_types.Tbool requires_where);
+                       ("requires_search", Jg_types.Tbool requires_search);
+                       ("requires_data", Jg_types.Tbool requires_data);
+                     ])) );
         ]
   in
   let controller_file =
-    getcwd () ^ "/.out/server/src/controllers/" ^ name ^ ".controller.js"
+    getcwd () ^ "/.out/server/src/controllers/" ^ String.lowercase name ^ ".ts"
   in
   write_file controller_file controller_code
 
-let generate_controllers controllers =
-  ignore (List.map controllers ~f:generate_controller);
+let generate_controllers controllers_table =
   let names =
-    List.map controllers ~f:(fun element -> Jg_types.Tstr element.name)
+    List.map (Hashtbl.keys controllers_table) ~f:(fun name ->
+        Jg_types.Tstr name)
   in
+  Hashtbl.iteri controllers_table ~f:(fun ~key ~data ->
+      generate_controller key data);
   let controllers_index_template =
-    getcwd () ^ "/templates/server/src/controllers/index.js"
+    getcwd () ^ "/templates/server/src/controllers/index.ts"
   in
   let controllers_index_code =
     Jg_template.from_file controllers_index_template
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
   let controller_index_file =
-    getcwd () ^ "/.out/server/src/controllers/index.js"
+    getcwd () ^ "/.out/server/src/controllers/index.ts"
   in
   write_file controller_index_file controllers_index_code
 
-let generate_route route_specs =
-  let { name; list } = route_specs in
-  let route_template = getcwd () ^ "/templates/server/src/routes/template.js" in
+let generate_route name routes =
+  let route_template = getcwd () ^ "/templates/server/src/routes/template.ts" in
   let route_code =
     Jg_template.from_file route_template
       ~models:
         [
-          ( "route",
-            Jg_types.Tobj
-              [
-                ("name", Jg_types.Tstr name);
-                ( "list",
-                  Jg_types.Tlist
-                    (List.map list ~f:(fun element ->
-                         Jg_types.Tobj
-                           [
-                             ("id", Jg_types.Tstr element.id);
-                             ("type", Jg_types.Tstr element.typ);
-                             ( "where",
-                               Jg_types.Tstr (string_of_option element.where) );
-                           ])) );
-              ] );
+          ("name", Jg_types.Tstr name);
+          ( "list",
+            Jg_types.Tlist
+              (List.map routes ~f:(fun route ->
+                   let { route_id; route_type; route_param } = route in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr route_id);
+                       ("type", Jg_types.Tstr route_type);
+                       ( "where",
+                         match route_param with
+                         | Some id -> Jg_types.Tstr id
+                         | None -> Jg_types.Tnull );
+                     ])) );
         ]
   in
   let route_file =
-    getcwd () ^ "/.out/server/src/routes/" ^ name ^ ".routes.js"
+    getcwd () ^ "/.out/server/src/routes/" ^ String.lowercase name ^ ".ts"
   in
   write_file route_file route_code
 
-let generate_routes routes =
-  ignore (List.map routes ~f:generate_route);
-  let names = List.map routes ~f:(fun element -> Jg_types.Tstr element.name) in
-  let routes_index_file = getcwd () ^ "/templates/server/src/routes/index.js" in
+let generate_routes routes_table =
+  let names =
+    List.map (Hashtbl.keys routes_table) ~f:(fun name -> Jg_types.Tstr name)
+  in
+  Hashtbl.iteri routes_table ~f:(fun ~key ~data -> generate_route key data);
+  let routes_index_file = getcwd () ^ "/templates/server/src/routes/index.ts" in
   let routes_index_code =
     Jg_template.from_file routes_index_file
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
-  let routes_index_file = getcwd () ^ "/.out/server/src/routes/index.js" in
+  let routes_index_file = getcwd () ^ "/.out/server/src/routes/index.ts" in
   write_file routes_index_file routes_index_code
+
+let generate_validator name validators =
+  let validator_template =
+    getcwd () ^ "/templates/server/src/validators/template.ts"
+  in
+  let validator_code =
+    Jg_template.from_file validator_template
+      ~models:
+        [
+          ("name", Jg_types.Tstr name);
+          ( "list",
+            Jg_types.Tlist
+              (List.map validators ~f:(fun validator ->
+                   let { validator_id; where_field; search_fields; data_fields }
+                       =
+                     validator
+                   in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr validator_id);
+                       ( "where",
+                         match where_field with
+                         | Some (id, typ) ->
+                             Jg_types.Tobj
+                               [
+                                 ("id", Jg_types.Tstr id);
+                                 ("type", Jg_types.Tstr typ);
+                               ]
+                         | None -> Jg_types.Tnull );
+                       ( "search",
+                         match search_fields with
+                         | Some fields ->
+                             Jg_types.Tlist
+                               (List.map fields ~f:(fun field ->
+                                    let id, typ = field in
+                                    Jg_types.Tobj
+                                      [
+                                        ("id", Jg_types.Tstr id);
+                                        ("type", Jg_types.Tstr typ);
+                                      ]))
+                         | None -> Jg_types.Tnull );
+                       ( "data",
+                         match data_fields with
+                         | Some fields ->
+                             Jg_types.Tlist
+                               (List.map fields ~f:(fun field ->
+                                    let id, typ = field in
+
+                                    Jg_types.Tobj
+                                      [
+                                        ("id", Jg_types.Tstr id);
+                                        ("type", Jg_types.Tstr typ);
+                                      ]))
+                         | None -> Jg_types.Tnull );
+                     ])) );
+        ]
+  in
+  let validator_file =
+    getcwd () ^ "/.out/server/src/validators/" ^ String.lowercase name ^ ".ts"
+  in
+  write_file validator_file validator_code
+
+let generate_validators validators_table =
+  let names =
+    List.map (Hashtbl.keys validators_table) ~f:(fun name -> Jg_types.Tstr name)
+  in
+  Hashtbl.iteri validators_table ~f:(fun ~key ~data ->
+      generate_validator key data);
+  let validators_index_file =
+    getcwd () ^ "/templates/server/src/validators/index.ts"
+  in
+  let validators_index_code =
+    Jg_template.from_file validators_index_file
+      ~models:[ ("names", Jg_types.Tlist names) ]
+  in
+  let validators_index_file =
+    getcwd () ^ "/.out/server/src/validators/index.ts"
+  in
+  write_file validators_index_file validators_index_code
 
 let setup_server_folder =
   let destination = getcwd () ^ "/templates/server" in
   create_folder destination;
-  delete_files "/server/src/services/template.js";
-  delete_files "/server/src/controllers/template.js";
-  delete_files "/server/src/routes/template.js"
+  delete_files "/server/src/controllers/template.ts";
+  delete_files "/server/src/routes/template.ts";
+  delete_files "/server/src/validators/template.ts"
 
 let generate_server server_specs =
   setup_server_folder;
-  let { services; controllers; routes } = server_specs in
-  generate_services services;
-  generate_controllers controllers;
-  generate_routes routes
+  let { controllers_table; routes_table; validators_table } = server_specs in
+  generate_controllers controllers_table;
+  generate_validators validators_table;
+  generate_routes routes_table;
+  system
+    (Fmt.str
+       "cd %s/.out/server && yarn && yarn prettier && yarn prisma migrate dev \
+        --name %s"
+       (getcwd ())
+       (Fmt.str "%f" (time ()) |> digest_string |> to_hex))
+  |> ignore

@@ -1,4 +1,4 @@
-open Ast.Ast_types
+open Ast_types
 
 let get_scalar_type typ =
   match typ with

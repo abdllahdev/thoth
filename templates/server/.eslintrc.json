@@ -1,6 +1,6 @@
 {
   "root": true,
-  "parser": "babel-eslint",
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2018,
     "sourceType": "module"
@@ -10,11 +10,10 @@
     "node": true
   },
   "extends": [
-    "standard",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
     "prettier",
-    "prettier/standard",
-    "plugin:import/errors",
-    "plugin:import/warnings"
+    "plugin:prettier/recommended"
   ],
   "globals": {
     "Atomics": "readonly",
@@ -30,9 +29,23 @@
       }
     }
   },
-  "plugins": ["import", "prettier", "standard", "jsx-a11y"],
+  "plugins": ["prettier"],
   "rules": {
-    "no-console": "off",
-    "prettier/prettier": 1
+    "max-len": "off",
+    "no-underscore-dangle": "off",
+    "arrow-body-style": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/unbound-method": "off",
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/naming-convention": "off",
+    "@typescript-eslint/no-unsafe-return": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-inferrable-types": "off",
+    "jsdoc/newline-after-description": "off"
   }
 }

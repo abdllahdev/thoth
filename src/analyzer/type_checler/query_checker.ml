@@ -10,12 +10,15 @@ let check_where_arg global_env loc id model field =
     GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
+
   if not (LocalEnvironment.contains model_value ~key:field) then
     raise_undefined_error loc "field" field ~declaration_id:model_id
       ~declaration_type:ModelDeclaration;
+
   let field_info : GlobalEnvironment.field_value =
     LocalEnvironment.lookup model_value ~key:field
   in
+
   let field_attrs_table = field_info.field_attrs_table in
   if not (LocalEnvironment.contains model_value ~key:field) then
     raise_undefined_error loc "field" field ~declaration_id:model_id
@@ -58,19 +61,19 @@ let check_args global_env loc typ id model args : unit =
       let arg = List.hd_exn args in
       match arg with
       | Query.Where (loc, _) ->
-          raise_query_argument_error loc id [ Query.FilterArgument ]
+          raise_query_argument_error loc id [ Query.SearchArgument ]
             Query.WhereArgument
       | Query.Data (loc, _) ->
-          raise_query_argument_error loc id [ Query.FilterArgument ]
+          raise_query_argument_error loc id [ Query.SearchArgument ]
             Query.DataArgument
-      | Query.Filter (loc, fields) ->
+      | Query.Search (loc, fields) ->
           check_filter_arg global_env loc model fields)
   | Query.FindUnique -> (
       let arg = List.hd_exn args in
       match arg with
-      | Query.Filter (loc, _) ->
+      | Query.Search (loc, _) ->
           raise_query_argument_error loc id [ Query.WhereArgument ]
-            Query.FilterArgument
+            Query.SearchArgument
       | Query.Data (loc, _) ->
           raise_query_argument_error loc id [ Query.WhereArgument ]
             Query.DataArgument
@@ -79,9 +82,9 @@ let check_args global_env loc typ id model args : unit =
   | Query.Create -> (
       let arg = List.hd_exn args in
       match arg with
-      | Query.Filter (loc, _) ->
+      | Query.Search (loc, _) ->
           raise_query_argument_error loc id [ Query.DataArgument ]
-            Query.FilterArgument
+            Query.SearchArgument
       | Query.Where (loc, _) ->
           raise_query_argument_error loc id [ Query.DataArgument ]
             Query.WhereArgument
@@ -93,10 +96,10 @@ let check_args global_env loc typ id model args : unit =
       ignore
         (List.map args ~f:(fun arg ->
              match arg with
-             | Query.Filter (loc, _) ->
+             | Query.Search (loc, _) ->
                  raise_query_argument_error loc id
                    [ Query.WhereArgument; Query.DataArgument ]
-                   Query.FilterArgument
+                   Query.SearchArgument
              | Query.Where (loc, field) ->
                  check_where_arg global_env loc id model field
              | Query.Data (loc, fields) ->
@@ -104,9 +107,9 @@ let check_args global_env loc typ id model args : unit =
   | Query.Delete -> (
       let arg = List.hd_exn args in
       match arg with
-      | Query.Filter (loc, _) ->
+      | Query.Search (loc, _) ->
           raise_query_argument_error loc id [ Query.WhereArgument ]
-            Query.FilterArgument
+            Query.SearchArgument
       | Query.Data (loc, _) ->
           raise_query_argument_error loc id [ Query.WhereArgument ]
             Query.DataArgument

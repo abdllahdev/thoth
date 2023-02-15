@@ -1,6 +1,6 @@
 open FilePath
-open Sys
 open Core
+open Core_unix
 
 let write_file filename code =
   let file = DefaultPath.filename_of_string filename in

@@ -13,11 +13,12 @@ let parse_file (filename : string) =
   parse_with_error lexbuf
 
 let () =
-  let filename = getcwd () ^ "/examples/test.ra" in
+  let filename = getcwd () ^ "/examples/todo.ra" in
   Fmt.str "Parsing %s\n" filename |> print_string;
   match parse_file filename with
   | Ok ast ->
-      Type_checker.run_type_checker ast;
-      Specs.App_specs.generate_app_specs ast
+      let global_env = Type_checker.Environment.GlobalEnvironment.create () in
+      Type_checker.Checker.run global_env ast;
+      Specs.App_specs.generate_app_specs global_env ast
       |> Generator.App_generator.generate_app
   | Error error -> Core.Error.to_string_hum error |> print_string

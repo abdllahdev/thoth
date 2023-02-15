@@ -1,9 +1,9 @@
 open Core
 open Ast.Ast_types
 open Ast.Pprinter
+open Ast.Helper
 open Error_handler.Handler
 open Environment
-open Helper
 
 let rec check_expressions global_env xra_env expressions =
   (* TODO: check dot expressions *)

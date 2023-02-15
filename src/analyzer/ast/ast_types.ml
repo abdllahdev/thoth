@@ -43,12 +43,12 @@ end
 
 module Query = struct
   type typ = FindUnique | FindMany | Create | Update | Delete
-  type argument_type = WhereArgument | DataArgument | FilterArgument
+  type argument_type = WhereArgument | DataArgument | SearchArgument
 
   type arg =
-    | Where of loc * string
-    | Filter of loc * string list
-    | Data of loc * string list
+    | Where of loc * id
+    | Search of loc * id list
+    | Data of loc * id list
 
   type model = loc * id
 end
@@ -109,6 +109,7 @@ end
 
 type model_declaration = loc * id * Model.body
 
+(* TODO: add optional routes to queries *)
 type query_declaration =
   loc
   * id

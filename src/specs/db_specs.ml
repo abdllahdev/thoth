@@ -18,7 +18,7 @@ type db_specs = { models : model_specs list }
 
 let generate_attr_arg_specs arg =
   match arg with
-  | Model.AttrArgLiteral literal -> Fmt.str "'%s'" (string_of_literal literal)
+  | Model.AttrArgLiteral literal -> string_of_literal literal
   | Model.AttrArgRef (_, id) -> Fmt.str "[%s]" id
   | Model.AttrArgNow _ -> Fmt.str "now()"
 

@@ -1,8 +1,8 @@
 open Core
 open Ast.Ast_types
+open Ast.Helper
 open Error_handler.Handler
 open Environment
-open Helper
 
 let get_custom_scalar_type scalar_type =
   match scalar_type with CustomType str -> Some str | _ -> None

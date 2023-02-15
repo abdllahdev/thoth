@@ -136,7 +136,7 @@ module QueryEnvironment = struct
           | Query.FindUnique -> Scalar (CustomType model_id)
           | Query.Create -> Scalar (CustomType model_id)
           | Query.Update -> Scalar (CustomType model_id)
-          | Query.Delete -> Scalar Void)
+          | Query.Delete -> Scalar (CustomType model_id))
     in
 
     if GlobalEnvironment.contains global_env ~key:id then

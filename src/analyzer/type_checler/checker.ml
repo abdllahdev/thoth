@@ -25,7 +25,6 @@ let check_declaration global_env declarations =
   in
   List.iter ~f:(fun declaration -> check_declaration declaration) declarations
 
-let run_type_checker (Ast declarations) : unit =
-  let global_env = GlobalEnvironment.create () in
+let run global_env (Ast declarations) : unit =
   EnvironmentManager.populate global_env (Ast declarations);
   check_declaration global_env declarations

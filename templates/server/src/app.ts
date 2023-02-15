@@ -1,0 +1,55 @@
+// Global consts
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import xXssProtection from 'x-xss-protection';
+import compression from 'compression';
+import bodyParser from 'body-parser';
+import httpStatus from 'http-status';
+
+// App consts
+import { errorHandler } from './middlewares';
+import routes from './routes';
+import ApiError from './utils/apiError';
+
+// Init express app
+const app = express();
+
+// Set security HTTP headers
+app.use(helmet());
+
+// Parse application/json
+app.use(bodyParser.json());
+
+// Parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// Sanitize request data
+app.use(xXssProtection());
+
+// gzip compression
+app.use(compression());
+
+// Enable cors
+app.use(cors());
+app.options('*', cors());
+
+// App router
+app.use('/', routes);
+
+// Send back a 404 error for any unknown api request
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const error = new ApiError({
+    status: httpStatus.NOT_FOUND,
+    code: 'not_found',
+    error: 'not_found',
+    message: 'Not Found',
+    details: [],
+  });
+  errorHandler(error, req, res, next);
+});
+
+// Global error handler
+app.use(errorHandler);
+
+export default app;
