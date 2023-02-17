@@ -44,13 +44,15 @@ end
 module Query = struct
   type typ = FindUnique | FindMany | Create | Update | Delete
   type argument_type = WhereArgument | DataArgument | SearchArgument
+  type data_args = (string * (string * string) option) list
 
-  type arg =
-    | Where of loc * id
+  type body_arg =
+    | Where of loc * id list
     | Search of loc * id list
-    | Data of loc * id list
+    | Data of loc * data_args
 
   type model = loc * id
+  type body = body_arg list
 end
 
 module XRA = struct
@@ -115,7 +117,7 @@ type query_declaration =
   * id
   * Query.typ
   * typ option
-  * Query.arg list
+  * Query.body
   * Query.model list
   * permission list option
 

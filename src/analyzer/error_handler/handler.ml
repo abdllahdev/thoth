@@ -148,6 +148,18 @@ let raise_relation_error loc field_id model_id other_model_id =
            relation field on the model '%s'"
           (string_of_loc loc) field_id model_id other_model_id))
 
+let raise_type_relation_error loc relation_field_id relation_field_type
+    ref_field_id ref_field_type =
+  raise
+    (RelationError
+       (Fmt.str
+          "@(%s): The relation fields must be of the same type but received \
+           '%s' of type '%s' and '%s' of type '%s'"
+          (string_of_loc loc) relation_field_id
+          (string_of_type relation_field_type)
+          ref_field_id
+          (string_of_type ref_field_type)))
+
 let raise_attribute_error loc field_type attribute =
   raise
     (AttributeError
@@ -187,10 +199,10 @@ let raise_query_return_type_error loc query_type expected_type received_type =
           (string_of_type expected_type)
           (string_of_type received_type)))
 
-let raise_missing_argument_error loc arg_id arg_typ id =
+let raise_required_argument_error loc arg_id arg_typ id =
   raise
-    (MissingArgumentError
-       (Fmt.str "@(%s): Missing argument '%s' of type '%s' in '%s"
+    (RequiredArgumentError
+       (Fmt.str "@(%s): Required argument '%s' of type '%s' in '%s"
           (string_of_loc loc) arg_id (string_of_type arg_typ) id))
 
 let raise_unexpected_argument_error loc arg_id id =

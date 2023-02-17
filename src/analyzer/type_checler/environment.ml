@@ -25,7 +25,7 @@ module GlobalEnvironment = struct
 
   type query_value = {
     typ : Query.typ;
-    args : Query.arg list;
+    body : Query.body;
     models : Query.model list;
     return_type : typ;
   }
@@ -125,7 +125,7 @@ end
 
 module QueryEnvironment = struct
   let allocate (global_env : GlobalEnvironment.t) query =
-    let loc, id, typ, return_type, args, models, _ = query in
+    let loc, id, typ, return_type, body, models, _ = query in
 
     let return_type =
       match return_type with
@@ -142,7 +142,7 @@ module QueryEnvironment = struct
     if GlobalEnvironment.contains global_env ~key:id then
       raise_multi_definitions_error loc id;
     let declaration_value =
-      GlobalEnvironment.QueryValue { typ; return_type; args; models }
+      GlobalEnvironment.QueryValue { typ; return_type; body; models }
     in
     GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 end

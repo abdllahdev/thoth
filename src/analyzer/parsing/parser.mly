@@ -157,17 +157,24 @@ query_type:
     { Query.Delete }
   ;
 
-query_arg:
-  | WHERE; COLON; field = ID
-    { Query.Where($startpos, field) }
-  | DATA; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
-    { Query.Data($startpos, fields) }
-  | SEARCH; COLON; LEFT_BRACE; fields = separated_list(COMMA, ID); RIGHT_BRACE
+query_data_field:
+  | field = ID;
+    { (field, None) }
+  | relation_field = ID; COLON; LEFT_BRACE; reference_field = ID; COLON; model_field = ID; RIGHT_BRACE
+    { (relation_field, Some(reference_field, model_field)) }
+  ;
+
+query_body_arg:
+  | WHERE; COLON; LEFT_BRACE; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACE
+    { Query.Where($startpos, fields) }
+  | DATA; COLON; LEFT_BRACE; query_data_fields = separated_nonempty_list(COMMA, query_data_field); RIGHT_BRACE
+    { Query.Data($startpos, query_data_fields) }
+  | SEARCH; COLON; LEFT_BRACE; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACE
     { Query.Search($startpos, fields) }
   ;
 
-query_args:
-  | LEFT_PARAN; args = separated_nonempty_list(COMMA, query_arg); RIGHT_PARAN
+query_body:
+  | LEFT_BRACE; args = separated_nonempty_list(COMMA, query_body_arg); RIGHT_BRACE
     { args }
   ;
 
@@ -449,10 +456,10 @@ declaration:
   | MODEL; model_id = ID; model_body = model_body
     { Model($startpos, (parse_declaration_id $startpos model_id ModelDeclaration), model_body) }
   | query_attributes = query_attributes;
-    QUERY; typ = query_type; query_id = ID; args = query_args;
-    option(COLON); return_type = option(typ); option(SEMICOLON)
+    QUERY; typ = query_type; query_id = ID; option(COLON);
+    return_type = option(typ); body = query_body; option(SEMICOLON)
     { let (permissions, models) = query_attributes in
-      Query($startpos, (parse_id $startpos query_id), typ, return_type, args, models, permissions) }
+      Query($startpos, (parse_id $startpos query_id), typ, return_type, body, models, permissions) }
   | xra_component = xra_component
     { xra_component }
   | xra_page_attributes = xra_page_attributes; PAGE; page_id = ID; xra_general_body = xra_general_body

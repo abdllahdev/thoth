@@ -1,6 +1,6 @@
 {
   "ignore": [".git", "node_modules", "dist"],
   "watch": ["./src"],
-  "exec": "yarn tsc && node ./dist/index.js",
+  "exec": "ts-node --files ./src/index.ts",
   "ext": "ts"
 }

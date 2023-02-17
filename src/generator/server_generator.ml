@@ -1,7 +1,6 @@
 open Jingoo
 open Core
 open Core_unix
-open Md5
 open Specs.Server_specs
 open File_generator
 
@@ -112,46 +111,88 @@ let generate_validator name validators =
           ( "list",
             Jg_types.Tlist
               (List.map validators ~f:(fun validator ->
-                   let { validator_id; where_field; search_fields; data_fields }
-                       =
-                     validator
-                   in
+                   let { validator_id; fields } = validator in
+                   let { where; search; data } = fields in
                    Jg_types.Tobj
                      [
                        ("id", Jg_types.Tstr validator_id);
                        ( "where",
-                         match where_field with
-                         | Some (id, typ) ->
-                             Jg_types.Tobj
-                               [
-                                 ("id", Jg_types.Tstr id);
-                                 ("type", Jg_types.Tstr typ);
-                               ]
-                         | None -> Jg_types.Tnull );
-                       ( "search",
-                         match search_fields with
+                         match where with
                          | Some fields ->
                              Jg_types.Tlist
                                (List.map fields ~f:(fun field ->
-                                    let id, typ = field in
+                                    let id, types = field in
                                     Jg_types.Tobj
                                       [
                                         ("id", Jg_types.Tstr id);
-                                        ("type", Jg_types.Tstr typ);
+                                        ( "type",
+                                          Jg_types.Tlist
+                                            (List.map types ~f:(fun typ ->
+                                                 Jg_types.Tstr typ)) );
+                                      ]))
+                         | None -> Jg_types.Tnull );
+                       ( "search",
+                         match search with
+                         | Some fields ->
+                             Jg_types.Tlist
+                               (List.map fields ~f:(fun field ->
+                                    let id, types = field in
+                                    Jg_types.Tobj
+                                      [
+                                        ("id", Jg_types.Tstr id);
+                                        ( "type",
+                                          Jg_types.Tlist
+                                            (List.map types ~f:(fun typ ->
+                                                 Jg_types.Tstr typ)) );
                                       ]))
                          | None -> Jg_types.Tnull );
                        ( "data",
-                         match data_fields with
+                         match data with
                          | Some fields ->
                              Jg_types.Tlist
                                (List.map fields ~f:(fun field ->
-                                    let id, typ = field in
-
-                                    Jg_types.Tobj
-                                      [
-                                        ("id", Jg_types.Tstr id);
-                                        ("type", Jg_types.Tstr typ);
-                                      ]))
+                                    match field with
+                                    | Field (id, types) ->
+                                        Jg_types.Tobj
+                                          [
+                                            ( "field",
+                                              Jg_types.Tobj
+                                                [
+                                                  ("id", Jg_types.Tstr id);
+                                                  ( "type",
+                                                    Jg_types.Tlist
+                                                      (List.map types
+                                                         ~f:(fun typ ->
+                                                           Jg_types.Tstr typ))
+                                                  );
+                                                ] );
+                                          ]
+                                    | Object (id, Field (sub_id, types)) ->
+                                        Jg_types.Tobj
+                                          [
+                                            ( "object",
+                                              Jg_types.Tobj
+                                                [
+                                                  ("id", Jg_types.Tstr id);
+                                                  ( "field",
+                                                    Jg_types.Tobj
+                                                      [
+                                                        ( "id",
+                                                          Jg_types.Tstr sub_id
+                                                        );
+                                                        ( "type",
+                                                          Jg_types.Tlist
+                                                            (List.map types
+                                                               ~f:(fun typ ->
+                                                                 Jg_types.Tstr
+                                                                   typ)) );
+                                                      ] );
+                                                ] );
+                                          ]
+                                    | _ ->
+                                        failwith
+                                          "CompilationError: Something went \
+                                           wrong"))
                          | None -> Jg_types.Tnull );
                      ])) );
         ]
@@ -192,10 +233,4 @@ let generate_server server_specs =
   generate_controllers controllers_table;
   generate_validators validators_table;
   generate_routes routes_table;
-  system
-    (Fmt.str
-       "cd %s/.out/server && yarn && yarn prettier && yarn prisma migrate dev \
-        --name %s"
-       (getcwd ())
-       (Fmt.str "%f" (time ()) |> digest_string |> to_hex))
-  |> ignore
+  system (Fmt.str "cd %s/.out/server && yarn prettier" (getcwd ())) |> ignore

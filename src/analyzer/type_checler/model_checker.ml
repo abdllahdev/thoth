@@ -1,5 +1,6 @@
 open Core
 open Ast.Ast_types
+open Ast.Pprinter
 open Ast.Helper
 open Error_handler.Handler
 open Environment
@@ -94,43 +95,71 @@ let check_field_attr global_env model_env model_id field_id
 
       if not (equal args_length 2) then
         raise_argument_number_error loc 2 args_length id;
-      (let relation_field = List.nth_exn args 0 in
-       match relation_field with
-       | Model.AttrArgRef (loc, field) ->
-           if not (LocalEnvironment.contains model_env ~key:field) then
-             raise_undefined_error loc "field" field ~declaration_id:model_id
-               ~declaration_type:ModelDeclaration
-       | Model.AttrArgNow loc ->
-           raise_type_error loc (Scalar Reference) "now" (Scalar DateTime) ~id
-       | Model.AttrArgLiteral literal ->
-           check_attribute_argument id literal Reference);
-      let relation_ref = List.nth_exn args 1 in
-      match relation_ref with
-      | Model.AttrArgRef (loc, ref) ->
+
+      let relation_field_arg = List.nth_exn args 0 in
+      let relation_ref_arg = List.nth_exn args 1 in
+
+      (match relation_field_arg with
+      | Model.AttrArgRef (loc, field) ->
+          if not (LocalEnvironment.contains model_env ~key:field) then
+            raise_undefined_error loc "field" field ~declaration_id:model_id
+              ~declaration_type:ModelDeclaration
+      | Model.AttrArgNow loc ->
+          raise_type_error loc (Scalar Reference) "now" (Scalar DateTime) ~id
+      | Model.AttrArgLiteral literal ->
+          check_attribute_argument id literal Reference);
+
+      match relation_ref_arg with
+      | Model.AttrArgRef (loc, relation_ref_id) ->
           let other_model_id =
             (LocalEnvironment.lookup model_env ~key:field_id).typ
             |> get_custom_type |> Option.value_exn
           in
 
-          let other_model_table =
+          let other_model_env =
             GlobalEnvironment.lookup global_env ~key:other_model_id
             |> GlobalEnvironment.get_model_value
           in
 
-          if not (LocalEnvironment.contains other_model_table ~key:ref) then
-            raise_undefined_error loc "field" ref ~declaration_id:other_model_id
-              ~declaration_type:ModelDeclaration;
-
-          let field_attrs =
-            (LocalEnvironment.lookup other_model_table ~key:ref)
-              .field_attrs_table
+          let relation_field_id =
+            (match relation_field_arg with
+            | Model.AttrArgRef (_, field) -> Some field
+            | _ -> None)
+            |> Option.value_exn
           in
 
+          let relation_field_type =
+            (LocalEnvironment.lookup model_env ~key:relation_field_id).typ
+          in
+
+          let relation_ref_field =
+            LocalEnvironment.lookup other_model_env ~key:relation_ref_id
+          in
+
+          let relation_ref_attrs = relation_ref_field.field_attrs_table in
+
+          let relation_ref_type = relation_ref_field.typ in
+
           if
-            (not (LocalEnvironment.contains field_attrs ~key:"@unique"))
-            && not (LocalEnvironment.contains field_attrs ~key:"@id")
+            not
+              (String.equal
+                 (string_of_type relation_ref_type)
+                 (string_of_type relation_field_type))
           then
-            raise_unique_field_error loc Model.UniqueField ref
+            raise_type_relation_error loc relation_field_id relation_field_type
+              relation_ref_id relation_ref_type;
+
+          if
+            not (LocalEnvironment.contains other_model_env ~key:relation_ref_id)
+          then
+            raise_undefined_error loc "field" relation_ref_id
+              ~declaration_id:other_model_id ~declaration_type:ModelDeclaration;
+
+          if
+            (not (LocalEnvironment.contains relation_ref_attrs ~key:"@unique"))
+            && not (LocalEnvironment.contains relation_ref_attrs ~key:"@id")
+          then
+            raise_unique_field_error loc Model.UniqueField relation_ref_id
               Model.NonUniqueField ~id
       | Model.AttrArgLiteral literal ->
           check_attribute_argument id literal Reference
@@ -145,7 +174,23 @@ let rec check_field_attrs global_env model_env model_id field_id field_attrs =
       check_field_attr global_env model_env model_id field_id field_attr;
       check_field_attrs global_env model_env model_id field_id field_attrs
 
-let check_field_type global_env model_id field_id field_type loc : unit =
+let check_field_type global_env loc model_id field_id field_type field_attrs :
+    unit =
+  (* Check if primary field is of type Int *)
+  List.iter field_attrs ~f:(fun attr ->
+      let (Model.Attribute (loc, id, _)) = attr in
+      match id with
+      | "@id" ->
+          if
+            not
+              (String.equal
+                 (string_of_type field_type)
+                 (string_of_type (Scalar Int)))
+          then
+            raise_type_error loc (Scalar Int) field_id field_type ~id:model_id
+      | _ -> ());
+
+  (* Check if model exists *)
   let custom_type = get_custom_type field_type in
   match custom_type with
   | Some custom_type ->
@@ -181,7 +226,7 @@ let check_field_type global_env model_id field_id field_type loc : unit =
 let check_field global_env model_env model_id field =
   match field with
   | Model.Field (loc, id, field_type, field_attrs) ->
-      check_field_type global_env model_id id field_type loc;
+      check_field_type global_env loc model_id id field_type field_attrs;
       check_field_attrs global_env model_env model_id id field_attrs
 
 let rec check_fields global_env model_env model_id fields =

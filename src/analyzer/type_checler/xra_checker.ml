@@ -64,7 +64,7 @@ let rec check_expressions global_env xra_env expressions =
             List.iter args ~f:(fun arg ->
                 let _, arg_id, arg_typ = arg in
                 if not (Hashtbl.mem attributes_ht arg_id) then
-                  raise_missing_argument_error loc arg_id arg_typ id;
+                  raise_required_argument_error loc arg_id arg_typ id;
 
                 let attribute_value = Hashtbl.find_exn attributes_ht arg_id in
                 match attribute_value with
@@ -315,9 +315,13 @@ let check_component global_env xra_env typ args body =
               (match arg with
               | Query.Data (_, fields) -> (
                   try
-                    List.find_exn ~f:(fun field -> String.equal id field) fields
+                    List.find_exn
+                      ~f:(fun field ->
+                        let field, _ = field in
+                        String.equal id field)
+                      fields
                     |> ignore
-                  with Not_found_s _ ->
+                  with Not_found_s _ | Caml.Not_found ->
                     raise_undefined_error loc "field" id
                       ~declaration_type:QueryDeclaration
                       ~declaration_id:query_id)
@@ -325,7 +329,7 @@ let check_component global_env xra_env typ args body =
               check_args args
         in
 
-        check_args query.args;
+        check_args query.body;
 
         let loc, element_id =
           (match input with

@@ -27,7 +27,13 @@ export const {{ func.id }} = async (
     };
 
     {% if func.type == "update" or func.type == "delete" %}
-    const item = await prismaClient.{{ name | lower }}.findUnique(payload.where);
+      {% if func.type == "update" %}
+      const item = await prismaClient.{{ name | lower }}.findUnique({
+        where: payload.where
+      });
+      {% elif func.type == "delete" %}
+      const item = await prismaClient.{{ name | lower }}.findUnique(payload);
+      {% endif %}
     if (!item)
       throw new ApiError({
         status: httpStatus.NOT_FOUND,
@@ -59,7 +65,7 @@ export const {{ func.id }} = async (
     {% elif func.type == "update" %}
     sse.send(result, 'update');
     {% elif func.type == "delete" %}
-    sse.send(null, 'delete');
+    sse.send(item, 'delete');
     {% endif %}
 
     res.status(

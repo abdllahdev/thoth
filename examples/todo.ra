@@ -2,35 +2,54 @@ model User {
 	id        Int     @id
 	firstName String
 	lastName  String
+	tasks     Task[]
 }
 
 model Task {
 	id        Int      @id
 	title     String
 	isDone    Boolean  @default(false)
+	user 			User     @relation(userId, id)
+	userId    Int
 	createdAt DateTime @default(now)
 	updatedAt DateTime @updatedAt
 }
 
 @on(Task)
 @permission(isAuth)
-query<findMany> getTasks(search: { title, isDone }) : Task[]
+query<findMany> getTasks : Task[] {
+	search: { title, isDone }
+}
 
 @on(Task)
 @permission(isAuth)
-query<findUnique> getTaskById(where: id)
+query<findUnique> getTaskById {
+	where: { id }
+}
 
 @on(Task)
 @permission(isAuth)
-query<create> createTask(data: { title })
+query<create> createTask {
+	data: {
+		title,
+		user: {
+			id: userId
+		}
+	}
+}
 
 @on(Task)
 @permission(isAuth, owns)
-query<update> updateTaskById(where: id, data: { title, isDone })
+query<update> updateTaskById {
+	where: { id },
+	data: { title, isDone }
+}
 
 @on(Task)
 @permission(isAuth, owns)
-query<delete> deleteTaskById(where: id)
+query<delete> deleteTaskById {
+	where: { id }
+}
 
 component TaskComponent(task: Task) {
 	render(

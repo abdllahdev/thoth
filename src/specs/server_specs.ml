@@ -4,12 +4,13 @@ open Ast.Pprinter
 open Ast.Helper
 open Type_checker.Environment
 
-type typed_variable = string * typ
+type typed_variable = string * string list
+type field = Field of typed_variable | Object of (string * field)
 
 type query_args_specs = {
-  where : typed_variable option;
+  where : typed_variable list option;
   search : typed_variable list option;
-  data : typed_variable list option;
+  data : field list option;
 }
 
 type query_specs = {
@@ -21,12 +22,7 @@ type query_specs = {
   query_permissions : string list option;
 }
 
-type validator_specs = {
-  validator_id : string;
-  where_field : (string * string) option;
-  search_fields : (string * string) list option;
-  data_fields : (string * string) list option;
-}
+type validator_specs = { validator_id : string; fields : query_args_specs }
 
 type required_args = {
   requires_where : bool;
@@ -52,46 +48,102 @@ type server_specs = {
   validators_table : (string, validator_specs list) Hashtbl.t;
 }
 
-let get_query_args global_env models args =
-  let model_id = List.nth_exn models 0 in
+let convert_type typ =
+  let convert_scalar_type scalar_type =
+    match scalar_type with
+    | Int -> [ "number" ]
+    | String -> [ "string" ]
+    | Boolean -> [ "boolean" ]
+    | DateTime -> [ "date" ]
+    | CustomType typ -> [ String.lowercase typ ]
+    | _ -> failwith "CompilationError: Something went wrong"
+  in
+
+  let convert_composite_type composite_type =
+    match composite_type with
+    | List scalar_type -> convert_scalar_type scalar_type @ [ "array" ]
+    | Optional scalar_type -> convert_scalar_type scalar_type @ [ "optional" ]
+    | OptionalList scalar_type ->
+        convert_scalar_type scalar_type @ [ "optional"; "array" ]
+  in
+
+  match typ with
+  | Composite composite_type -> convert_composite_type composite_type
+  | Scalar scalar_type -> convert_scalar_type scalar_type
+
+let get_query_args global_env models query_type query_args =
+  let model_id = List.hd_exn models in
   let model_fields =
     GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
 
   let where =
-    List.map args ~f:(function
-      | Query.Where (_, id) ->
-          let arg_type = (LocalEnvironment.lookup model_fields ~key:id).typ in
-          Some (id, arg_type)
+    List.map query_args ~f:(function
+      | Query.Where (_, fields) ->
+          Some
+            (List.map fields ~f:(fun field ->
+                 let arg_type =
+                   (LocalEnvironment.lookup model_fields ~key:field).typ
+                 in
+                 (field, convert_type arg_type)))
       | _ -> None)
     |> List.find ~f:(function Some _ -> true | None -> false)
     |> Option.value_or_thunk ~default:(fun () -> None)
   in
 
   let search =
-    List.map args ~f:(function
-      | Query.Search (_, ids) ->
+    List.map query_args ~f:(function
+      | Query.Search (_, fields) ->
           Some
-            (List.map ids ~f:(fun id ->
+            (List.map fields ~f:(fun field ->
                  let arg_type =
-                   (LocalEnvironment.lookup model_fields ~key:id).typ
+                   (LocalEnvironment.lookup model_fields ~key:field).typ
                  in
-                 (id, arg_type)))
+                 (field, convert_type arg_type)))
       | _ -> None)
     |> List.find ~f:(function Some _ -> true | None -> false)
     |> Option.value_or_thunk ~default:(fun () -> None)
   in
 
   let data =
-    List.map args ~f:(function
-      | Query.Data (_, ids) ->
+    List.map query_args ~f:(function
+      | Query.Data (_, fields) ->
           Some
-            (List.map ids ~f:(fun id ->
+            (List.map fields ~f:(fun field ->
+                 let field, relations = field in
                  let arg_type =
-                   (LocalEnvironment.lookup model_fields ~key:id).typ
+                   (LocalEnvironment.lookup model_fields ~key:field).typ
                  in
-                 (id, arg_type)))
+
+                 match relations with
+                 | Some relations ->
+                     let reference_field, relation_field = relations in
+                     let reference_field_type =
+                       (LocalEnvironment.lookup model_fields ~key:relation_field)
+                         .typ
+                     in
+                     Object
+                       ( field,
+                         if
+                           String.equal
+                             (QueryPrinter.string_of_query_type query_type)
+                             (QueryPrinter.string_of_query_type Query.Update)
+                         then
+                           Field
+                             ( reference_field,
+                               convert_type arg_type @ [ "optional" ] )
+                         else
+                           Field
+                             (reference_field, convert_type reference_field_type)
+                       )
+                 | None ->
+                     if
+                       String.equal
+                         (QueryPrinter.string_of_query_type query_type)
+                         (QueryPrinter.string_of_query_type Query.Update)
+                     then Field (field, convert_type arg_type @ [ "optional" ])
+                     else Field (field, convert_type arg_type)))
       | _ -> None)
     |> List.find ~f:(function Some _ -> true | None -> false)
     |> Option.value_or_thunk ~default:(fun () -> None)
@@ -119,7 +171,7 @@ let get_query_specs global_env (query : query_declaration) =
     |> GlobalEnvironment.get_query_value)
       .return_type
   in
-  let query_args = get_query_args global_env model_id args in
+  let query_args = get_query_args global_env model_id query_type args in
   {
     query_id;
     query_type;
@@ -171,7 +223,11 @@ let generate_routes_specs queries =
     let route_type = QueryPrinter.string_of_query_type query_type in
     let { where; _ } = query_args in
     let route_param =
-      match where with Some (id, _) -> Some id | None -> None
+      match where with
+      | Some where ->
+          let id, _ = List.hd_exn where in
+          Some id
+      | None -> None
     in
     let route = { route_id = query_id; route_type; route_param } in
     route :: lst
@@ -181,30 +237,7 @@ let generate_routes_specs queries =
 let generate_validators_specs queries =
   let get_validator lst query =
     let { query_id; query_args; _ } = query in
-    let { where; search; data } = query_args in
-    let where_field =
-      match where with
-      | Some (field, typ) -> Some (field, string_of_type typ)
-      | None -> None
-    in
-    let search_fields =
-      match search with
-      | Some search ->
-          Some
-            (List.map search ~f:(fun (field, typ) ->
-                 (field, string_of_type typ)))
-      | None -> None
-    in
-    let data_fields =
-      match data with
-      | Some data ->
-          Some
-            (List.map data ~f:(fun (field, typ) -> (field, string_of_type typ)))
-      | None -> None
-    in
-    let validator =
-      { validator_id = query_id; where_field; search_fields; data_fields }
-    in
+    let validator = { validator_id = query_id; fields = query_args } in
     validator :: lst
   in
   List.fold_left ~init:[] ~f:get_validator queries
