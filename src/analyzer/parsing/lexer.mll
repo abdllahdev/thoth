@@ -48,7 +48,6 @@ rule token =
   | "</"           { CLOSING_TAG }
   | "<>"           { FRAGMENT_OPENING }
   | "</>"          { FRAGMENT_CLOSING }
-  | "=>"           { ARROW }
   | "true"         { TRUE }
   | "false"        { FALSE }
   | "if"           { IF }
@@ -71,8 +70,6 @@ rule token =
   | "create"       { CREATE }
   | "update"       { UPDATE }
   | "delete"       { DELETE }
-  | "fetchMany"    { FETCH_MANY }
-  | "fetchOne"     { FETCH_ONE }
   | "as"           { AS }
   | "onError"      { ON_ERROR }
   | "onLoading"    { ON_LOADING }

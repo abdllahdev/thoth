@@ -9,7 +9,6 @@
 %token <string> ATTRIBUTE
 %token          TRUE
 %token          FALSE
-%token          ARROW
 %token          NOT
 %token          EQ
 %token          NOT_EQ
@@ -48,8 +47,6 @@
 %token          CREATE
 %token          UPDATE
 %token          DELETE
-%token          FETCH_MANY
-%token          FETCH_ONE
 %token          ON_ERROR
 %token          ON_LOADING
 %token          ON_SUCCESS
@@ -188,16 +185,12 @@ permissions:
     { parse_permissions $startpos permissions }
 
 (* xra rules *)
-xra_variable:
-  | dot = xra_variable; DOT; id = ID
-    { XRA.Dot($startpos, id, dot) }
-  | id = ID;
-    { XRA.Variable($startpos, id) }
-  ;
-
 xra_variable_expression:
-  | xra_variable = xra_variable
-    { XRA.VariableExpression(xra_variable) }
+  | id = ID
+    { XRA.VariableExpression($startpos, id) }
+  | id = ID; DOT; expanded_id = ID
+    { XRA.DotExpression($startpos, id, expanded_id) }
+  ;
 
 xra_basic_expression:
   | literal = literal
@@ -288,13 +281,15 @@ xra_expression:
   | xra_element_or_fragment = xra_element_or_fragment
     { xra_element_or_fragment }
   | IF; conditional_expression = xra_conditional_expression;
-    THEN; then_block = xra_expression;
-    ELSE; else_block = xra_expression;
+    THEN; option(LEFT_PARAN); then_block = xra_expression; option(RIGHT_PARAN)
+    ELSE; option(LEFT_PARAN); else_block = xra_expression; option(RIGHT_PARAN)
     { XRA.IfThenElseStatement($startpos, conditional_expression, then_block, else_block) }
   | IF; conditional_expression = xra_conditional_expression
-    THEN; then_block = xra_expression;
+    THEN; option(LEFT_PARAN); then_block = xra_expression; option(RIGHT_PARAN)
     { XRA.IfThenStatement($startpos, conditional_expression, then_block) }
-  | FOR; var = ID; IN; lst = xra_variable_expression; ARROW; output = xra_expression;
+  | FOR; var = ID; IN;
+    lst = xra_variable_expression; COLON;
+    option(LEFT_PARAN); output = xra_expression; option(RIGHT_PARAN)
     { XRA.ForLoopStatement ($startpos, var, lst, output) }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
@@ -333,12 +328,12 @@ xra_component_args:
     { args }
   ;
 
-xra_fetch_component_declarations:
-  | ON_ERROR; ARROW; xra_render_expression = xra_render_expression
+xra_find_component_declarations:
+  | ON_ERROR; COLON; xra_render_expression = xra_render_expression
     { (xra_render_expression) }
-  | ON_LOADING; ARROW; xra_render_expression = xra_render_expression
+  | ON_LOADING; COLON; xra_render_expression = xra_render_expression
     { (xra_render_expression) }
-  | ON_SUCCESS; ARROW; xra_render_expression = xra_render_expression
+  | ON_SUCCESS; COLON; xra_render_expression = xra_render_expression
     { (xra_render_expression) }
   ;
 
@@ -349,7 +344,7 @@ xra_action_component_form_field:
 
 xra_action_component_form_fields:
   | FORM_FIELDS;
-    ARROW;
+    COLON;
     LEFT_BRACE;
     fields = separated_nonempty_list(COMMA, xra_action_component_form_field);
     RIGHT_BRACE
@@ -357,7 +352,7 @@ xra_action_component_form_fields:
   ;
 
 xra_action_component_submit_button:
-  | FORM_BUTTON; ARROW; xra_element = xra_element
+  | FORM_BUTTON; COLON; xra_element = xra_element
     { xra_element }
   ;
 
@@ -373,33 +368,33 @@ xra_component:
         args,
         Component.GeneralBody(xra_general_body)) }
   | COMPONENT;
-    LT; FETCH_MANY; COLON; query_id = ID; AS; variable = ID; GT;
+    LT; FIND_MANY; COLON; query_id = ID; AS; variable = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    on_error = xra_fetch_component_declarations;
-    on_loading = xra_fetch_component_declarations;
-    on_success = xra_fetch_component_declarations;
+    on_error = xra_find_component_declarations;
+    on_loading = xra_find_component_declarations;
+    on_success = xra_find_component_declarations;
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
-        Component.FetchMany($startpos, query_id, variable),
+        Component.FindMany($startpos, query_id, variable),
         None,
-        Component.FetchBody(on_error, on_loading, on_success)) }
+        Component.FindBody(on_error, on_loading, on_success)) }
   | COMPONENT;
-    LT; FETCH_ONE; COLON; query_id = ID; AS; variable = ID; GT;
+    LT; FIND_UNIQUE; COLON; query_id = ID; AS; variable = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    on_error = xra_fetch_component_declarations;
-    on_loading = xra_fetch_component_declarations;
-    on_success = xra_fetch_component_declarations;
+    on_error = xra_find_component_declarations;
+    on_loading = xra_find_component_declarations;
+    on_success = xra_find_component_declarations;
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
-        Component.FetchOne($startpos, query_id, variable),
+        Component.FindUnique($startpos, query_id, variable),
         None,
-        Component.FetchBody(on_error, on_loading, on_success)) }
+        Component.FindBody(on_error, on_loading, on_success)) }
   | COMPONENT;
     LT; CREATE; COLON; query_id = ID; GT;
     component_id = ID;

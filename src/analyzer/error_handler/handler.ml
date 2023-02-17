@@ -2,8 +2,8 @@ open Errors
 open Core
 open Ast.Pprinter
 
-let raise_type_error ?(id = "") loc expected_type received_value received_type =
-  if String.is_empty id then
+let raise_type_error ?id loc expected_type received_value received_type =
+  if Option.is_none id then
     raise
       (TypeError
          (Fmt.str
@@ -23,11 +23,11 @@ let raise_type_error ?(id = "") loc expected_type received_value received_type =
             (string_of_type expected_type)
             received_value
             (string_of_type received_type)
-            id))
+            (Option.value_exn id)))
 
-let raise_declaration_type_error ?(id = "") loc expected_type received_value
+let raise_declaration_type_error ?id loc expected_type received_value
     received_type =
-  if String.is_empty id then
+  if Option.is_none id then
     raise
       (DeclarationTypeError
          (Fmt.str
@@ -47,11 +47,17 @@ let raise_declaration_type_error ?(id = "") loc expected_type received_value
             (string_of_declaration_type expected_type)
             received_value
             (string_of_declaration_type received_type)
-            id))
+            (Option.value_exn id)))
 
-let raise_unique_field_error ?(id = "") loc expected_type received_value
-    received_type =
-  if String.is_empty id then
+let raise_dot_operator_error loc expanded_value id id_type =
+  raise
+    (TypeError
+       (Fmt.str "@(%s): Cannot get '%s' from '%s' of type '%s'"
+          (string_of_loc loc) expanded_value id (string_of_type id_type)))
+
+let raise_unique_field_error ?id loc expected_type received_value received_type
+    =
+  if Option.is_none id then
     raise
       (UniqueFieldError
          (Fmt.str
@@ -71,7 +77,7 @@ let raise_unique_field_error ?(id = "") loc expected_type received_value
             (ModelPrinter.string_of_field_unique_type expected_type)
             received_value
             (ModelPrinter.string_of_field_unique_type received_type)
-            id))
+            (Option.value_exn id)))
 
 let raise_query_argument_error loc id expected_args received_arg =
   raise
@@ -96,9 +102,8 @@ let raise_query_type_error loc expected_query_type received_query
           received_query
           (QueryPrinter.string_of_query_type received_query_type)))
 
-let raise_undefined_error ?(declaration_id = "") ?declaration_type loc
-    declaration id =
-  if String.is_empty declaration_id && Option.is_none declaration_type then
+let raise_undefined_error ?declaration_id ?declaration_type loc declaration id =
+  if Option.is_none declaration_id && Option.is_none declaration_type then
     raise
       (UndefinedError
          (Fmt.str "@(%s): Undefined %s '%s'" (string_of_loc loc) declaration id))
@@ -108,7 +113,7 @@ let raise_undefined_error ?(declaration_id = "") ?declaration_type loc
          (Fmt.str "@(%s): Undefined %s '%s' in %s '%s'" (string_of_loc loc)
             declaration id
             (string_of_declaration_type (Option.value_exn declaration_type))
-            declaration_id))
+            (Option.value_exn declaration_id)))
 
 let raise_name_error loc declaration_type =
   raise

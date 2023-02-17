@@ -61,31 +61,32 @@ component TaskComponent(task: Task) {
 	)
 }
 
-component<fetchMany:getTasks as tasks> TasksComponent {
-	onError => render(
+component<findMany:getTasks as tasks> TasksComponent {
+	onError: render(
 		<div>{ "An error occured" }</div>
 	)
 
-	onLoading => render(
+	onLoading: render(
 		<div>{ "Loading..." }</div>
 	)
 
-	onSuccess => render(
+	onSuccess: render(
 		<>
 			{
-				for task in tasks =>
+				for task in tasks: (
 					<TaskComponent task={ task } />
+				)
 			}
 		</>
 	)
 }
 
 component<create:createTask> TaskCreateForm {
-	formFields => {
+	formFields: {
 	 title: <input type="text" />
 	}
 
-	formButton => <button>{ "Submit" }</button>
+	formButton: <button>{ "Submit" }</button>
 }
 
 @at("/")

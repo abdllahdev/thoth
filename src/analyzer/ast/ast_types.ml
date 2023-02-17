@@ -58,13 +58,10 @@ end
 module XRA = struct
   type query_application = loc * id * id list
 
-  type variable_expression =
-    | Variable of loc * id
-    | Dot of loc * id * variable_expression
-
   type expression =
     | Literal of literal
-    | VariableExpression of variable_expression
+    | VariableExpression of loc * id
+    | DotExpression of loc * id * id
     | LetExpression of loc * id * expression
     | LiteralConditionalExpression of loc * expression
     | NotConditionalExpression of loc * expression
@@ -90,15 +87,15 @@ module Component = struct
 
   type typ =
     | General
-    | FetchMany of loc * query_id * string
-    | FetchOne of loc * query_id * string
+    | FindMany of loc * query_id * string
+    | FindUnique of loc * query_id * string
     | Create of loc * query_id
     | Update of loc * query_id
     | Delete of loc * query_id
 
   type body =
     | GeneralBody of XRA.body
-    | FetchBody of
+    | FindBody of
         XRA.expression list * XRA.expression list * XRA.expression list
     | CreateBody of (loc * string * XRA.expression) list * XRA.expression
     | UpdateBody of (loc * string * XRA.expression) list * XRA.expression
