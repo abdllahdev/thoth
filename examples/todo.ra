@@ -83,19 +83,28 @@ component<findMany:getTasks as tasks> TasksComponent {
 
 component<create:createTask> TaskCreateForm {
 	formFields: {
-	 title: <input type="text" />
-	}
+		title: {
+			type: TextField,
+			isVisible: true
+		}
+	},
 
-	formButton: <button>{ "Submit" }</button>
+	formButton: {
+		name: "Create"
+	}
+}
+
+component<delete:deleteTaskById> TaskDeleteButton {
+	formButton: {
+		name: "Delete"
+	}
 }
 
 @at("/")
 @permission(isAuth)
 page Home {
 	render(
-		<div>
-			<TasksComponent />
-			<TaskCreateForm />
-		</div>
+		<TasksComponent />
+		<TaskCreateForm />
 	)
 }

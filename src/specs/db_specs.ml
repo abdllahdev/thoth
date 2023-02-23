@@ -1,6 +1,6 @@
 open Core
 open Ast.Ast_types
-open Ast.Pprinter
+open Ast.Formatter
 
 type id = string
 type field_specs = { id : string; field_type : string; field_attrs : string }

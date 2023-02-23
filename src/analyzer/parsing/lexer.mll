@@ -25,67 +25,76 @@ let attribute = ('@')(id)
 (* Lexer rules *)
 rule token =
   parse
-  | '{'            { LEFT_BRACE }
-  | '}'            { RIGHT_BRACE }
-  | '('            { LEFT_PARAN }
-  | ')'            { RIGHT_PARAN }
-  | '/'            { SLASH }
-  | '?'            { QUESTION_MARK }
-  | '<'            { LT }
-  | '>'            { GT }
-  | '='            { EQUAL }
-  | '!'            { NOT }
-  | "=="           { EQ }
-  | "!="           { NOT_EQ }
-  | "<="           { LT_OR_EQ }
-  | ">="           { GT_OR_EQ }
-  | ':'            { COLON }
-  | ';'            { SEMICOLON }
-  | ','            { COMMA }
-  | '.'            { DOT }
-  | '"'            { read_string (Buffer.create 17) lexbuf }
-  | "[]"           { LIST_MODIFIER }
-  | "</"           { CLOSING_TAG }
-  | "<>"           { FRAGMENT_OPENING }
-  | "</>"          { FRAGMENT_CLOSING }
-  | "true"         { TRUE }
-  | "false"        { FALSE }
-  | "if"           { IF }
-  | "then"         { THEN }
-  | "else"         { ELSE }
-  | "for"          { FOR }
-  | "in"           { IN }
-  | "model"        { MODEL }
-  | "query"        { QUERY }
-  | "where"        { WHERE }
-  | "data"         { DATA }
-  | "search"       { SEARCH }
-  | "component"    { COMPONENT }
-  | "page"         { PAGE }
-  | "render"       { RENDER }
-  | "let"          { LET }
-  | "now"          { NOW }
-  | "findMany"     { FIND_MANY }
-  | "findUnique"   { FIND_UNIQUE }
-  | "create"       { CREATE }
-  | "update"       { UPDATE }
-  | "delete"       { DELETE }
-  | "as"           { AS }
-  | "onError"      { ON_ERROR }
-  | "onLoading"    { ON_LOADING }
-  | "onSuccess"    { ON_SUCCESS }
-  | "formFields"   { FORM_FIELDS }
-  | "formButton"   { FORM_BUTTON }
-  | "@on"          { ON }
-  | "@permission"  { PERMISSION }
-  | "@at"          { AT }
-  | attribute      { ATTRIBUTE (Lexing.lexeme lexbuf) }
-  | int            { INT (int_of_string (Lexing.lexeme lexbuf))}
-  | id             { ID (Lexing.lexeme lexbuf) }
-  | whitespace     { token lexbuf }
-  | newline        { next_line lexbuf; token lexbuf }
-  | eof            { EOF }
-  | _              { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
+  | '{'             { LEFT_BRACE }
+  | '}'             { RIGHT_BRACE }
+  | '('             { LEFT_PARAN }
+  | ')'             { RIGHT_PARAN }
+  | '/'             { SLASH }
+  | '?'             { QUESTION_MARK }
+  | '<'             { LT }
+  | '>'             { GT }
+  | '='             { EQUAL }
+  | '!'             { NOT }
+  | "=="            { EQ }
+  | "!="            { NOT_EQ }
+  | "<="            { LT_OR_EQ }
+  | ">="            { GT_OR_EQ }
+  | ':'             { COLON }
+  | ';'             { SEMICOLON }
+  | ','             { COMMA }
+  | '.'             { DOT }
+  | '"'             { read_string (Buffer.create 17) lexbuf }
+  | "[]"            { LIST_MODIFIER }
+  | "</"            { CLOSING_TAG }
+  | "<>"            { FRAGMENT_OPENING }
+  | "</>"           { FRAGMENT_CLOSING }
+  | "true"          { TRUE }
+  | "false"         { FALSE }
+  | "if"            { IF }
+  | "then"          { THEN }
+  | "else"          { ELSE }
+  | "for"           { FOR }
+  | "in"            { IN }
+  | "model"         { MODEL }
+  | "query"         { QUERY }
+  | "where"         { WHERE }
+  | "data"          { DATA }
+  | "search"        { SEARCH }
+  | "component"     { COMPONENT }
+  | "page"          { PAGE }
+  | "render"        { RENDER }
+  | "let"           { LET }
+  | "now"           { NOW }
+  | "findMany"      { FIND_MANY }
+  | "findUnique"    { FIND_UNIQUE }
+  | "create"        { CREATE }
+  | "update"        { UPDATE }
+  | "delete"        { DELETE }
+  | "as"            { AS }
+  | "onError"       { ON_ERROR }
+  | "onLoading"     { ON_LOADING }
+  | "onSuccess"     { ON_SUCCESS }
+  | "formFields"    { FORM_FIELDS }
+  | "TextField"     { TEXT_FIELD }
+  | "EmailField"    { EMAIL_FIELD }
+  | "PasswordField" { PASSWORD_FIELD }
+  | "NumberField"   { NUMBER_FIELD }
+  | "name"          { NAME }
+  | "type"          { TYPE }
+  | "isVisible"     { IS_VISIBLE }
+  | "style"         { STYLE }
+  | "defaultValue"  { DEFAULT_VALUE }
+  | "formButton"    { FORM_BUTTON }
+  | "@on"           { ON }
+  | "@permission"   { PERMISSION }
+  | "@at"           { AT }
+  | attribute       { ATTRIBUTE (Lexing.lexeme lexbuf) }
+  | int             { INT (int_of_string (Lexing.lexeme lexbuf))}
+  | id              { ID (Lexing.lexeme lexbuf) }
+  | whitespace      { token lexbuf }
+  | newline         { next_line lexbuf; token lexbuf }
+  | eof             { EOF }
+  | _               { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
 
 and read_string buf = parse
   | '"'           { STRING (Buffer.contents buf) }

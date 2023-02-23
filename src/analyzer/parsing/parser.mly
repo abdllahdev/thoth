@@ -51,6 +51,15 @@
 %token          ON_LOADING
 %token          ON_SUCCESS
 %token          FORM_FIELDS
+%token          NAME
+%token          TYPE
+%token          IS_VISIBLE
+%token          STYLE
+%token          DEFAULT_VALUE
+%token          TEXT_FIELD
+%token          EMAIL_FIELD
+%token          PASSWORD_FIELD
+%token          NUMBER_FIELD
 %token          FORM_BUTTON
 %token          AS
 %token          FRAGMENT_OPENING
@@ -265,10 +274,8 @@ xra_conditional_expression:
     { XRA.LtOrEqConditionalExpression($startpos, left_expression, right_expression) }
   | left_expression = xra_basic_expression; GT_OR_EQ; right_expression = xra_basic_expression
     { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | NOT; xra_variable_expression = xra_variable_expression
-    { XRA.NotConditionalExpression($startpos, xra_variable_expression) }
-  | NOT; boolean = boolean
-    { XRA.NotConditionalExpression($startpos, XRA.Literal(boolean)) }
+  | NOT; xra_conditional_expression = xra_conditional_expression
+    { XRA.NotConditionalExpression($startpos, xra_conditional_expression) }
   | xra_variable_expression = xra_variable_expression
     { XRA.LiteralConditionalExpression($startpos, xra_variable_expression) }
   | boolean = boolean
@@ -283,14 +290,14 @@ xra_expression:
   | IF; conditional_expression = xra_conditional_expression;
     THEN; option(LEFT_PARAN); then_block = xra_expression; option(RIGHT_PARAN)
     ELSE; option(LEFT_PARAN); else_block = xra_expression; option(RIGHT_PARAN)
-    { XRA.IfThenElseStatement($startpos, conditional_expression, then_block, else_block) }
+    { XRA.IfThenElseExpression($startpos, conditional_expression, then_block, else_block) }
   | IF; conditional_expression = xra_conditional_expression
     THEN; option(LEFT_PARAN); then_block = xra_expression; option(RIGHT_PARAN)
-    { XRA.IfThenStatement($startpos, conditional_expression, then_block) }
+    { XRA.IfThenExpression($startpos, conditional_expression, then_block) }
   | FOR; var = ID; IN;
     lst = xra_variable_expression; COLON;
     option(LEFT_PARAN); output = xra_expression; option(RIGHT_PARAN)
-    { XRA.ForLoopStatement ($startpos, var, lst, output) }
+    { XRA.ForExpression ($startpos, var, lst, output) }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
   ;
@@ -337,9 +344,31 @@ xra_find_component_declarations:
     { (xra_render_expression) }
   ;
 
+(* TODO: check if there exist two attrs of the same name *)
+xra_action_component_form_field_attrs:
+  | TYPE; COLON; TEXT_FIELD
+    { FormFieldType(Component.TextField) }
+  | TYPE; COLON; EMAIL_FIELD
+    { FormFieldType(Component.EmailField) }
+  | TYPE; COLON; PASSWORD_FIELD
+    { FormFieldType(Component.PasswordField) }
+  | TYPE; COLON; NUMBER_FIELD
+    { FormFieldType(Component.NumberField) }
+  | DEFAULT_VALUE; COLON; default_value = STRING
+    { FormFieldDefaultValue(default_value) }
+  | STYLE; COLON; style = STRING
+    { FormFieldStyle(style) }
+  | IS_VISIBLE; COLON; visibility = boolean
+    { FormFieldVisibility(visibility) }
+  | NAME; COLON; name = STRING;
+    { FormFieldName(name) }
+  ;
+
 xra_action_component_form_field:
-  | id = ID; COLON; xra_element = xra_element
-    { ($startpos, id, xra_element) }
+  | id = ID; COLON; LEFT_BRACE;
+    attrs = separated_nonempty_list(COMMA, xra_action_component_form_field_attrs)
+    RIGHT_BRACE
+    { ($startpos, id, attrs) }
   ;
 
 xra_action_component_form_fields:
@@ -352,8 +381,10 @@ xra_action_component_form_fields:
   ;
 
 xra_action_component_submit_button:
-  | FORM_BUTTON; COLON; xra_element = xra_element
-    { xra_element }
+  | FORM_BUTTON; COLON; LEFT_BRACE;
+    attrs = separated_nonempty_list(COMMA, xra_action_component_form_field_attrs);
+    RIGHT_BRACE
+    { attrs }
   ;
 
 xra_component:
@@ -400,6 +431,7 @@ xra_component:
     component_id = ID;
     LEFT_BRACE;
     fromFields = xra_action_component_form_fields;
+    COMMA;
     submitButton = xra_action_component_submit_button;
     RIGHT_BRACE
     { Component(
@@ -413,6 +445,7 @@ xra_component:
     component_id = ID;
     LEFT_BRACE;
     fromFields = xra_action_component_form_fields;
+    COMMA;
     submitButton = xra_action_component_submit_button;
     RIGHT_BRACE
     { Component(

@@ -1,6 +1,6 @@
 open Core
 open Ast.Ast_types
-open Ast.Pprinter
+open Ast.Formatter
 open Ast.Helper
 open Type_checker.Environment
 
@@ -127,8 +127,8 @@ let get_query_args global_env models query_type query_args =
                        ( field,
                          if
                            String.equal
-                             (QueryPrinter.string_of_query_type query_type)
-                             (QueryPrinter.string_of_query_type Query.Update)
+                             (QueryFormatter.string_of_query_type query_type)
+                             (QueryFormatter.string_of_query_type Query.Update)
                          then
                            Field
                              ( reference_field,
@@ -140,8 +140,8 @@ let get_query_args global_env models query_type query_args =
                  | None ->
                      if
                        String.equal
-                         (QueryPrinter.string_of_query_type query_type)
-                         (QueryPrinter.string_of_query_type Query.Update)
+                         (QueryFormatter.string_of_query_type query_type)
+                         (QueryFormatter.string_of_query_type Query.Update)
                      then Field (field, convert_type arg_type @ [ "optional" ])
                      else Field (field, convert_type arg_type)))
       | _ -> None)
@@ -200,7 +200,7 @@ let group_queries queries =
 let generate_controllers_specs queries =
   let get_controller_function lst query =
     let { query_id; query_type; query_args; _ } = query in
-    let function_type = QueryPrinter.string_of_query_type query_type in
+    let function_type = QueryFormatter.string_of_query_type query_type in
     let required_args =
       let { where; search; data } = query_args in
       let requires_where = match where with Some _ -> true | None -> false in
@@ -220,7 +220,7 @@ let generate_controllers_specs queries =
 let generate_routes_specs queries =
   let get_route lst query =
     let { query_id; query_type; query_args; _ } = query in
-    let route_type = QueryPrinter.string_of_query_type query_type in
+    let route_type = QueryFormatter.string_of_query_type query_type in
     let { where; _ } = query_args in
     let route_param =
       match where with

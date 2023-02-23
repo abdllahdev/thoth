@@ -27,7 +27,6 @@
     "ocaml"
 ],
   "files.associations": {
-    "*.prisma": "jinja",
-    "*.js": "jinja",
+    "*.jinja": "jinja",
   }
 }

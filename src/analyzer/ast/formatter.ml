@@ -33,7 +33,7 @@ let string_of_literal literal =
   | BooleanLiteral (_, boolean) -> Fmt.str "%b" boolean
   | IntLiteral (_, num) -> Fmt.str "%d" num
 
-module ModelPrinter = struct
+module ModelFormatter = struct
   let string_of_field_unique_type field_unique_type =
     match field_unique_type with
     | Model.UniqueField -> "UniqueField"
@@ -83,7 +83,7 @@ module ModelPrinter = struct
         ^ string_of_fields fields
 end
 
-module QueryPrinter = struct
+module QueryFormatter = struct
   let string_of_query_argument_type argument_type =
     match argument_type with
     | Query.DataArgument -> "Data"
@@ -99,6 +99,15 @@ module QueryPrinter = struct
     | Query.FindMany -> "findMany"
 end
 
+module ComponentFormatter = struct
+  let string_form_field_type field_type =
+    match field_type with
+    | Component.TextField -> "text"
+    | Component.NumberField -> "number"
+    | Component.EmailField -> "email"
+    | Component.PasswordField -> "password"
+end
+
 let string_of_declaration_type declaration_type =
   match declaration_type with
   | ModelDeclaration -> "Model"
@@ -110,7 +119,7 @@ let string_of_declaration declaration =
   match declaration with
   | Model (_, id, body) ->
       Fmt.str "  Model(\n    \"%s\",\n    [%s\n    ]\n  )" id
-        (ModelPrinter.string_of_fields body)
+        (ModelFormatter.string_of_fields body)
   | Query _ -> ""
   | Component _ -> ""
   | Page _ -> ""

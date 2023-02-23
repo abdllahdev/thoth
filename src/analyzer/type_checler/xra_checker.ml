@@ -1,6 +1,6 @@
 open Core
 open Ast.Ast_types
-open Ast.Pprinter
+open Ast.Formatter
 open Ast.Helper
 open Error_handler.Handler
 open Environment
@@ -200,14 +200,14 @@ let rec check_expressions global_env xra_env expressions =
     | XRA.GtOrEqConditionalExpression (_, left_expression, right_expression) ->
         check_expression left_expression;
         check_expression right_expression
-    | XRA.IfThenElseStatement (_, condition, then_block, else_block) ->
+    | XRA.IfThenElseExpression (_, condition, then_block, else_block) ->
         check_expression condition;
         check_expression then_block;
         check_expression else_block
-    | XRA.IfThenStatement (_, condition, then_block) ->
+    | XRA.IfThenExpression (_, condition, then_block) ->
         check_expression condition;
         check_expression then_block
-    | XRA.ForLoopStatement (loc, id, lst, for_block) ->
+    | XRA.ForExpression (loc, id, lst, for_block) ->
         check_expression lst;
 
         let lst_loc, lst_id, lst_typ =
@@ -295,8 +295,8 @@ let check_component global_env xra_env typ args body =
     if
       not
         (String.equal
-           (QueryPrinter.string_of_query_type query_value.typ)
-           (QueryPrinter.string_of_query_type expected_query_type))
+           (QueryFormatter.string_of_query_type query_value.typ)
+           (QueryFormatter.string_of_query_type expected_query_type))
     then raise_query_type_error loc expected_query_type id query_value.typ
   in
 
@@ -320,7 +320,7 @@ let check_component global_env xra_env typ args body =
       XRAEnvironment.allocate xra_env loc ~key:variable ~data:query_return_type
   | Component.Create (loc, id) -> check_query loc id Query.Create
   | Component.Update (loc, id) -> check_query loc id Query.Update
-  | Component.Delete (loc, id) -> check_query loc id Query.Update);
+  | Component.Delete (loc, id) -> check_query loc id Query.Delete);
 
   let check_arg arg =
     let loc, id, typ = arg in
@@ -351,15 +351,17 @@ let check_component global_env xra_env typ args body =
       | _ -> None)
       |> Option.value_exn
     in
+
     let query =
       GlobalEnvironment.lookup global_env ~key:query_id
       |> GlobalEnvironment.get_query_value
     in
 
+    (* TODO: check if required fields are implemented in the form and check the types *)
     match form_fields with
     | [] -> ()
     | form_field :: form_fields ->
-        let loc, id, input = form_field in
+        let loc, id, _ = form_field in
 
         let rec check_args args =
           match args with
@@ -381,39 +383,8 @@ let check_component global_env xra_env typ args body =
               | _ -> ());
               check_args args
         in
-
         check_args query.body;
-
-        let loc, element_id =
-          (match input with
-          | XRA.Element (loc, id, _, _) -> Some (loc, id)
-          | _ -> None)
-          |> Option.value_exn
-        in
-
-        if
-          not
-            (String.equal element_id "input"
-            || String.equal element_id "select"
-            || String.equal element_id "option"
-            || String.equal element_id "textarea")
-        then
-          raise_element_type_error loc "input, select, option, or textarea"
-            element_id;
-
         check_form_fields form_fields
-  in
-
-  let check_form_button form_button =
-    let loc, element_id =
-      (match form_button with
-      | XRA.Element (loc, id, _, _) -> Some (loc, id)
-      | _ -> None)
-      |> Option.value_exn
-    in
-
-    if not (String.equal element_id "button") then
-      raise_element_type_error loc "button" element_id
   in
 
   let check_component_body body =
@@ -423,11 +394,10 @@ let check_component global_env xra_env typ args body =
         check_render_expression global_env xra_env on_error;
         check_render_expression global_env xra_env on_loading;
         check_render_expression global_env xra_env on_success
-    | Component.CreateBody (form_fields, form_button)
-    | Component.UpdateBody (form_fields, form_button) ->
-        check_form_fields form_fields;
-        check_form_button form_button
-    | Component.DeleteBody form_button -> check_form_button form_button
+    | Component.CreateBody (form_fields, _)
+    | Component.UpdateBody (form_fields, _) ->
+        check_form_fields form_fields
+    | Component.DeleteBody _ -> ()
   in
 
   check_component_body body

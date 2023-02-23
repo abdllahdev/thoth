@@ -9,7 +9,7 @@ let list_of_option = function Some lst -> lst | None -> []
 
 let generate_controller name controller_functions =
   let controller_template =
-    getcwd () ^ "/templates/server/src/controllers/template.ts"
+    getcwd () ^ "/templates/server/src/controllers/template.jinja"
   in
   let controller_code =
     Jg_template.from_file controller_template
@@ -48,7 +48,7 @@ let generate_controllers controllers_table =
   Hashtbl.iteri controllers_table ~f:(fun ~key ~data ->
       generate_controller key data);
   let controllers_index_template =
-    getcwd () ^ "/templates/server/src/controllers/index.ts"
+    getcwd () ^ "/templates/server/src/controllers/index.jinja"
   in
   let controllers_index_code =
     Jg_template.from_file controllers_index_template
@@ -60,7 +60,9 @@ let generate_controllers controllers_table =
   write_file controller_index_file controllers_index_code
 
 let generate_route name routes =
-  let route_template = getcwd () ^ "/templates/server/src/routes/template.ts" in
+  let route_template =
+    getcwd () ^ "/templates/server/src/routes/template.jinja"
+  in
   let route_code =
     Jg_template.from_file route_template
       ~models:
@@ -91,9 +93,11 @@ let generate_routes routes_table =
     List.map (Hashtbl.keys routes_table) ~f:(fun name -> Jg_types.Tstr name)
   in
   Hashtbl.iteri routes_table ~f:(fun ~key ~data -> generate_route key data);
-  let routes_index_file = getcwd () ^ "/templates/server/src/routes/index.ts" in
+  let routes_index_template =
+    getcwd () ^ "/templates/server/src/routes/index.jinja"
+  in
   let routes_index_code =
-    Jg_template.from_file routes_index_file
+    Jg_template.from_file routes_index_template
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
   let routes_index_file = getcwd () ^ "/.out/server/src/routes/index.ts" in
@@ -101,7 +105,7 @@ let generate_routes routes_table =
 
 let generate_validator name validators =
   let validator_template =
-    getcwd () ^ "/templates/server/src/validators/template.ts"
+    getcwd () ^ "/templates/server/src/validators/template.jinja"
   in
   let validator_code =
     Jg_template.from_file validator_template
@@ -208,11 +212,11 @@ let generate_validators validators_table =
   in
   Hashtbl.iteri validators_table ~f:(fun ~key ~data ->
       generate_validator key data);
-  let validators_index_file =
-    getcwd () ^ "/templates/server/src/validators/index.ts"
+  let validators_index_template =
+    getcwd () ^ "/templates/server/src/validators/index.jinja"
   in
   let validators_index_code =
-    Jg_template.from_file validators_index_file
+    Jg_template.from_file validators_index_template
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
   let validators_index_file =
@@ -223,14 +227,13 @@ let generate_validators validators_table =
 let setup_server_folder =
   let destination = getcwd () ^ "/templates/server" in
   create_folder destination;
-  delete_files "/server/src/controllers/template.ts";
-  delete_files "/server/src/routes/template.ts";
-  delete_files "/server/src/validators/template.ts"
+  delete_files "/server/src/controllers/template.jinja";
+  delete_files "/server/src/routes/template.jinja";
+  delete_files "/server/src/validators/template.jinja"
 
 let generate_server server_specs =
   setup_server_folder;
   let { controllers_table; routes_table; validators_table } = server_specs in
   generate_controllers controllers_table;
   generate_validators validators_table;
-  generate_routes routes_table;
-  system (Fmt.str "cd %s/.out/server && yarn prettier" (getcwd ())) |> ignore
+  generate_routes routes_table

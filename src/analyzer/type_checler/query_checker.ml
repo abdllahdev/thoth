@@ -1,5 +1,5 @@
 open Core
-open Ast.Pprinter
+open Ast.Formatter
 open Ast.Ast_types
 open Ast.Helper
 open Environment
@@ -54,8 +54,8 @@ let check_data_arg global_env loc query_id query_type model fields =
   (* Check for required fields *)
   (if
    String.equal
-     (QueryPrinter.string_of_query_type query_type)
-     (QueryPrinter.string_of_query_type Query.Create)
+     (QueryFormatter.string_of_query_type query_type)
+     (QueryFormatter.string_of_query_type Query.Create)
   then
    let check_required_fields ~key ~(data : GlobalEnvironment.field_value) =
      let flatten_fields =

@@ -1,0 +1,20 @@
+import DeleteButton from "../../components/DeleteButton";
+
+const baseUrl = "http://localhost:4000";
+
+const {{ id }} = () => {
+  const url = `${baseUrl}/{{ post_to }}`;
+
+  return (
+    <>
+      <DeleteButton
+        url={{ "{" }}url{{ "}" }}
+        {% for attr in form_button %}
+          {{ attr.name }}="{{ attr.value }}"
+        {% endfor %}
+      />
+    </>
+  );
+};
+
+export default {{ id }};

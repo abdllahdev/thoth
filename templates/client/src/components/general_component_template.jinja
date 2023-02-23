@@ -1,0 +1,15 @@
+{% for imported_component in imported_components %}
+  import {{ imported_component }} from "./{{ imported_component }}"
+{% endfor %}
+
+const {{ id }} = ({% for arg in args %}{{ arg.id }}: {{ arg.type }},{% endfor %}) => {
+  return (
+    <>
+      {%- autoescape false -%}
+        {{ render_expression }}
+      {% endautoescape -%}
+    </>
+  );
+};
+
+export default {{ id }};

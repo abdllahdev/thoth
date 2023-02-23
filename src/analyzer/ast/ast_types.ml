@@ -71,9 +71,9 @@ module XRA = struct
     | GtConditionalExpression of loc * expression * expression
     | LtOrEqConditionalExpression of loc * expression * expression
     | GtOrEqConditionalExpression of loc * expression * expression
-    | IfThenElseStatement of loc * expression * expression * expression
-    | IfThenStatement of loc * expression * expression
-    | ForLoopStatement of loc * id * expression * expression
+    | IfThenElseExpression of loc * expression * expression * expression
+    | IfThenExpression of loc * expression * expression
+    | ForExpression of loc * id * expression * expression
     | Element of loc * id * expression list option * expression list option
     | Fragment of loc * expression list option
     | Attribute of loc * id * expression
@@ -93,13 +93,25 @@ module Component = struct
     | Update of loc * query_id
     | Delete of loc * query_id
 
+  type form_field_type = TextField | EmailField | PasswordField | NumberField
+
+  type form_field_attrs =
+    | FormFieldName of string
+    | FormFieldType of form_field_type
+    | FormFieldVisibility of literal
+    | FormFieldStyle of string
+    | FormFieldDefaultValue of string
+
+  type form_field = loc * id * form_field_attrs list
+  type form_button = form_field_attrs list
+
   type body =
     | GeneralBody of XRA.body
     | FindBody of
         XRA.expression list * XRA.expression list * XRA.expression list
-    | CreateBody of (loc * string * XRA.expression) list * XRA.expression
-    | UpdateBody of (loc * string * XRA.expression) list * XRA.expression
-    | DeleteBody of XRA.expression
+    | CreateBody of form_field list * form_button
+    | UpdateBody of form_field list * form_button
+    | DeleteBody of form_button
 end
 
 module Page = struct

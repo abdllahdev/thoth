@@ -23,7 +23,7 @@ let generate_model model_specs =
 
 let generate_db db_specs =
   let { models } = db_specs in
-  let models_template = getcwd () ^ "/templates/db/schema.prisma" in
+  let models_template = getcwd () ^ "/templates/db/schema.jinja" in
   let models_code =
     Jg_template.from_file models_template
       ~models:[ ("models", Jg_types.Tlist (List.map models ~f:generate_model)) ]

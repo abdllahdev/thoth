@@ -1,6 +1,6 @@
 open Errors
 open Core
-open Ast.Pprinter
+open Ast.Formatter
 
 let raise_type_error ?id loc expected_type received_value received_type =
   if Option.is_none id then
@@ -64,9 +64,9 @@ let raise_unique_field_error ?id loc expected_type received_value received_type
             "@(%s): Excepted a field of type '%s' but received '%s' of type \
              '%s'"
             (string_of_loc loc)
-            (ModelPrinter.string_of_field_unique_type expected_type)
+            (ModelFormatter.string_of_field_unique_type expected_type)
             received_value
-            (ModelPrinter.string_of_field_unique_type received_type)))
+            (ModelFormatter.string_of_field_unique_type received_type)))
   else
     raise
       (UniqueFieldError
@@ -74,9 +74,9 @@ let raise_unique_field_error ?id loc expected_type received_value received_type
             "@(%s): Excepted a field of type '%s' but received '%s' of type \
              '%s' in '%s'"
             (string_of_loc loc)
-            (ModelPrinter.string_of_field_unique_type expected_type)
+            (ModelFormatter.string_of_field_unique_type expected_type)
             received_value
-            (ModelPrinter.string_of_field_unique_type received_type)
+            (ModelFormatter.string_of_field_unique_type received_type)
             (Option.value_exn id)))
 
 let raise_query_argument_error loc id expected_args received_arg =
@@ -86,9 +86,9 @@ let raise_query_argument_error loc id expected_args received_arg =
           (string_of_loc loc)
           (String.concat ~sep:", "
              (List.map expected_args
-                ~f:QueryPrinter.string_of_query_argument_type))
+                ~f:QueryFormatter.string_of_query_argument_type))
           (if List.length expected_args > 1 then "argument" else "argument")
-          (QueryPrinter.string_of_query_argument_type received_arg)
+          (QueryFormatter.string_of_query_argument_type received_arg)
           id))
 
 let raise_query_type_error loc expected_query_type received_query
@@ -98,9 +98,9 @@ let raise_query_type_error loc expected_query_type received_query
        (Fmt.str
           "@(%s): Excepted a query of type '%s' but received '%s' of type '%s'"
           (string_of_loc loc)
-          (QueryPrinter.string_of_query_type expected_query_type)
+          (QueryFormatter.string_of_query_type expected_query_type)
           received_query
-          (QueryPrinter.string_of_query_type received_query_type)))
+          (QueryFormatter.string_of_query_type received_query_type)))
 
 let raise_undefined_error ?declaration_id ?declaration_type loc declaration id =
   if Option.is_none declaration_id && Option.is_none declaration_type then
@@ -200,7 +200,7 @@ let raise_query_return_type_error loc query_type expected_type received_type =
           "@(%s): Query of type '%s' expected a return of type '%s' but \
            received a return type of '%s'"
           (string_of_loc loc)
-          (QueryPrinter.string_of_query_type query_type)
+          (QueryFormatter.string_of_query_type query_type)
           (string_of_type expected_type)
           (string_of_type received_type)))
 

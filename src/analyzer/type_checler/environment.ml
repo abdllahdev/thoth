@@ -1,6 +1,6 @@
 open Core
 open Ast.Ast_types
-open Ast.Pprinter
+open Ast.Formatter
 open Error_handler.Handler
 
 module LocalEnvironment = struct

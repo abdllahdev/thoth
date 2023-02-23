@@ -1,0 +1,36 @@
+import { {{ find_from  }} } from "../../types";
+import useFetch from "../../libs/hooks/useFetch";
+{% for imported_component in imported_components %}
+  import {{ imported_component }} from "./{{ imported_component }}"
+{% endfor %}
+
+const baseUrl = "http://localhost:4000";
+
+const {{ id }} = () => {
+  const url = `${baseUrl}/{{ find_from }}`;
+  const { data: {{ variable.id }}, isLoading, error } = useFetch<{{ variable.type }}>(url);
+
+  if (error) {
+    return (
+      {%- autoescape false -%}
+        {{ on_error }}
+      {% endautoescape -%})
+  };
+
+  if (isLoading) {
+    return (
+      {%- autoescape false -%}
+        {{ on_loading }}
+      {% endautoescape -%})
+  };
+
+  return (
+    <>
+      {%- autoescape false -%}
+        {{ render_expression }}
+      {% endautoescape -%}
+    </>
+  );
+};
+
+export default {{ id }};

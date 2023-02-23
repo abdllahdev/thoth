@@ -23,4 +23,4 @@ let make_directory directory_page =
   let destination =
     DefaultPath.filename_of_string (getcwd () ^ "/.out" ^ directory_page)
   in
-  FileUtil.mkdir destination
+  FileUtil.mkdir ~parent:true destination

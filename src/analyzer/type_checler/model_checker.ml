@@ -1,6 +1,6 @@
 open Core
 open Ast.Ast_types
-open Ast.Pprinter
+open Ast.Formatter
 open Ast.Helper
 open Error_handler.Handler
 open Environment
