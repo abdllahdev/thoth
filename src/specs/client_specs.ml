@@ -55,6 +55,28 @@ type client_specs = {
   types_specs : (string, type_specs) Hashtbl.t;
 }
 
+let convert_type typ =
+  let convert_scalar_type scalar_type =
+    match scalar_type with
+    | Int -> ": number"
+    | String -> ": string"
+    | Boolean -> ": boolean"
+    | DateTime -> ": string"
+    | _ -> failwith "CompilationError: Something went wrong"
+  in
+
+  let convert_composite_type composite_type =
+    match composite_type with
+    | List scalar_type -> Fmt.str " %s[]" (convert_scalar_type scalar_type)
+    | Optional scalar_type -> Fmt.str "? %s" (convert_scalar_type scalar_type)
+    | OptionalList scalar_type ->
+        Fmt.str "? %s[]" (convert_scalar_type scalar_type)
+  in
+
+  match typ with
+  | Composite composite_type -> convert_composite_type composite_type
+  | Scalar scalar_type -> convert_scalar_type scalar_type
+
 let rec get_imported_components global_env xra_expression =
   match xra_expression with
   | XRA.Element (_, id, attributes, children) ->
@@ -231,7 +253,7 @@ let generate_find_component_specs global_env id query_id variable_id body
 
   (* Model of the result returned by the query
      used to build a typescript type in the React client app *)
-  if Hashtbl.mem types_specs result_scalar_type then (
+  if not (Hashtbl.mem types_specs result_scalar_type) then (
     let model_value =
       GlobalEnvironment.lookup global_env ~key:result_scalar_type
       |> GlobalEnvironment.get_model_value
@@ -241,7 +263,7 @@ let generate_find_component_specs global_env id query_id variable_id body
 
     Hashtbl.iteri model_value ~f:(fun ~key ~data ->
         if not (is_custom_type data.typ) then
-          let field_type = string_of_type data.typ in
+          let field_type = convert_type data.typ in
           Hashtbl.add_exn type_specs ~key ~data:field_type);
 
     Hashtbl.add_exn types_specs ~key:result_scalar_type ~data:type_specs);
@@ -292,7 +314,7 @@ let get_field_attr field_attr =
   | Component.FormFieldDefaultValue value -> ("defaultValue", value)
   | Component.FormFieldStyle style -> ("style", style)
   | Component.FormFieldType field_type ->
-      ("typ", ComponentFormatter.string_form_field_type field_type)
+      ("type", ComponentFormatter.string_form_field_type field_type)
 
 let generate_create_update_components_specs global_env id query_id body =
   let query =

@@ -43,9 +43,9 @@ type route_specs = {
 }
 
 type server_specs = {
-  controllers_table : (string, controller_function_specs list) Hashtbl.t;
-  routes_table : (string, route_specs list) Hashtbl.t;
-  validators_table : (string, validator_specs list) Hashtbl.t;
+  controllers_specs : (string, controller_function_specs list) Hashtbl.t;
+  routes_specs : (string, route_specs list) Hashtbl.t;
+  validators_specs : (string, validator_specs list) Hashtbl.t;
 }
 
 let convert_type typ =
@@ -248,13 +248,13 @@ let generate_server_specs global_env query_declarations =
         get_query_specs global_env query_declaration)
   in
   let groups = group_queries queries_specs in
-  let controllers_table =
+  let controllers_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_controllers_specs data)
   in
-  let routes_table =
+  let routes_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_routes_specs data)
   in
-  let validators_table =
+  let validators_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_validators_specs data)
   in
-  { controllers_table; routes_table; validators_table }
+  { controllers_specs; routes_specs; validators_specs }

@@ -201,6 +201,52 @@ let generate_page page_specs =
 
   write_file page_file page_code
 
+let generate_type type_key type_data =
+  let type_template =
+    getcwd () ^ "/templates/client/src/types/template.jinja"
+  in
+
+  let type_code =
+    Jg_template.from_file type_template
+      ~models:
+        [
+          ("id", Jg_types.Tstr type_key);
+          ( "elements",
+            Jg_types.Tlist
+              (List.map type_data ~f:(fun element ->
+                   let id, typ = element in
+                   Jg_types.Tobj
+                     [ ("id", Jg_types.Tstr id); ("type", Jg_types.Tstr typ) ]))
+          );
+        ]
+  in
+
+  let type_file = getcwd () ^ "/.out/client/src/types/" ^ type_key ^ ".ts" in
+
+  write_file type_file type_code
+
+let generate_types types_specs =
+  let names =
+    List.map (Hashtbl.keys types_specs) ~f:(fun name -> Jg_types.Tstr name)
+  in
+
+  Hashtbl.iteri types_specs ~f:(fun ~key ~data ->
+      let data = Hashtbl.to_alist data in
+      generate_type key data);
+
+  let types_index_template =
+    getcwd () ^ "/templates/client/src/types/index.jinja"
+  in
+
+  let types_index_code =
+    Jg_template.from_file types_index_template
+      ~models:[ ("names", Jg_types.Tlist names) ]
+  in
+
+  let types_index_file = getcwd () ^ "/.out/client/src/types/index.ts" in
+
+  write_file types_index_file types_index_code
+
 let setup_client_folder =
   let destination = getcwd () ^ "/templates/client" in
   create_folder destination;
@@ -208,24 +254,27 @@ let setup_client_folder =
   delete_files "/client/src/components/find_component_template.jinja";
   delete_files "/client/src/components/create_update_component_template.jinja";
   delete_files "/client/src/components/delete_component_template.jinja";
+  delete_files "/client/src/types/index.jinja";
+  delete_files "/client/src/types/template.jinja";
   delete_files "/client/src/pages/template.jinja"
 
 let generate_client client_specs =
   setup_client_folder;
+
   let {
     general_components_specs;
     find_components_specs;
     create_update_components_specs;
     delete_components_specs;
     pages_specs;
-    _;
+    types_specs;
   } =
     client_specs
   in
 
-  List.map ~f:generate_general_component general_components_specs |> ignore;
-  List.map ~f:generate_find_component find_components_specs |> ignore;
-  List.map ~f:generate_create_update_component create_update_components_specs
-  |> ignore;
-  List.map ~f:generate_delete_component delete_components_specs |> ignore;
-  List.map ~f:generate_page pages_specs |> ignore
+  List.iter ~f:generate_general_component general_components_specs;
+  List.iter ~f:generate_find_component find_components_specs;
+  List.iter ~f:generate_create_update_component create_update_components_specs;
+  List.iter ~f:generate_delete_component delete_components_specs;
+  List.iter ~f:generate_page pages_specs;
+  generate_types types_specs

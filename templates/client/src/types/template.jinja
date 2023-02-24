@@ -1,8 +1,5 @@
-export type Task = {
-  id: number;
-  title: string;
-  isDone: boolean;
-  userId: number;
-  createdAt: string;
-  updatedAt: string;
+export type {{ id }} = {
+  {% for element in elements %}
+  {{ element.id }}{{ element.type }};
+  {% endfor %}
 };

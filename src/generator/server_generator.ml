@@ -40,12 +40,12 @@ let generate_controller name controller_functions =
   in
   write_file controller_file controller_code
 
-let generate_controllers controllers_table =
+let generate_controllers controllers_specs =
   let names =
-    List.map (Hashtbl.keys controllers_table) ~f:(fun name ->
+    List.map (Hashtbl.keys controllers_specs) ~f:(fun name ->
         Jg_types.Tstr name)
   in
-  Hashtbl.iteri controllers_table ~f:(fun ~key ~data ->
+  Hashtbl.iteri controllers_specs ~f:(fun ~key ~data ->
       generate_controller key data);
   let controllers_index_template =
     getcwd () ^ "/templates/server/src/controllers/index.jinja"
@@ -88,11 +88,11 @@ let generate_route name routes =
   in
   write_file route_file route_code
 
-let generate_routes routes_table =
+let generate_routes routes_specs =
   let names =
-    List.map (Hashtbl.keys routes_table) ~f:(fun name -> Jg_types.Tstr name)
+    List.map (Hashtbl.keys routes_specs) ~f:(fun name -> Jg_types.Tstr name)
   in
-  Hashtbl.iteri routes_table ~f:(fun ~key ~data -> generate_route key data);
+  Hashtbl.iteri routes_specs ~f:(fun ~key ~data -> generate_route key data);
   let routes_index_template =
     getcwd () ^ "/templates/server/src/routes/index.jinja"
   in
@@ -206,11 +206,11 @@ let generate_validator name validators =
   in
   write_file validator_file validator_code
 
-let generate_validators validators_table =
+let generate_validators validators_specs =
   let names =
-    List.map (Hashtbl.keys validators_table) ~f:(fun name -> Jg_types.Tstr name)
+    List.map (Hashtbl.keys validators_specs) ~f:(fun name -> Jg_types.Tstr name)
   in
-  Hashtbl.iteri validators_table ~f:(fun ~key ~data ->
+  Hashtbl.iteri validators_specs ~f:(fun ~key ~data ->
       generate_validator key data);
   let validators_index_template =
     getcwd () ^ "/templates/server/src/validators/index.jinja"
@@ -233,7 +233,7 @@ let setup_server_folder =
 
 let generate_server server_specs =
   setup_server_folder;
-  let { controllers_table; routes_table; validators_table } = server_specs in
-  generate_controllers controllers_table;
-  generate_validators validators_table;
-  generate_routes routes_table
+  let { controllers_specs; routes_specs; validators_specs } = server_specs in
+  generate_controllers controllers_specs;
+  generate_validators validators_specs;
+  generate_routes routes_specs
