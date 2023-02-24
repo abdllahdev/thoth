@@ -3,7 +3,7 @@ import React from "react";
 type DeleteButtonProps = {
   url: string;
   name: string;
-  style: string;
+  style?: string;
 };
 
 const DeleteButton = ({ url, name, style }: DeleteButtonProps) => {

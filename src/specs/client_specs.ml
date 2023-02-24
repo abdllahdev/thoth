@@ -13,7 +13,6 @@ type general_component_specs = {
 
 type find_component_specs = {
   id : string;
-  typ : string;
   find_from : string;
   result_variable : string;
   result_type : string;
@@ -33,7 +32,6 @@ type create_update_component_specs = {
 
 type delete_component_specs = {
   id : string;
-  typ : string;
   post_to : string;
   form_button : (string * string) list;
 }
@@ -96,9 +94,44 @@ let rec get_imported_components global_env xra_expression =
 
 let rec generate_xra_specs xra_expression =
   match xra_expression with
-  | XRA.Literal literal -> Fmt.str "{ %s }" (string_of_literal literal)
-  | XRA.VariableExpression (_, id) -> Fmt.str "{ %s }" id
-  | XRA.DotExpression (_, id, expanded_id) -> Fmt.str "{ %s.%s }" id expanded_id
+  | XRA.Element (_, id, attributes, children) ->
+      let attributes =
+        match attributes with
+        | Some attributes ->
+            List.fold attributes ~init:"" ~f:(fun str attribute ->
+                str ^ generate_xra_specs attribute)
+        | None -> ""
+      in
+
+      let children =
+        match children with
+        | Some children ->
+            List.fold children ~init:"" ~f:(fun str child ->
+                match child with
+                | XRA.Element _ | XRA.Fragment _ ->
+                    str ^ generate_xra_specs child
+                | _ -> str ^ Fmt.str "{ %s }" (generate_xra_specs child))
+        | None -> ""
+      in
+
+      if String.is_empty children then Fmt.str "<%s %s/>" id attributes
+      else Fmt.str "<%s %s>%s</%s>" id attributes children id
+  | XRA.Fragment (_, children) -> (
+      match children with
+      | Some children ->
+          List.fold children ~init:"" ~f:(fun str child ->
+              match child with
+              | XRA.Element _ | XRA.Fragment _ -> str ^ generate_xra_specs child
+              | _ -> str ^ Fmt.str "{ %s }" (generate_xra_specs child))
+      | None -> "")
+  | XRA.Attribute (_, id, expression) ->
+      Fmt.str "%s={ %s }" id (generate_xra_specs expression)
+  | XRA.Literal literal -> (
+      match literal with
+      | StringLiteral (_, str) -> Fmt.str "'%s'" str
+      | _ -> Fmt.str "'%s'" (string_of_literal literal))
+  | XRA.VariableExpression (_, id) -> Fmt.str "%s" id
+  | XRA.DotExpression (_, id, expanded_id) -> Fmt.str "%s.%s" id expanded_id
   | LiteralConditionalExpression (_, expression) ->
       generate_xra_specs expression
   | NotConditionalExpression (_, expression) ->
@@ -137,35 +170,9 @@ let rec generate_xra_specs xra_expression =
         (generate_xra_specs condition)
         (generate_xra_specs then_block)
   | ForExpression (_, var, lst, expression) ->
-      Fmt.str "%s.map((%s) => (%s))" (generate_xra_specs lst) var
+      Fmt.str "%s && %s.map((%s : any) => (%s))" (generate_xra_specs lst)
+        (generate_xra_specs lst) var
         (generate_xra_specs expression)
-  | XRA.Element (_, id, attributes, children) ->
-      let attributes =
-        match attributes with
-        | Some attributes ->
-            List.fold attributes ~init:"" ~f:(fun str attribute ->
-                str ^ generate_xra_specs attribute)
-        | None -> ""
-      in
-
-      let children =
-        match children with
-        | Some children ->
-            List.fold children ~init:"" ~f:(fun str child ->
-                str ^ generate_xra_specs child)
-        | None -> ""
-      in
-
-      if String.is_empty children then Fmt.str "<%s %s/>" id attributes
-      else Fmt.str "<%s %s>%s</%s>" id attributes children id
-  | XRA.Fragment (_, expressions) -> (
-      match expressions with
-      | Some expressions ->
-          List.fold expressions ~init:"" ~f:(fun str expression ->
-              str ^ generate_xra_specs expression)
-      | None -> "")
-  | XRA.Attribute (_, id, expression) ->
-      Fmt.str "%s={%s}" id (generate_xra_specs expression)
   | _ -> ""
 
 let generate_page_specs global_env page_declaration =
@@ -268,7 +275,6 @@ let generate_find_component_specs global_env id query_id variable_id body
 
   {
     id;
-    typ = QueryFormatter.string_of_query_type query.typ;
     find_from = result_scalar_type |> String.lowercase;
     result_variable = variable_id;
     result_type = string_of_type query.return_type;
@@ -358,12 +364,7 @@ let generate_delete_components_specs global_env id query_id body =
     |> Option.value_exn
   in
 
-  {
-    id;
-    typ = QueryFormatter.string_of_query_type query.typ;
-    post_to = result_scalar_type |> String.lowercase;
-    form_button;
-  }
+  { id; post_to = result_scalar_type |> String.lowercase; form_button }
 
 let generate_client_specs global_env component_declarations page_declarations =
   let types_specs = Hashtbl.create ~size:17 (module String) in

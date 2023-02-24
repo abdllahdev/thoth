@@ -49,7 +49,6 @@ let generate_find_component find_component_specs =
 
   let {
     id;
-    typ;
     find_from;
     result_variable;
     result_type;
@@ -84,7 +83,7 @@ let generate_find_component find_component_specs =
   in
 
   let find_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ typ ^ id ^ ".tsx"
+    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
   in
 
   write_file find_component_file find_component_code
@@ -128,7 +127,7 @@ let generate_create_update_component create_update_component_specs =
   in
 
   let create_update_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ typ ^ id ^ ".tsx"
+    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
   in
 
   write_file create_update_component_file create_update_component_code
@@ -139,7 +138,7 @@ let generate_delete_component delete_component_specs =
     ^ "/templates/client/src/components/delete_component_template.jinja"
   in
 
-  let { id; typ; post_to; form_button } = delete_component_specs in
+  let { id; post_to; form_button } = delete_component_specs in
 
   let delete_component_code =
     Jg_template.from_file delete_component_template
@@ -159,7 +158,7 @@ let generate_delete_component delete_component_specs =
   in
 
   let delete_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ typ ^ id ^ ".tsx"
+    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
   in
 
   write_file delete_component_file delete_component_code
