@@ -1,8 +1,17 @@
+{% for imported_type in imported_types %}
+  import { {{ imported_type }} } from "../types"
+{% endfor %}
 {% for imported_component in imported_components %}
   import {{ imported_component }} from "./{{ imported_component }}"
 {% endfor %}
 
-const {{ id }} = ({% for arg in args %}{{ arg.id }}: {{ arg.type }},{% endfor %}) => {
+type {{ id }}Props = {
+  {% for arg in args %}
+  {{ arg.id }}{{ arg.type }};
+  {% endfor %}
+}
+
+const {{ id }} = ({ {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props) => {
   return (
     <>
       {%- autoescape false -%}

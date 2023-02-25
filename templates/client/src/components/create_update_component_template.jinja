@@ -10,7 +10,7 @@ const {{ id }} = () => {
       <Form
         method={% if type == "create" %}"POST"{% else %}"PUT"{% endif %}
         url={url}
-        schema={[
+        formInputs={[
           {% for field in form_fields %}
             {
               {% for attr in field %}
@@ -19,7 +19,7 @@ const {{ id }} = () => {
             },
           {% endfor %}
         ]}
-        formbutton={{ "{{" }}
+        formButton={{ "{{" }}
           {% for attr in form_button %}
             {{ attr.name }}: "{{ attr.value }}",
           {% endfor %}

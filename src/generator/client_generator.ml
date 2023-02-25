@@ -10,7 +10,7 @@ let generate_general_component general_component_specs =
     ^ "/templates/client/src/components/general_component_template.jinja"
   in
 
-  let { id; args; imported_components; render_expression } =
+  let { id; args; imported_types; imported_components; render_expression } =
     general_component_specs
   in
 
@@ -22,6 +22,10 @@ let generate_general_component general_component_specs =
             Jg_types.Tlist
               (List.map imported_components ~f:(fun imported_component ->
                    Jg_types.Tstr imported_component)) );
+          ( "imported_types",
+            Jg_types.Tlist
+              (List.map imported_types ~f:(fun imported_types ->
+                   Jg_types.Tstr imported_types)) );
           ("id", Jg_types.Tstr id);
           ( "args",
             Jg_types.Tlist
@@ -52,6 +56,7 @@ let generate_find_component find_component_specs =
     find_from;
     result_variable;
     result_type;
+    result_scalar_type;
     imported_components;
     on_error;
     on_loading;
@@ -75,6 +80,7 @@ let generate_find_component find_component_specs =
               [
                 ("id", Jg_types.Tstr result_variable);
                 ("type", Jg_types.Tstr result_type);
+                ("scalar_type", Jg_types.Tstr result_scalar_type);
               ] );
           ("on_error", Jg_types.Tstr on_error);
           ("on_loading", Jg_types.Tstr on_loading);

@@ -2,15 +2,12 @@ model User {
 	id        Int     @id
 	firstName String
 	lastName  String
-	tasks     Task[]
 }
 
 model Task {
 	id        Int      @id
 	title     String
 	isDone    Boolean  @default(false)
-	user 			User     @relation(userId, id)
-	userId    Int
 	createdAt DateTime @default(now)
 	updatedAt DateTime @updatedAt
 }
@@ -31,10 +28,7 @@ query<findUnique> getTaskById {
 @permission(isAuth)
 query<create> createTask {
 	data: {
-		title,
-		user: {
-			id: userId
-		}
+		title
 	}
 }
 
@@ -104,7 +98,7 @@ component<delete:deleteTaskById> TaskDeleteButton {
 @permission(isAuth)
 page Home {
 	render(
-		<TasksComponent />
 		<TaskCreateForm />
+		<TasksComponent />
 	)
 }

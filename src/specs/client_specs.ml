@@ -7,6 +7,7 @@ open Type_checker.Environment
 type general_component_specs = {
   id : string;
   args : (string * string) list;
+  imported_types : string list;
   imported_components : string list;
   render_expression : string;
 }
@@ -16,6 +17,7 @@ type find_component_specs = {
   find_from : string;
   result_variable : string;
   result_type : string;
+  result_scalar_type : string;
   imported_components : string list;
   on_error : string;
   on_loading : string;
@@ -62,6 +64,7 @@ let convert_type typ =
     | String -> ": string"
     | Boolean -> ": boolean"
     | DateTime -> ": string"
+    | CustomType custom_type -> Fmt.str ": %s" custom_type
     | _ -> failwith "CompilationError: Something went wrong"
   in
 
@@ -192,8 +195,8 @@ let rec generate_xra_specs xra_expression =
         (generate_xra_specs condition)
         (generate_xra_specs then_block)
   | ForExpression (_, var, lst, expression) ->
-      Fmt.str "%s && %s.map((%s : any) => (%s))" (generate_xra_specs lst)
-        (generate_xra_specs lst) var
+      Fmt.str "%s && %s.map((%s, idx) => (<div key={idx}>%s</div>))"
+        (generate_xra_specs lst) (generate_xra_specs lst) var
         (generate_xra_specs expression)
   | _ -> ""
 
@@ -216,14 +219,26 @@ let generate_page_specs global_env page_declaration =
   { id; route; permissions; imported_components; render_expression }
 
 let generate_general_component_specs global_env id args body =
+  let imported_types =
+    match args with
+    | Some args ->
+        List.fold args ~init:[] ~f:(fun lst arg ->
+            let _, _, arg_type = arg in
+            if is_custom_type arg_type then
+              lst @ [ get_scalar_type arg_type |> string_of_scalar_type ]
+            else lst)
+    | None -> []
+  in
+
   let args =
     match args with
     | Some args ->
         List.map args ~f:(fun arg ->
             let _, arg_id, arg_type = arg in
-            (arg_id, string_of_type arg_type))
+            (arg_id, convert_type arg_type))
     | None -> []
   in
+
   let imported_components, render_expression =
     match body with
     | Component.GeneralBody (_, render_expression) ->
@@ -238,7 +253,8 @@ let generate_general_component_specs global_env id args body =
         (imported_components, render_expression)
     | _ -> ([ "" ], "")
   in
-  { id; args; imported_components; render_expression }
+
+  { id; args; imported_types; imported_components; render_expression }
 
 let generate_find_component_specs global_env id query_id variable_id body
     types_specs =
@@ -297,9 +313,11 @@ let generate_find_component_specs global_env id query_id variable_id body
 
   {
     id;
-    find_from = result_scalar_type |> String.lowercase;
+    find_from = Fmt.str "%ss" (result_scalar_type |> String.lowercase);
     result_variable = variable_id;
     result_type = string_of_type query.return_type;
+    result_scalar_type =
+      get_scalar_type query.return_type |> string_of_scalar_type;
     imported_components;
     on_error;
     on_loading;
@@ -357,7 +375,7 @@ let generate_create_update_components_specs global_env id query_id body =
   {
     id;
     typ = QueryFormatter.string_of_query_type query.typ;
-    post_to = result_scalar_type |> String.lowercase;
+    post_to = Fmt.str "%ss" (result_scalar_type |> String.lowercase);
     form_fields;
     form_button;
   }
@@ -386,7 +404,11 @@ let generate_delete_components_specs global_env id query_id body =
     |> Option.value_exn
   in
 
-  { id; post_to = result_scalar_type |> String.lowercase; form_button }
+  {
+    id;
+    post_to = Fmt.str "%ss" (result_scalar_type |> String.lowercase);
+    form_button;
+  }
 
 let generate_client_specs global_env component_declarations page_declarations =
   let types_specs = Hashtbl.create ~size:17 (module String) in

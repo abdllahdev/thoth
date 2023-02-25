@@ -3,14 +3,14 @@ import React, { useState } from "react";
 type FormInput = {
   type: "text" | "email" | "password" | "number";
   name: string;
-  style: string;
-  visibility: boolean;
+  visibility: string;
+  style?: string;
   defaultValue?: string | number;
 };
 
 type FormButton = {
   name: string;
-  style: string;
+  style?: string;
 }
 
 type FormProps = {
@@ -52,7 +52,7 @@ const Form = ({ method, url, formInputs, formButton }: FormProps) => {
   return (
     <form onSubmit={handleFormSubmit}>
       {formInputs.map((input, idx) => {
-        if (input.visibility !== "true")
+        if (input.visibility === "true")
           return (
             <input
               key={idx}
