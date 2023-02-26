@@ -40,6 +40,7 @@
 %token          SEARCH
 %token          COMPONENT
 %token          PAGE
+%token          APP
 %token          LET
 %token          RENDER
 %token          FIND_MANY
@@ -72,9 +73,6 @@
 %token          EOF
 
 %start <ast> ast
-
-%type <Model.field> model_field
-%type <declaration> declaration
 
 %%
 
@@ -500,7 +498,26 @@ declaration:
         xra_general_body) }
   ;
 
+obj_field_value:
+  | value = ID
+    { ReferenceObjField value }
+  | value = STRING
+    { StringObjField value }
+  | LEFT_BRACE; value = separated_list(COMMA, obj_field); RIGHT_BRACE
+    { AssocObjField value }
+  ;
+
+obj_field:
+  | key = ID; COLON; value = obj_field_value
+    { (key, value) }
+  ;
+
+app_declaration:
+  | APP; app_id = ID; LEFT_BRACE; app_configs = separated_list(COMMA, obj_field); RIGHT_BRACE
+    { (app_id, parse_app_configs $startpos app_configs) }
+  ;
+
 ast:
-  | declarations = list(declaration); EOF
-    { Ast(declarations) }
+  | app_declaration = app_declaration; declarations = list(declaration); EOF
+    { (app_declaration, declarations) }
   ;

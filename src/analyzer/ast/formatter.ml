@@ -12,7 +12,8 @@ let string_of_scalar_type scalar_type =
   | Boolean -> "Boolean"
   | DateTime -> "DateTime"
   | Reference -> "Reference"
-  | Void -> "Void"
+  | Nil -> "Nil"
+  | Assoc -> "Assoc"
   | CustomType custom_type -> custom_type
 
 let string_of_composite_type composite_type =
@@ -133,5 +134,5 @@ let rec string_of_declarations declarations =
       ^ ",\n"
       ^ string_of_declarations declarations
 
-let string_of_ast (Ast declarations) =
+let string_of_ast (_, declarations) =
   Fmt.str "Ast(\n%s\n)" (string_of_declarations declarations)

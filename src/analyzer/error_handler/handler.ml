@@ -2,28 +2,44 @@ open Errors
 open Core
 open Ast.Formatter
 
-let raise_type_error ?id loc expected_type received_value received_type =
-  if Option.is_none id then
-    raise
-      (TypeError
-         (Fmt.str
-            "@(%s): Excepted a value of type '%s' but received '%s' of type \
-             '%s'"
-            (string_of_loc loc)
-            (string_of_type expected_type)
-            received_value
-            (string_of_type received_type)))
+let raise_type_error ?id ?received_value ?received_type loc expected_type =
+  if Option.is_some received_type then
+    if Option.is_some received_value then
+      if Option.is_none id then
+        raise
+          (TypeError
+             (Fmt.str
+                "@(%s): Excepted a value of type '%s' but received '%s' of \
+                 type '%s'"
+                (string_of_loc loc)
+                (string_of_type expected_type)
+                (Option.value_exn received_value)
+                (string_of_type (Option.value_exn received_type))))
+      else
+        raise
+          (TypeError
+             (Fmt.str
+                "@(%s): Excepted a value of type '%s' but received '%s' of \
+                 type '%s' in '%s'"
+                (string_of_loc loc)
+                (string_of_type expected_type)
+                (Option.value_exn received_value)
+                (string_of_type (Option.value_exn received_type))
+                (Option.value_exn id)))
+    else
+      raise
+        (TypeError
+           (Fmt.str
+              "@(%s): Excepted a value of type %s but received a value of type \
+               %s"
+              (string_of_loc loc)
+              (string_of_type expected_type)
+              (string_of_type (Option.value_exn received_type))))
   else
     raise
       (TypeError
-         (Fmt.str
-            "@(%s): Excepted a value of type '%s' but received '%s' of type \
-             '%s' in '%s'"
-            (string_of_loc loc)
-            (string_of_type expected_type)
-            received_value
-            (string_of_type received_type)
-            (Option.value_exn id)))
+         (Fmt.str "@(%s): Excepted a value of type %s" (string_of_loc loc)
+            (string_of_type expected_type)))
 
 let raise_declaration_type_error ?id loc expected_type received_value
     received_type =

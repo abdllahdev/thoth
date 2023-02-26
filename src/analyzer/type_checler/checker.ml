@@ -25,6 +25,7 @@ let check_declaration global_env declarations =
   in
   List.iter ~f:(fun declaration -> check_declaration declaration) declarations
 
-let run global_env (Ast declarations) : unit =
-  EnvironmentManager.populate global_env (Ast declarations);
+let run global_env ast : unit =
+  EnvironmentManager.populate global_env ast;
+  let _, declarations = ast in
   check_declaration global_env declarations

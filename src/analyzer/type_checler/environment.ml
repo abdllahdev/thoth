@@ -184,7 +184,7 @@ module EnvironmentManager = struct
       raise_multi_definitions_error loc id;
     GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 
-  let populate global_env (Ast declarations) =
+  let populate global_env (_, declarations) =
     let populate_declaration global_env declaration =
       match declaration with
       | Model model -> ModelEnvironment.allocate global_env model

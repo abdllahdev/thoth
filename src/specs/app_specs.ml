@@ -6,7 +6,7 @@ open Client_specs
 
 type app_specs = { db : db_specs; server : server_specs; client : client_specs }
 
-let generate_app_specs global_env (Ast declarations) =
+let generate_app_specs global_env (_, declarations) =
   let {
     model_declarations;
     query_declarations;

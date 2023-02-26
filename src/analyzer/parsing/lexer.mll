@@ -62,6 +62,7 @@ rule token =
   | "search"        { SEARCH }
   | "component"     { COMPONENT }
   | "page"          { PAGE }
+  | "app"           { APP }
   | "render"        { RENDER }
   | "let"           { LET }
   | "now"           { NOW }

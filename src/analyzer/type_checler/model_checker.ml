@@ -13,38 +13,47 @@ let check_attribute_argument id literal expected_type =
   | String -> (
       match literal with
       | BooleanLiteral (loc, boolean) ->
-          raise_type_error loc (Scalar expected_type) (string_of_bool boolean)
-            (Scalar Boolean) ~id
+          raise_type_error loc (Scalar expected_type)
+            ~received_value:(string_of_bool boolean)
+            ~received_type:(Scalar Boolean) ~id
       | IntLiteral (loc, number) ->
-          raise_type_error loc (Scalar expected_type) (string_of_int number)
-            (Scalar Int) ~id
+          raise_type_error loc (Scalar expected_type)
+            ~received_value:(string_of_int number) ~received_type:(Scalar Int)
+            ~id
       | _ -> ())
   | Int -> (
       match literal with
       | BooleanLiteral (loc, boolean) ->
-          raise_type_error loc (Scalar expected_type) (string_of_bool boolean)
-            (Scalar Boolean) ~id
+          raise_type_error loc (Scalar expected_type)
+            ~received_value:(string_of_bool boolean)
+            ~received_type:(Scalar Boolean) ~id
       | StringLiteral (loc, str) ->
-          raise_type_error loc (Scalar expected_type) str (Scalar String) ~id
+          raise_type_error loc (Scalar expected_type) ~received_value:str
+            ~received_type:(Scalar String) ~id
       | _ -> ())
   | Boolean -> (
       match literal with
       | StringLiteral (loc, str) ->
-          raise_type_error loc (Scalar expected_type) str (Scalar String) ~id
+          raise_type_error loc (Scalar expected_type) ~received_value:str
+            ~received_type:(Scalar String) ~id
       | IntLiteral (loc, number) ->
-          raise_type_error loc (Scalar expected_type) (string_of_int number)
-            (Scalar Int) ~id
+          raise_type_error loc (Scalar expected_type)
+            ~received_value:(string_of_int number) ~received_type:(Scalar Int)
+            ~id
       | _ -> ())
   | Reference -> (
       match literal with
       | StringLiteral (loc, str) ->
-          raise_type_error loc (Scalar expected_type) str (Scalar String) ~id
+          raise_type_error loc (Scalar expected_type) ~received_value:str
+            ~received_type:(Scalar String) ~id
       | IntLiteral (loc, number) ->
-          raise_type_error loc (Scalar expected_type) (string_of_int number)
-            (Scalar Int) ~id
+          raise_type_error loc (Scalar expected_type)
+            ~received_value:(string_of_int number) ~received_type:(Scalar Int)
+            ~id
       | BooleanLiteral (loc, boolean) ->
-          raise_type_error loc (Scalar expected_type) (string_of_bool boolean)
-            (Scalar Boolean) ~id)
+          raise_type_error loc (Scalar expected_type)
+            ~received_value:(string_of_bool boolean)
+            ~received_type:(Scalar Boolean) ~id)
   | _ -> ()
 
 let check_field_attr global_env model_env model_id field_id
@@ -68,13 +77,14 @@ let check_field_attr global_env model_env model_id field_id
         let arg = List.hd_exn args in
         match arg with
         | Model.AttrArgRef (loc, ref) ->
-            raise_type_error loc (Scalar field_type) ref (Scalar Reference) ~id
+            raise_type_error loc (Scalar field_type) ~received_value:ref
+              ~received_type:(Scalar Reference) ~id
         | Model.AttrArgNow loc -> (
             match field_type with
             | DateTime -> ()
             | _ ->
-                raise_type_error loc (Scalar field_type) "now" (Scalar DateTime)
-                  ~id)
+                raise_type_error loc (Scalar field_type) ~received_value:"now"
+                  ~received_type:(Scalar DateTime) ~id)
         | Model.AttrArgLiteral literal ->
             check_attribute_argument id literal field_type)
   | "@relation" -> (
@@ -93,7 +103,8 @@ let check_field_attr global_env model_env model_id field_id
             raise_undefined_error loc "field" field ~declaration_id:model_id
               ~declaration_type:ModelDeclaration
       | Model.AttrArgNow loc ->
-          raise_type_error loc (Scalar Reference) "now" (Scalar DateTime) ~id
+          raise_type_error loc (Scalar Reference) ~received_value:"now"
+            ~received_type:(Scalar DateTime) ~id
       | Model.AttrArgLiteral literal ->
           check_attribute_argument id literal Reference);
 
@@ -152,7 +163,8 @@ let check_field_attr global_env model_env model_id field_id
       | Model.AttrArgLiteral literal ->
           check_attribute_argument id literal Reference
       | Model.AttrArgNow loc ->
-          raise_type_error loc (Scalar Reference) "now" (Scalar DateTime) ~id)
+          raise_type_error loc (Scalar Reference) ~received_value:"now"
+            ~received_type:(Scalar DateTime) ~id)
   | _ -> raise_undefined_error loc "attribute" id
 
 let rec check_field_attrs global_env model_env model_id field_id field_attrs =
@@ -175,7 +187,8 @@ let check_field_type global_env loc model_id field_id field_type field_attrs :
                  (string_of_type field_type)
                  (string_of_type (Scalar Int)))
           then
-            raise_type_error loc (Scalar Int) field_id field_type ~id:model_id
+            raise_type_error loc (Scalar Int) ~received_value:field_id
+              ~received_type:field_type ~id:model_id
       | _ -> ());
 
   (* Check if model exists *)

@@ -2,15 +2,14 @@
 type id = string
 type loc = Lexing.position
 
-(* TODO: add auth config, app config, and db config *)
-
 type scalar_type =
   | String
   | Int
   | Boolean
   | DateTime
   | Reference
-  | Void
+  | Nil
+  | Assoc
   | CustomType of string
 
 type composite_type =
@@ -27,7 +26,6 @@ type literal =
 
 type permission = loc * id
 
-(* TODO: add enums to data models *)
 module Model = struct
   type unique_field_type = UniqueField | NonUniqueField
 
@@ -120,7 +118,6 @@ end
 
 type model_declaration = loc * id * Model.body
 
-(* TODO: add optional routes to queries *)
 type query_declaration =
   loc
   * id
@@ -149,6 +146,18 @@ type declaration =
   | Component of component_declaration
   | Page of page_declaration
 
+type obj_field =
+  | AssocObjField of (string * obj_field) list
+  | ReferenceObjField of string
+  | StringObjField of string
+
+type app_config =
+  | Title of string
+  | DatabaseUrl of string
+  | Auth of (string * string) list
+
+type app_declaration = string * app_config list
+
 type filtered_ast = {
   model_declarations : model_declaration list;
   query_declarations : query_declaration list;
@@ -157,4 +166,4 @@ type filtered_ast = {
 }
 
 (* Ast type *)
-type ast = Ast of declaration list
+type ast = app_declaration * declaration list

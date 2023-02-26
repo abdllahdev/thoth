@@ -45,11 +45,38 @@ let parse_type ?(list_modifier = false) ?(optional_modifier = false) typ =
 let parse_permissions loc permissions =
   let check_permission permission =
     match permission with
-    | "isAuth" -> (loc, "isAuth")
+    | "isAuthenticated" -> (loc, "isAuthenticated")
     | "owns" -> (loc, "owns")
     | _ -> raise_undefined_error loc "permission" permission
   in
   List.map permissions ~f:check_permission
+
+let parse_app_configs loc obj =
+  List.map obj ~f:(fun (key, value) ->
+      match key with
+      | "title" | "databaseUrl" -> (
+          match value with
+          | StringObjField value -> DatabaseUrl value
+          | _ -> raise_type_error loc (Scalar String))
+      | "auth" -> (
+          match value with
+          | AssocObjField value ->
+              Auth
+                (List.map value ~f:(fun (key, value) ->
+                     match key with
+                     | "userModel" | "idField" | "usernameField"
+                     | "passwordField" | "signupForm" | "loginForm"
+                     | "logoutButton" -> (
+                         match value with
+                         | ReferenceObjField value -> (key, value)
+                         | _ -> raise_type_error loc (Scalar Reference))
+                     | "onAuthFailedRedirectTo" -> (
+                         match value with
+                         | StringObjField value -> (key, value)
+                         | _ -> raise_type_error loc (Scalar String))
+                     | _ -> ("", "")))
+          | _ -> raise_type_error loc (Scalar Assoc))
+      | _ -> raise_name_error loc ModelDeclaration)
 
 let parse_xra_element loc opening_id closing_id attributes children =
   if not (String.equal opening_id closing_id) then

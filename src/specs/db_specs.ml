@@ -5,15 +5,6 @@ open Ast.Formatter
 type id = string
 type field_specs = { id : string; field_type : string; field_attrs : string }
 type model_specs = { id : string; body : field_specs list }
-
-type db_config = {
-  user : string;
-  password : string;
-  host : string;
-  name : string;
-}
-
-(* TODO: add db config *)
 type db_specs = { models : model_specs list }
 
 let generate_attr_arg_specs arg =

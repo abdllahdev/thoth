@@ -69,7 +69,9 @@ let rec check_expressions global_env xra_env expressions =
                       not
                         (String.equal (string_of_type id_type)
                            (string_of_type arg_typ))
-                    then raise_type_error ~id loc arg_typ id id_type
+                    then
+                      raise_type_error ~id loc arg_typ ~received_value:id
+                        ~received_type:id_type
                 | XRA.DotExpression (loc, id, expanded_id) -> (
                     if not (XRAEnvironment.contains xra_env id) then
                       raise_undefined_error loc "variable" id;
@@ -113,8 +115,8 @@ let rec check_expressions global_env xra_env expressions =
                                  (string_of_type arg_typ))
                           then
                             raise_type_error loc arg_typ
-                              (Fmt.str "%s.%s" id expanded_id)
-                              expanded_id_type
+                              ~received_value:(Fmt.str "%s.%s" id expanded_id)
+                              ~received_type:expanded_id_type
                     | None ->
                         raise_dot_operator_error loc expanded_id id id_type)
                 | XRA.Literal literal -> (
@@ -127,7 +129,8 @@ let rec check_expressions global_env xra_env expressions =
                                (string_of_type arg_typ))
                         then
                           raise_type_error ~id loc arg_typ
-                            (string_of_bool value) (Scalar Boolean)
+                            ~received_value:(string_of_bool value)
+                            ~received_type:(Scalar Boolean)
                     | StringLiteral (loc, value) ->
                         if
                           not
@@ -135,7 +138,8 @@ let rec check_expressions global_env xra_env expressions =
                                (string_of_type (Scalar String))
                                (string_of_type arg_typ))
                         then
-                          raise_type_error ~id loc arg_typ value (Scalar String)
+                          raise_type_error ~id loc arg_typ ~received_value:value
+                            ~received_type:(Scalar String)
                     | IntLiteral (loc, value) ->
                         if
                           not
@@ -143,8 +147,9 @@ let rec check_expressions global_env xra_env expressions =
                                (string_of_type (Scalar Int))
                                (string_of_type arg_typ))
                         then
-                          raise_type_error ~id loc arg_typ (string_of_int value)
-                            (Scalar Int))
+                          raise_type_error ~id loc arg_typ
+                            ~received_value:(string_of_int value)
+                            ~received_type:(Scalar Int))
                 | _ -> ())
         | None -> ()
     in
@@ -225,10 +230,10 @@ let rec check_expressions global_env xra_env expressions =
             | List _ -> ()
             | _ ->
                 raise_type_error lst_loc (Composite (List (CustomType "List")))
-                  lst_id lst_typ)
+                  ~received_value:lst_id ~received_type:lst_typ)
         | Scalar _ ->
             raise_type_error lst_loc (Composite (List (CustomType "List")))
-              lst_id lst_typ);
+              ~received_value:lst_id ~received_type:lst_typ);
 
         XRAEnvironment.extend xra_env;
         XRAEnvironment.allocate xra_env loc ~key:id
@@ -327,7 +332,8 @@ let check_component global_env xra_env typ args body =
     let scalar_typ = get_scalar_type typ in
     (match scalar_typ with
     | String | Int | Boolean | DateTime -> ()
-    | Reference | Void -> raise_argument_type_error loc (Scalar Reference)
+    | Reference | Nil | Assoc ->
+        raise_argument_type_error loc (Scalar Reference)
     | CustomType custom_type ->
         if not (GlobalEnvironment.contains global_env ~key:custom_type) then
           raise_undefined_error loc "type" custom_type;

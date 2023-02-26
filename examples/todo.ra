@@ -1,5 +1,22 @@
+app Todo {
+	title: "Todo App Created by Ra",
+	databaseUrl: "postgresql://root:123@localhost:5432/todo?schema=public",
+	auth: {
+		userModel: User,
+		idField: id,
+		usernameField: username,
+		passwordField: password,
+		signupForm: SignupFrom,
+		loginForm: LoginForm,
+		logoutButton: LogoutButton,
+		onAuthFailedRedirectTo: "/login"
+	}
+}
+
 model User {
 	id        Int     @id
+	username  String  @unique
+	password  String
 	firstName String
 	lastName  String
 }
@@ -13,19 +30,19 @@ model Task {
 }
 
 @on(Task)
-@permission(isAuth)
+@permission(isAuthenticated)
 query<findMany> getTasks : Task[] {
 	search: { title, isDone }
 }
 
 @on(Task)
-@permission(isAuth)
+@permission(isAuthenticated)
 query<findUnique> getTaskById {
 	where: { id }
 }
 
 @on(Task)
-@permission(isAuth)
+@permission(isAuthenticated)
 query<create> createTask {
 	data: {
 		title
@@ -33,14 +50,14 @@ query<create> createTask {
 }
 
 @on(Task)
-@permission(isAuth, owns)
+@permission(isAuthenticated, owns)
 query<update> updateTaskById {
 	where: { id },
 	data: { title, isDone }
 }
 
 @on(Task)
-@permission(isAuth, owns)
+@permission(isAuthenticated, owns)
 query<delete> deleteTaskById {
 	where: { id }
 }
@@ -95,7 +112,7 @@ component<delete:deleteTaskById> TaskDeleteButton {
 }
 
 @at("/")
-@permission(isAuth)
+@permission(isAuthenticated)
 page Home {
 	render(
 		<TaskCreateForm />
