@@ -3,7 +3,7 @@ import { z } from 'zod';
 {% for validator in list %}
 export const {{ validator.id }}Validator = z.object({
   {% if validator.where %}
-    params: z.object({
+    where: z.object({
       {% for field in validator.where %}
         {{ field.id }}: z.string({
           required_error: '`{{ field.id }}` is required',
@@ -20,15 +20,30 @@ export const {{ validator.id }}Validator = z.object({
   {% endif %}
 
   {% if validator.search %}
-  query: z.object({
+  search: z.object({
     {% for field in validator.search %}
+      {% if field.type[0] == 'boolean' %}
+      {{ field.id }}: z
+        .enum(['true', 'false'])
+        .transform((val) => (val === 'true' ? true : false))
+        .optional(),
+      {% elif field.type[0] == 'number' %}
+      {{ field.id }}: z
+        .string({
+          required_error: '`{{ field.id }}` is required',
+        })
+        .regex(/^\d+$/)
+        .transform(({{ field.id }}: string) => parseInt({{ field.id }}, 10))
+        .optional(),
+      {% else %}
       {{ field.id }}: z.{{ field.type[0] | lower }}().optional(),
+      {% endif %}
     {% endfor %}
   }),
   {% endif %}
 
   {% if validator.data %}
-  body: z.object({
+  data: z.object({
     {% for field in validator.data %}
       {% if field.field %}
         {{ field.field.id }}: z.{{ field.field.type[0] | lower }}({
