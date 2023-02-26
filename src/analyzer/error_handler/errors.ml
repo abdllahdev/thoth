@@ -17,3 +17,4 @@ exception QueryArgumentError of string
 exception QueryTypeError of string
 exception UniqueFieldError of string
 exception DeclarationTypeError of string
+exception UnexpectedAttribute of string

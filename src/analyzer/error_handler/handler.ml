@@ -231,3 +231,11 @@ let raise_unexpected_argument_error loc arg_id id =
     (UnexpectedArgumentError
        (Fmt.str "@(%s): Unexpected argument '%s' in '%s" (string_of_loc loc)
           arg_id id))
+
+let raise_unexpected_permissions_attr loc query_id =
+  raise
+    (UnexpectedAttribute
+       (Fmt.str
+          "@(%s): Unexpected attribute permissions in %s. The app must \
+           implement auth to have permissions"
+          (string_of_loc loc) query_id))

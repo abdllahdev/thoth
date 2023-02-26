@@ -172,8 +172,8 @@ let check_args global_env loc typ id model args : unit =
       | Query.Where (loc, field) ->
           check_where_arg global_env loc id model field)
 
-let check_query global_env query =
-  let loc, id, typ, return_type, args, models, _ = query in
+let check_query global_env requiresAuth user_model query =
+  let loc, id, typ, return_type, args, models, permissions = query in
   (* Check query models *)
   let check_model model =
     match model with
@@ -194,15 +194,15 @@ let check_query global_env query =
   (* Check query arguments *)
   check_args global_env loc typ id (List.hd_exn models) args;
 
-  (* Check query return type *)
-  match return_type with
-  | Some return_type ->
-      let expected_return_type =
-        (GlobalEnvironment.lookup global_env ~key:id
-        |> GlobalEnvironment.get_query_value)
-          .return_type
-      in
+  let expected_return_type =
+    (GlobalEnvironment.lookup global_env ~key:id
+    |> GlobalEnvironment.get_query_value)
+      .return_type
+  in
 
+  (* Check query return type *)
+  (match return_type with
+  | Some return_type ->
       if
         not
           (String.equal
@@ -210,4 +210,27 @@ let check_query global_env query =
              (string_of_type expected_return_type))
       then
         raise_query_return_type_error loc typ expected_return_type return_type
+  | None -> ());
+
+  (* Check query permissions *)
+  match permissions with
+  | Some permissions ->
+      if not requiresAuth then raise_unexpected_permissions_attr loc id;
+      List.iter permissions ~f:(fun (loc, permission) ->
+          if String.equal permission "owns" then
+            let model_fields =
+              GlobalEnvironment.lookup global_env
+                ~key:
+                  (get_scalar_type expected_return_type |> string_of_scalar_type)
+              |> GlobalEnvironment.get_model_value
+            in
+            let relation_exists =
+              Hashtbl.fold model_fields ~init:false ~f:(fun ~key:_ ~data flag ->
+                  let field_type =
+                    get_scalar_type data.typ |> string_of_scalar_type
+                  in
+                  if String.equal field_type user_model then flag else not flag)
+            in
+            if not relation_exists then
+              raise_unexpected_argument_error loc "owns" id)
   | None -> ()
