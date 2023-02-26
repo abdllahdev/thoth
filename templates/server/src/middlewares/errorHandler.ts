@@ -6,7 +6,7 @@ export const errorHandler = (
   err: any,
   _req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
   let apiError = err;
 

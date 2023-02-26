@@ -9,9 +9,9 @@ export const validate =
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       req.validatedPayload = await schema.parseAsync({
-        body: req.body,
-        query: req.query,
-        params: req.params,
+        data: req.body,
+        where: req.params,
+        search: req.query,
       });
       next();
     } catch (error) {
