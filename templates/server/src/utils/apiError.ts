@@ -1,6 +1,11 @@
 import { ZodIssueCode } from 'zod';
 
-type ErrorCode = 'bad_request' | 'not_found' | 'internal_server_error';
+type ErrorCode =
+  | 'bad_request'
+  | 'not_found'
+  | 'internal_server_error'
+  | 'forbidden'
+  | 'unauthorized';
 
 export type ErrorDetail = {
   code: ZodIssueCode;

@@ -1,6 +1,5 @@
 app Todo {
 	title: "Todo App Created by Ra",
-	databaseUrl: "postgresql://root:123@localhost:5432/todo?schema=public",
 	auth: {
 		userModel: User,
 		idField: id,

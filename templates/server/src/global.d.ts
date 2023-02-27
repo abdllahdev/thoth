@@ -4,8 +4,10 @@ declare global {
   namespace Express {
     export interface Request {
       validatedPayload: {
-        [x: string]: any;
+        where?: any;
+        data?: any;
       };
+      user: JwtPayload;
     }
   }
 }

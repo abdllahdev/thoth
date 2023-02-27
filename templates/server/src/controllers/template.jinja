@@ -13,16 +13,12 @@ export const {{ func.id }} = async (
 ) => {
   try {
     const payload = {
-      {% if func.requires_where and func.requires_search %}
-      where: Object.assign(req.validatedPayload.params, req.validatedPayload.query)
-      {% elif func.requires_where %}
-      where: req.validatedPayload.params,
-      {% elif func.requires_search %}
-      where: req.validatedPayload.query,
+      {% if func.requires_where or func.requires_search %}
+      where: req.validatedPayload.where,
       {% endif %}
 
       {% if func.requires_data %}
-      data: req.validatedPayload.body,
+      data: req.validatedPayload.data,
       {% endif %}
     };
 
