@@ -1,0 +1,23 @@
+import { z } from 'zod';
+
+export const signup = z.object({
+  data: z.object({
+    username: z.string({
+      required_error: '`username` is required',
+    }),
+    password: z.string({
+      required_error: '`password` is required',
+    }),
+  }),
+});
+
+export const login = z.object({
+  data: z.object({
+    username: z.string({
+      required_error: '`username` is required',
+    }),
+    password: z.string({
+      required_error: '`password` is required',
+    }),
+  }),
+});

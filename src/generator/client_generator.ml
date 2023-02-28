@@ -1,5 +1,5 @@
-open Sys
 open Core
+open Core_unix
 open Jingoo
 open Specs.Client_specs
 open File_generator
@@ -256,13 +256,9 @@ let generate_types types_specs =
 let setup_client_folder =
   let destination = getcwd () ^ "/templates/client" in
   create_folder destination;
-  delete_files "/client/src/components/general_component_template.jinja";
-  delete_files "/client/src/components/find_component_template.jinja";
-  delete_files "/client/src/components/create_update_component_template.jinja";
-  delete_files "/client/src/components/delete_component_template.jinja";
-  delete_files "/client/src/types/index.jinja";
-  delete_files "/client/src/types/template.jinja";
-  delete_files "/client/src/pages/template.jinja"
+  system (Fmt.str "rm %s/.out/client/src/components/*" (getcwd ())) |> ignore;
+  system (Fmt.str "rm %s/.out/client/src/pages/*" (getcwd ())) |> ignore;
+  system (Fmt.str "rm %s/.out/client/src/types/*" (getcwd ())) |> ignore
 
 let generate_client client_specs =
   setup_client_folder;

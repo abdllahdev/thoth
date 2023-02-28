@@ -1,0 +1,16 @@
+import express from 'express';
+import { validate } from '../middlewares';
+import { authValidators } from '../validators';
+import { authController } from '../controllers';
+
+const authRouter = express.Router();
+
+authRouter.post(
+  '/signup',
+  validate(authValidators.signup),
+  authController.signup,
+);
+
+authRouter.post('/login', validate(authValidators.login), authController.login);
+
+export default authRouter;

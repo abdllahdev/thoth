@@ -13,12 +13,6 @@ let create_folder source =
   FileUtil.mkdir destination;
   FileUtil.cp [ source ] destination ~recurse:true
 
-let delete_files directory_path =
-  let destination =
-    DefaultPath.filename_of_string (getcwd () ^ "/.out" ^ directory_path)
-  in
-  FileUtil.rm [ destination ] ~recurse:true
-
 let make_directory directory_page =
   let destination =
     DefaultPath.filename_of_string (getcwd () ^ "/.out" ^ directory_page)

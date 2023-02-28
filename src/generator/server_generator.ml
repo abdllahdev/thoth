@@ -237,12 +237,9 @@ let generate_validators validators_specs =
 let setup_server_folder =
   let destination = getcwd () ^ "/templates/server" in
   create_folder destination;
-  delete_files "/server/src/controllers/index.jinja";
-  delete_files "/server/src/controllers/template.jinja";
-  delete_files "/server/src/routes/index.jinja";
-  delete_files "/server/src/routes/template.jinja";
-  delete_files "/server/src/validators/index.jinja";
-  delete_files "/server/src/validators/template.jinja"
+  system (Fmt.str "rm %s/.out/server/src/controllers/*" (getcwd ())) |> ignore;
+  system (Fmt.str "rm %s/.out/server/src/routes/*" (getcwd ())) |> ignore;
+  system (Fmt.str "rm %s/.out/server/src/validators/*" (getcwd ())) |> ignore
 
 let generate_server server_specs =
   setup_server_folder;

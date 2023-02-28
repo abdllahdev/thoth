@@ -1,0 +1,94 @@
+import { Request, Response, NextFunction } from 'express';
+import httpStatus from 'http-status';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import prismaClient from '../utils/prismaClient';
+import ApiError from '../utils/apiError';
+
+export const signup = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const payload = {
+      data: req.validatedPayload.data,
+    };
+
+    const existingUser = await prismaClient.user.findUnique({
+      where: {
+        username: payload.data.username,
+      },
+    });
+
+    if (existingUser)
+      throw new ApiError({
+        status: httpStatus.BAD_REQUEST,
+        code: 'bad_request',
+        error: 'bad_request',
+        message: 'Username already used',
+        details: [],
+      });
+
+    payload.data.password = bcrypt.hashSync(payload.data.password, 12);
+
+    await prismaClient.user.create(payload);
+    res.status(httpStatus.CREATED).json();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const payload = {
+      data: req.validatedPayload.data,
+    };
+
+    const existingUser = await prismaClient.user.findUnique({
+      where: {
+        username: payload.data.username,
+      },
+    });
+
+    if (!existingUser)
+      throw new ApiError({
+        status: httpStatus.FORBIDDEN,
+        code: 'forbidden',
+        error: 'forbidden',
+        message: 'Invalid login credentials',
+        details: [],
+      });
+
+    const validPassword = await bcrypt.compare(
+      payload.data.password,
+      existingUser.password,
+    );
+
+    if (!validPassword)
+      throw new ApiError({
+        status: httpStatus.FORBIDDEN,
+        code: 'forbidden',
+        error: 'forbidden',
+        message: 'Invalid login credentials',
+        details: [],
+      });
+
+    const accessToken = jwt.sign(
+      { userId: existingUser.id },
+      process.env.JWT_ACCESS_SECRET as string,
+      {},
+    );
+
+    const { password, ...loggedUser } = existingUser;
+
+    res.status(httpStatus.OK).json({ ...loggedUser, accessToken });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+};

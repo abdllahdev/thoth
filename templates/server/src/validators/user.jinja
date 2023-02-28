@@ -1,0 +1,12 @@
+import { z } from 'zod';
+
+export const findUniqueValidator = z.object({
+  where: z.object({
+    id: z
+      .string({
+        required_error: '`id` is required',
+      })
+      .regex(/^\d+$/)
+      .transform((id: string) => parseInt(id, 10)),
+  }),
+});

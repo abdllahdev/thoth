@@ -1,0 +1,31 @@
+import { Request, Response, NextFunction } from 'express';
+import httpStatus from 'http-status';
+import prismaClient from '../utils/prismaClient';
+import ApiError from '../utils/apiError';
+
+export const getById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const payload = {
+      where: req.validatedPayload.where,
+    };
+
+    const user = await prismaClient.user.findUnique(payload);
+
+    if (!user)
+      throw new ApiError({
+        status: httpStatus.NOT_FOUND,
+        code: 'not_found',
+        error: 'not_found',
+        message: 'Not Found',
+        details: [],
+      });
+
+    res.status(httpStatus.OK).json(user);
+  } catch (err) {
+    next(err);
+  }
+};
