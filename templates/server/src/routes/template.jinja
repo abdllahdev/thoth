@@ -1,16 +1,16 @@
 import express from 'express';
-import { validate } from '../middlewares';
-import { {{ name | lower }}Validators } from '../validators';
-import { taskController } from '../controllers';
+import * as middlewares from '../middlewares';
+import { {{ name  }}Validators } from '../validators';
+import { {{ name }}Controller } from '../controllers';
 import sse from '../utils/sse';
 
-const {{ name | lower }}Router = express.Router();
+const {{ name }}Router = express.Router();
 
-{{ name | lower }}Router.get('/events', sse.init);
-{{ name | lower }}Router.get('/:id/events', sse.init);
+{{ name }}Router.get('/events', sse.init);
+{{ name }}Router.get('/:id/events', sse.init);
 
 {% for route in list %}
-  {{ name | lower }}Router.
+  {{ name }}Router.
   {% if route.type == "findMany" or route.type == "findUnique" %}
   get
   {% elif route.type == "create" %}
@@ -22,9 +22,10 @@ const {{ name | lower }}Router = express.Router();
   {% endif %}
   (
     '/{% if route.where %}:{{ route.where }}{% endif %}',
-    validate({{ name | lower }}Validators.{{ route.id }}Validator),
-    {{ name | lower }}Controller.{{ route.id }},
+    {% for middleware in route.middlewares %}middlewares.{{ middleware }},{% endfor %}
+    middlewares.validate({{ name }}Validators.{{ route.id }}Validator),
+    {{ name }}Controller.{{ route.id }},
   );
 {% endfor %}
 
-export default taskRouter;
+export default {{ name }}Router;

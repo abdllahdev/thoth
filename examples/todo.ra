@@ -20,7 +20,7 @@ model User {
 	lastName  String
 }
 
-model Task {
+model TaskTest {
 	id        Int      @id
 	title     String
 	isDone    Boolean  @default(false)
@@ -28,19 +28,19 @@ model Task {
 	updatedAt DateTime @updatedAt
 }
 
-@on(Task)
+@on(TaskTest)
 @permission(isAuthenticated)
-query<findMany> getTasks : Task[] {
+query<findMany> getTasks : TaskTest[] {
 	search: { title, isDone }
 }
 
-@on(Task)
+@on(TaskTest)
 @permission(isAuthenticated)
 query<findUnique> getTaskById {
 	where: { id }
 }
 
-@on(Task)
+@on(TaskTest)
 @permission(isAuthenticated)
 query<create> createTask {
 	data: {
@@ -48,24 +48,23 @@ query<create> createTask {
 	}
 }
 
-@on(Task)
-@permission(isAuthenticated, owns)
+@on(TaskTest)
+@permission(isAuthenticated, ownsEntry)
 query<update> updateTaskById {
 	where: { id },
 	data: { title, isDone }
 }
 
-@on(Task)
-@permission(isAuthenticated, owns)
+@on(TaskTest)
+@permission(isAuthenticated, ownsEntry)
 query<delete> deleteTaskById {
 	where: { id }
 }
 
-component TaskComponent(task: Task) {
+component TaskComponent(task: TaskTest) {
 	render(
-		<div className={ if task.isDone then "text-green-500" else "text-red-500" }>
+		<div className="text-gray-900">
 			<div>{ task.title }</div>
-			<div>{ if task.isDone then "YES" else "NO" }</div>
 			<div>{ task.createdAt }</div>
 		</div>
 	)
@@ -84,7 +83,10 @@ component<findMany:getTasks as tasks> TasksComponent {
 		<>
 			{
 				for task in tasks: (
-					<TaskComponent task={ task } />
+					<>
+						<TaskComponent task={ task } />
+						<div className="border-y border-black"></div>
+					</>
 				)
 			}
 		</>
@@ -95,12 +97,14 @@ component<create:createTask> TaskCreateForm {
 	formFields: {
 		title: {
 			type: TextField,
-			isVisible: true
+			isVisible: true,
+			style: "shadow appearance-none border rounded w-full border py-2 px-3 text-gray-700 leading-tight"
 		}
 	},
 
 	formButton: {
-		name: "Create"
+		name: "Create",
+		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
 	}
 }
 
@@ -114,7 +118,13 @@ component<delete:deleteTaskById> TaskDeleteButton {
 @permission(isAuthenticated)
 page Home {
 	render(
-		<TaskCreateForm />
-		<TasksComponent />
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<div className="px-40 py-14 rounded-xl bg-white">
+				<TaskCreateForm />
+				<div className="py-2"></div>
+				<div className="font-bold text-size-[24px] py-2">{ "Tasks" }</div>
+				<TasksComponent />
+			</div>
+		</div>
 	)
 }

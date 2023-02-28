@@ -217,7 +217,7 @@ let check_query global_env requiresAuth user_model query =
   | Some permissions ->
       if not requiresAuth then raise_unexpected_permissions_attr loc id;
       List.iter permissions ~f:(fun (loc, permission) ->
-          if String.equal permission "owns" then
+          if String.equal permission "ownsEntry" then
             let model_fields =
               GlobalEnvironment.lookup global_env
                 ~key:
@@ -232,5 +232,5 @@ let check_query global_env requiresAuth user_model query =
                   if String.equal field_type user_model then flag else not flag)
             in
             if not relation_exists then
-              raise_unexpected_argument_error loc "owns" id)
+              raise_unexpected_argument_error loc "ownsEntry" id)
   | None -> ()

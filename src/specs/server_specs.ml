@@ -39,6 +39,7 @@ type controller_function_specs = {
 type route_specs = {
   route_id : string;
   route_type : string;
+  middlewares : string list;
   route_param : string option;
 }
 
@@ -55,7 +56,7 @@ let convert_type typ =
     | String -> [ "string" ]
     | Boolean -> [ "boolean" ]
     | DateTime -> [ "date" ]
-    | CustomType typ -> [ String.lowercase typ ]
+    | CustomType typ -> [ typ ]
     | _ -> failwith "CompilationError: Something went wrong"
   in
 
@@ -115,7 +116,6 @@ let get_query_args global_env models query_type query_args =
                  let arg_type =
                    (LocalEnvironment.lookup model_fields ~key:field).typ
                  in
-
                  match relations with
                  | Some relations ->
                      let reference_field, relation_field = relations in
@@ -219,7 +219,7 @@ let generate_controllers_specs queries =
 
 let generate_routes_specs queries =
   let get_route lst query =
-    let { query_id; query_type; query_args; _ } = query in
+    let { query_id; query_type; query_args; query_permissions; _ } = query in
     let route_type = QueryFormatter.string_of_query_type query_type in
     let { where; _ } = query_args in
     let route_param =
@@ -229,7 +229,12 @@ let generate_routes_specs queries =
           Some id
       | None -> None
     in
-    let route = { route_id = query_id; route_type; route_param } in
+    let middlewares =
+      match query_permissions with
+      | Some permissions -> permissions
+      | None -> []
+    in
+    let route = { route_id = query_id; route_type; route_param; middlewares } in
     route :: lst
   in
   List.fold_left ~init:[] ~f:get_route queries

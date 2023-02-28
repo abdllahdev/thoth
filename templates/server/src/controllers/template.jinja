@@ -24,11 +24,11 @@ export const {{ func.id }} = async (
 
     {% if func.type == "update" or func.type == "delete" %}
       {% if func.type == "update" %}
-      const item = await prismaClient.{{ name | lower }}.findUnique({
+      const item = await prismaClient.{{ name }}.findUnique({
         where: payload.where
       });
       {% elif func.type == "delete" %}
-      const item = await prismaClient.{{ name | lower }}.findUnique(payload);
+      const item = await prismaClient.{{ name  }}.findUnique(payload);
       {% endif %}
     if (!item)
       throw new ApiError({
@@ -43,7 +43,7 @@ export const {{ func.id }} = async (
     {% if func.type != "delete" %}
     const result =
     {% endif %}
-    await prismaClient.{{ name | lower }}.{{ func.type }}(payload);
+    await prismaClient.{{ name  }}.{{ func.type }}(payload);
 
     {% if func.type == "findUnique" %}
     if (!result)

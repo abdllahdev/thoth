@@ -6,6 +6,7 @@ type FormInput = {
   visibility: string;
   style?: string;
   defaultValue?: string | number;
+  placeholder?: string;
 };
 
 type FormButton = {
@@ -60,6 +61,7 @@ const Form = ({ method, url, formInputs, formButton }: FormProps) => {
               name={input.name}
               value={formData[input.name]}
               onChange={handleInputChange}
+              placeholder={input.placeholder}
             />
           );
       })}

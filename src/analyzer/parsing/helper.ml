@@ -46,7 +46,7 @@ let parse_permissions loc permissions =
   let check_permission permission =
     match permission with
     | "isAuthenticated" -> (loc, "isAuthenticated")
-    | "owns" -> (loc, "owns")
+    | "ownsEntry" -> (loc, "ownsEntry")
     | _ -> raise_undefined_error loc "permission" permission
   in
   List.map permissions ~f:check_permission

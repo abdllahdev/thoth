@@ -15,7 +15,7 @@ let generate_controller name controller_functions =
     Jg_template.from_file controller_template
       ~models:
         [
-          ("name", Jg_types.Tstr name);
+          ("name", Jg_types.Tstr (String.uncapitalize name));
           ( "functions",
             Jg_types.Tlist
               (List.map controller_functions ~f:(fun controller_function ->
@@ -36,14 +36,15 @@ let generate_controller name controller_functions =
         ]
   in
   let controller_file =
-    getcwd () ^ "/.out/server/src/controllers/" ^ String.lowercase name ^ ".ts"
+    getcwd () ^ "/.out/server/src/controllers/" ^ String.uncapitalize name
+    ^ ".ts"
   in
   write_file controller_file controller_code
 
 let generate_controllers controllers_specs =
   let names =
     List.map (Hashtbl.keys controllers_specs) ~f:(fun name ->
-        Jg_types.Tstr name)
+        Jg_types.Tstr (String.uncapitalize name))
   in
   Hashtbl.iteri controllers_specs ~f:(fun ~key ~data ->
       generate_controller key data);
@@ -67,15 +68,21 @@ let generate_route name routes =
     Jg_template.from_file route_template
       ~models:
         [
-          ("name", Jg_types.Tstr name);
+          ("name", Jg_types.Tstr (String.uncapitalize name));
           ( "list",
             Jg_types.Tlist
               (List.map routes ~f:(fun route ->
-                   let { route_id; route_type; route_param } = route in
+                   let { route_id; route_type; route_param; middlewares } =
+                     route
+                   in
                    Jg_types.Tobj
                      [
                        ("id", Jg_types.Tstr route_id);
                        ("type", Jg_types.Tstr route_type);
+                       ( "middlewares",
+                         Jg_types.Tlist
+                           (List.map middlewares ~f:(fun middleware ->
+                                Jg_types.Tstr middleware)) );
                        ( "where",
                          match route_param with
                          | Some id -> Jg_types.Tstr id
@@ -84,13 +91,14 @@ let generate_route name routes =
         ]
   in
   let route_file =
-    getcwd () ^ "/.out/server/src/routes/" ^ String.lowercase name ^ ".ts"
+    getcwd () ^ "/.out/server/src/routes/" ^ String.uncapitalize name ^ ".ts"
   in
   write_file route_file route_code
 
 let generate_routes routes_specs =
   let names =
-    List.map (Hashtbl.keys routes_specs) ~f:(fun name -> Jg_types.Tstr name)
+    List.map (Hashtbl.keys routes_specs) ~f:(fun name ->
+        Jg_types.Tstr (String.uncapitalize name))
   in
   Hashtbl.iteri routes_specs ~f:(fun ~key ~data -> generate_route key data);
   let routes_index_template =
@@ -111,7 +119,7 @@ let generate_validator name validators =
     Jg_template.from_file validator_template
       ~models:
         [
-          ("name", Jg_types.Tstr name);
+          ("name", Jg_types.Tstr (String.uncapitalize name));
           ( "list",
             Jg_types.Tlist
               (List.map validators ~f:(fun validator ->
@@ -202,13 +210,15 @@ let generate_validator name validators =
         ]
   in
   let validator_file =
-    getcwd () ^ "/.out/server/src/validators/" ^ String.lowercase name ^ ".ts"
+    getcwd () ^ "/.out/server/src/validators/" ^ String.uncapitalize name
+    ^ ".ts"
   in
   write_file validator_file validator_code
 
 let generate_validators validators_specs =
   let names =
-    List.map (Hashtbl.keys validators_specs) ~f:(fun name -> Jg_types.Tstr name)
+    List.map (Hashtbl.keys validators_specs) ~f:(fun name ->
+        Jg_types.Tstr (String.uncapitalize name))
   in
   Hashtbl.iteri validators_specs ~f:(fun ~key ~data ->
       generate_validator key data);
@@ -227,8 +237,11 @@ let generate_validators validators_specs =
 let setup_server_folder =
   let destination = getcwd () ^ "/templates/server" in
   create_folder destination;
+  delete_files "/server/src/controllers/index.jinja";
   delete_files "/server/src/controllers/template.jinja";
+  delete_files "/server/src/routes/index.jinja";
   delete_files "/server/src/routes/template.jinja";
+  delete_files "/server/src/validators/index.jinja";
   delete_files "/server/src/validators/template.jinja"
 
 let generate_server server_specs =

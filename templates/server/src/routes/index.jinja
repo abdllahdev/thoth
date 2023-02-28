@@ -1,12 +1,12 @@
 import express from 'express';
 {% for name in names %}
-import {{ name | lower }}Router from './{{ name | lower }}';
+import {{ name }}Router from './{{ name  }}';
 {% endfor %}
 
 const router = express.Router();
 
 {% for name in names %}
-router.use('/{{ name | lower }}s', {{ name | lower }}Router);
+router.use('/{{ name  }}s', {{ name  }}Router);
 {% endfor %}
 
 export default router;

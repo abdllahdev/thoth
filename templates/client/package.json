@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "prettier": "prettier --write 'src/**/*.{js,ts}'",
+    "prettier": "prettier --write 'src/**/*.{js,ts,jsx,tsx}'",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -36,7 +36,7 @@ export const {{ validator.id }}Validator = z.object({
         .transform(({{ field.id }}: string) => parseInt({{ field.id }}, 10))
         .optional(),
       {% else %}
-      {{ field.id }}: z.{{ field.type[0] | lower }}().optional(),
+      {{ field.id }}: z.{{ field.type[0]  }}().optional(),
       {% endif %}
     {% endfor %}
   }),
@@ -46,12 +46,12 @@ export const {{ validator.id }}Validator = z.object({
   data: z.object({
     {% for field in validator.data %}
       {% if field.field %}
-        {{ field.field.id }}: z.{{ field.field.type[0] | lower }}({
+        {{ field.field.id }}: z.{{ field.field.type[0]  }}({
           required_error: '`{{ field.field.id }}` is required',
         })
         {% for type in field.field.type %}
           {% if type == "optional" or type == "array" %}
-          .{{ type | lower }}()
+          .{{ type  }}()
           {% endif %}
         {% endfor %}
         ,
@@ -60,12 +60,12 @@ export const {{ validator.id }}Validator = z.object({
       {% if field.object %}
         {{ field.object.id }}: z.object({
           connect: z.object({
-            {{ field.object.field.id }}: z.{{ field.object.field.type[0] | lower }}({
+            {{ field.object.field.id }}: z.{{ field.object.field.type[0]  }}({
               required_error: '`{{ field.object.field.id }}` is required',
             })
             {% for type in field.object.field.type %}
               {% if type == "optional" or type == "array" %}
-              .{{ type | lower }}()
+              .{{ type  }}()
               {% endif %}
             {% endfor %}
             ,
