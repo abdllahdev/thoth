@@ -20,7 +20,7 @@ model User {
 	lastName  String
 }
 
-model TaskTest {
+model Task {
 	id        Int      @id
 	title     String
 	isDone    Boolean  @default(false)
@@ -28,19 +28,19 @@ model TaskTest {
 	updatedAt DateTime @updatedAt
 }
 
-@on(TaskTest)
+@on(Task)
 @permission(isAuthenticated)
-query<findMany> getTasks : TaskTest[] {
+query<findMany> getTasks : Task[] {
 	search: { title, isDone }
 }
 
-@on(TaskTest)
+@on(Task)
 @permission(isAuthenticated)
 query<findUnique> getTaskById {
 	where: { id }
 }
 
-@on(TaskTest)
+@on(Task)
 @permission(isAuthenticated)
 query<create> createTask {
 	data: {
@@ -48,20 +48,20 @@ query<create> createTask {
 	}
 }
 
-@on(TaskTest)
-@permission(isAuthenticated, ownsEntry)
+@on(Task)
+@permission(isAuthenticated)
 query<update> updateTaskById {
 	where: { id },
 	data: { title, isDone }
 }
 
-@on(TaskTest)
-@permission(isAuthenticated, ownsEntry)
+@on(Task)
+@permission(isAuthenticated)
 query<delete> deleteTaskById {
 	where: { id }
 }
 
-component TaskComponent(task: TaskTest) {
+component TaskComponent(task: Task) {
 	render(
 		<div className="text-gray-900">
 			<div>{ task.title }</div>

@@ -229,7 +229,7 @@ let check_query global_env requiresAuth user_model query =
                   let field_type =
                     get_scalar_type data.typ |> string_of_scalar_type
                   in
-                  if String.equal field_type user_model then flag else not flag)
+                  if String.equal field_type user_model then not flag else flag)
             in
             if not relation_exists then
               raise_unexpected_argument_error loc "ownsEntry" id)
