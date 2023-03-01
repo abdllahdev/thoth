@@ -43,10 +43,18 @@ type route_specs = {
   route_param : string option;
 }
 
+type auth_specs = {
+  user_model : string;
+  id_field : string;
+  username_field : string;
+  password_field : string;
+}
+
 type server_specs = {
   controllers_specs : (string, controller_function_specs list) Hashtbl.t;
   routes_specs : (string, route_specs list) Hashtbl.t;
   validators_specs : (string, validator_specs list) Hashtbl.t;
+  auth_specs : auth_specs option;
 }
 
 let convert_type typ =
@@ -247,7 +255,27 @@ let generate_validators_specs queries =
   in
   List.fold_left ~init:[] ~f:get_validator queries
 
-let generate_server_specs global_env query_declarations =
+let generate_auth_specs app_declaration =
+  let _, app_configs = app_declaration in
+  List.map app_configs ~f:(fun config ->
+      match config with
+      | Auth auth_configs ->
+          let get_value field_name =
+            List.Assoc.find auth_configs field_name ~equal:String.equal
+            |> Option.value_exn
+          in
+          Some
+            {
+              user_model = get_value "userModel";
+              id_field = get_value "idField";
+              username_field = get_value "usernameField";
+              password_field = get_value "passwordField";
+            }
+      | _ -> None)
+  |> List.find ~f:(function Some _ -> true | None -> false)
+  |> Option.value_or_thunk ~default:(fun () -> None)
+
+let generate_server_specs global_env app_declaration query_declarations =
   let queries_specs =
     List.map query_declarations ~f:(fun query_declaration ->
         get_query_specs global_env query_declaration)
@@ -262,4 +290,5 @@ let generate_server_specs global_env query_declarations =
   let validators_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_validators_specs data)
   in
-  { controllers_specs; routes_specs; validators_specs }
+  let auth_specs = generate_auth_specs app_declaration in
+  { controllers_specs; routes_specs; validators_specs; auth_specs }

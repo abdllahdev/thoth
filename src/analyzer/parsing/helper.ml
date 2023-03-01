@@ -54,9 +54,9 @@ let parse_permissions loc permissions =
 let parse_app_configs loc obj =
   List.map obj ~f:(fun (key, value) ->
       match key with
-      | "title" | "databaseUrl" -> (
+      | "title" -> (
           match value with
-          | StringObjField value -> DatabaseUrl value
+          | StringObjField value -> Title value
           | _ -> raise_type_error loc (Scalar String))
       | "auth" -> (
           match value with

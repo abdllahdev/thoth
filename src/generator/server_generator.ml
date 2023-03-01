@@ -41,13 +41,23 @@ let generate_controller name controller_functions =
   in
   write_file controller_file controller_code
 
-let generate_controllers controllers_specs =
-  let names =
-    List.map (Hashtbl.keys controllers_specs) ~f:(fun name ->
-        Jg_types.Tstr (String.uncapitalize name))
-  in
+let generate_controllers controllers_specs auth_specs =
   Hashtbl.iteri controllers_specs ~f:(fun ~key ~data ->
       generate_controller key data);
+  let names =
+    let names =
+      List.map (Hashtbl.keys controllers_specs) ~f:(fun name ->
+          Jg_types.Tstr (String.uncapitalize name))
+    in
+    match auth_specs with
+    | Some auth_specs ->
+        let { user_model; _ } = auth_specs in
+        names
+        @ [
+            Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
+          ]
+    | None -> names
+  in
   let controllers_index_template =
     getcwd () ^ "/templates/server/src/controllers/index.jinja"
   in
@@ -95,12 +105,22 @@ let generate_route name routes =
   in
   write_file route_file route_code
 
-let generate_routes routes_specs =
-  let names =
-    List.map (Hashtbl.keys routes_specs) ~f:(fun name ->
-        Jg_types.Tstr (String.uncapitalize name))
-  in
+let generate_routes routes_specs auth_specs =
   Hashtbl.iteri routes_specs ~f:(fun ~key ~data -> generate_route key data);
+  let names =
+    let names =
+      List.map (Hashtbl.keys routes_specs) ~f:(fun name ->
+          Jg_types.Tstr (String.uncapitalize name))
+    in
+    match auth_specs with
+    | Some auth_specs ->
+        let { user_model; _ } = auth_specs in
+        names
+        @ [
+            Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
+          ]
+    | None -> names
+  in
   let routes_index_template =
     getcwd () ^ "/templates/server/src/routes/index.jinja"
   in
@@ -215,13 +235,23 @@ let generate_validator name validators =
   in
   write_file validator_file validator_code
 
-let generate_validators validators_specs =
-  let names =
-    List.map (Hashtbl.keys validators_specs) ~f:(fun name ->
-        Jg_types.Tstr (String.uncapitalize name))
-  in
+let generate_validators validators_specs auth_specs =
   Hashtbl.iteri validators_specs ~f:(fun ~key ~data ->
       generate_validator key data);
+  let names =
+    let names =
+      List.map (Hashtbl.keys validators_specs) ~f:(fun name ->
+          Jg_types.Tstr (String.uncapitalize name))
+    in
+    match auth_specs with
+    | Some auth_specs ->
+        let { user_model; _ } = auth_specs in
+        names
+        @ [
+            Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
+          ]
+    | None -> names
+  in
   let validators_index_template =
     getcwd () ^ "/templates/server/src/validators/index.jinja"
   in
@@ -234,6 +264,37 @@ let generate_validators validators_specs =
   in
   write_file validators_index_file validators_index_code
 
+let generate_auth auth_specs =
+  match auth_specs with
+  | Some auth_specs ->
+      let { user_model; id_field; username_field; password_field } =
+        auth_specs
+      in
+      List.iter [ "controllers"; "routes"; "validators" ] ~f:(fun component ->
+          List.iter
+            [ "auth"; String.uncapitalize user_model ]
+            ~f:(fun file ->
+              let template =
+                Fmt.str "%s/templates/server/src/%s/%s.jinja" (getcwd ())
+                  component file
+              in
+              let code =
+                Jg_template.from_file template
+                  ~models:
+                    [
+                      ( "user_model",
+                        Jg_types.Tstr (String.uncapitalize user_model) );
+                      ("id_field", Jg_types.Tstr id_field);
+                      ("username_field", Jg_types.Tstr username_field);
+                      ("password_field", Jg_types.Tstr password_field);
+                    ]
+              in
+              let output_file =
+                Fmt.str "%s/.out/server/src/%s/%s.ts" (getcwd ()) component file
+              in
+              write_file output_file code))
+  | None -> ()
+
 let setup_server_folder =
   let destination = getcwd () ^ "/templates/server" in
   create_folder destination;
@@ -243,7 +304,10 @@ let setup_server_folder =
 
 let generate_server server_specs =
   setup_server_folder;
-  let { controllers_specs; routes_specs; validators_specs } = server_specs in
-  generate_controllers controllers_specs;
-  generate_validators validators_specs;
-  generate_routes routes_specs
+  let { controllers_specs; routes_specs; validators_specs; auth_specs } =
+    server_specs
+  in
+  generate_controllers controllers_specs auth_specs;
+  generate_validators validators_specs auth_specs;
+  generate_routes routes_specs auth_specs;
+  generate_auth auth_specs

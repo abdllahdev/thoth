@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 export const findUniqueValidator = z.object({
   where: z.object({
-    id: z
+    {{ id_field }}: z
       .string({
-        required_error: '`id` is required',
+        required_error: '`{{ id_field }}` is required',
       })
       .regex(/^\d+$/)
-      .transform((id: string) => parseInt(id, 10)),
+      .transform(({{ id_field }}: string) => parseInt({{ id_field }}, 10)),
   }),
 });

@@ -6,7 +6,7 @@ import {{ name }}Router from './{{ name  }}';
 const router = express.Router();
 
 {% for name in names %}
-router.use('/{{ name  }}s', {{ name  }}Router);
+router.use('/{{ name  }}', {{ name  }}Router);
 {% endfor %}
 
 export default router;

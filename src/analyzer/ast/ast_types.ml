@@ -151,11 +151,7 @@ type obj_field =
   | ReferenceObjField of string
   | StringObjField of string
 
-type app_config =
-  | Title of string
-  | DatabaseUrl of string
-  | Auth of (string * string) list
-
+type app_config = Title of string | Auth of (string * string) list
 type app_declaration = string * app_config list
 
 type filtered_ast = {

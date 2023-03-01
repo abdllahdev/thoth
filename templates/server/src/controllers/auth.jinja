@@ -15,9 +15,9 @@ export const signup = async (
       data: req.validatedPayload.data,
     };
 
-    const existingUser = await prismaClient.user.findUnique({
+    const existingUser = await prismaClient.{{ user_model }}.findUnique({
       where: {
-        username: payload.data.username,
+        {{ username_field }}: payload.data.{{ username_field }},
       },
     });
 
@@ -26,13 +26,13 @@ export const signup = async (
         status: httpStatus.BAD_REQUEST,
         code: 'bad_request',
         error: 'bad_request',
-        message: 'Username already used',
+        message: '{{ username_field }} already used',
         details: [],
       });
 
-    payload.data.password = bcrypt.hashSync(payload.data.password, 12);
+    payload.data.{{ password_field }} = bcrypt.hashSync(payload.data.{{ password_field }}, 12);
 
-    await prismaClient.user.create(payload);
+    await prismaClient.{{ user_model }}.create(payload);
     res.status(httpStatus.CREATED).json();
   } catch (err) {
     next(err);
@@ -49,9 +49,9 @@ export const login = async (
       data: req.validatedPayload.data,
     };
 
-    const existingUser = await prismaClient.user.findUnique({
+    const existingUser = await prismaClient.{{ user_model }}.findUnique({
       where: {
-        username: payload.data.username,
+        {{ username_field }}: payload.data.{{ username_field }},
       },
     });
 
@@ -65,8 +65,8 @@ export const login = async (
       });
 
     const validPassword = await bcrypt.compare(
-      payload.data.password,
-      existingUser.password,
+      payload.data.{{ password_field }},
+      existingUser.{{ password_field }},
     );
 
     if (!validPassword)
@@ -79,12 +79,12 @@ export const login = async (
       });
 
     const accessToken = jwt.sign(
-      { userId: existingUser.id },
+      { userId: existingUser.{{ id_field }} },
       process.env.JWT_ACCESS_SECRET as string,
       {},
     );
 
-    const { password, ...loggedUser } = existingUser;
+    const { {{ password_field }}, ...loggedUser } = existingUser;
 
     res.status(httpStatus.OK).json({ ...loggedUser, accessToken });
   } catch (err) {

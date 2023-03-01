@@ -2,22 +2,22 @@ import { z } from 'zod';
 
 export const signup = z.object({
   data: z.object({
-    username: z.string({
-      required_error: '`username` is required',
+    {{ username_field }}: z.string({
+      required_error: '`{{ username_field }}` is required',
     }),
-    password: z.string({
-      required_error: '`password` is required',
+    {{ password_field }}: z.string({
+      required_error: '`{{ password_field }}` is required',
     }),
   }),
 });
 
 export const login = z.object({
   data: z.object({
-    username: z.string({
-      required_error: '`username` is required',
+    {{ username_field }}: z.string({
+      required_error: '`{{ username_field }}` is required',
     }),
-    password: z.string({
-      required_error: '`password` is required',
+    {{ password_field }}: z.string({
+      required_error: '`{{ password_field }}` is required',
     }),
   }),
 });

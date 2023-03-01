@@ -13,7 +13,7 @@ export const getById = async (
       where: req.validatedPayload.where,
     };
 
-    const user = await prismaClient.user.findUnique(payload);
+    const user = await prismaClient.{{ user_model }}.findUnique(payload);
 
     if (!user)
       throw new ApiError({
