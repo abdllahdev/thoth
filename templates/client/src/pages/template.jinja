@@ -1,8 +1,25 @@
+{% if requires_auth %}
+import { User } from "../../types";
+import { useNavigate } from "react-router";
+import { useEffect } from "react";
+{% endif %}
 {% for imported_component in imported_components %}
   import {{ imported_component }} from "../components/{{ imported_component }}"
 {% endfor %}
 
 const {{ id }} = () => {
+  {% if requires_auth %}
+  const storedUser = localStorage.getItem("user");
+  const user: User | undefined = storedUser ? (JSON.parse(storedUser) as User) : undefined;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("{{ requires_auth }}");
+    }
+  }, [user]);
+  {% endif %}
+
   return (
     <>
       {%- autoescape false -%}

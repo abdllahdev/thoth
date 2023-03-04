@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 
 // TODO: create a store in the app and update the cached data based on the events pushed by the server
-const useFetch = <T>(url: string) => {
+const useFetch = <T>(url: string, accessToken?: string | null) => {
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetcher = async () => {
-    const response = await fetch(url);
+    let headers: { [x: string]: string } = {};
+
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(url, {
+      headers,
+    });
 
     if (!response.ok) {
       setError("An error occurred");
@@ -21,7 +29,9 @@ const useFetch = <T>(url: string) => {
 
   useEffect(() => {
     setIsLoading(true);
-    const eventSource = new EventSource(`${url}/events`);
+    const eventSource = new EventSource(
+      `${url}/events?accessToken=${accessToken}`
+    );
 
     eventSource.addEventListener("create", (event) => {
       fetcher();
@@ -31,7 +41,7 @@ const useFetch = <T>(url: string) => {
       fetcher();
     });
 
-    eventSource.addEventListener("delete", (event) => {
+    eventSource.addEventListener("destroy", (event) => {
       fetcher();
     });
 

@@ -71,15 +71,19 @@ rule token =
   | "create"        { CREATE }
   | "update"        { UPDATE }
   | "delete"        { DELETE }
+  | "signupForm"    { SIGNUP_FORM }
+  | "loginForm"     { LOGIN_FORM }
+  | "logoutButton"  { LOGOUT_BUTTON }
   | "as"            { AS }
   | "onError"       { ON_ERROR }
   | "onLoading"     { ON_LOADING }
   | "onSuccess"     { ON_SUCCESS }
-  | "formFields"    { FORM_FIELDS }
-  | "TextField"     { TEXT_FIELD }
-  | "EmailField"    { EMAIL_FIELD }
-  | "PasswordField" { PASSWORD_FIELD }
-  | "NumberField"   { NUMBER_FIELD }
+  | "formInputs"    { FORM_INPUTS }
+  | "TextInput"     { TEXT_INPUT }
+  | "EmailInput"    { EMAIL_INPUT }
+  | "PasswordInput" { PASSWORD_INPUT }
+  | "RelationInput" { RELATION_INPUT }
+  | "NumberInput"   { NUMBER_INPUT }
   | "name"          { NAME }
   | "type"          { TYPE }
   | "isVisible"     { IS_VISIBLE }

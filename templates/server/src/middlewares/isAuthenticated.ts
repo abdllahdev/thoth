@@ -10,8 +10,9 @@ export function isAuthenticated(
   next: NextFunction,
 ) {
   const { authorization } = req.headers;
+  const { accessToken } = req.query;
 
-  if (!authorization)
+  if (!authorization && !accessToken)
     throw new ApiError({
       status: httpStatus.UNAUTHORIZED,
       code: 'unauthorized',
@@ -21,7 +22,9 @@ export function isAuthenticated(
     });
 
   try {
-    const token = authorization.split(' ')[1];
+    const token = authorization
+      ? authorization.split(' ')[1]
+      : (accessToken as string);
     const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET as string);
     req.user = payload;
     next();

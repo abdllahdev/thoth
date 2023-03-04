@@ -19,22 +19,26 @@ type find_component_specs = {
   result_type : string;
   result_scalar_type : string;
   imported_components : string list;
+  requires_auth : bool;
   on_error : string;
   on_loading : string;
   render_expression : string;
 }
 
-type create_update_component_specs = {
+type action_form_component_specs = {
   id : string;
   typ : string;
   post_to : string;
+  requires_auth : bool;
   form_fields : (string * string) list list;
   form_button : (string * string) list;
 }
 
-type delete_component_specs = {
+type action_button_component_specs = {
   id : string;
   post_to : string;
+  requires_auth : bool;
+  typ : string;
   form_button : (string * string) list;
 }
 
@@ -43,18 +47,30 @@ type type_specs = (string, string) Hashtbl.t
 type page_specs = {
   id : string;
   route : string;
-  permissions : permission list option;
+  requires_auth : string option;
   imported_components : string list;
   render_expression : string;
+}
+
+type auth_specs = {
+  signup_form : action_form_component_specs;
+  login_form : action_form_component_specs;
+  logout_button : action_button_component_specs;
+  user_model : string;
+  id_field : string;
+  username_field : string;
+  on_success_redirect_to : string;
+  on_fail_redirect_to : string;
 }
 
 type client_specs = {
   general_components_specs : general_component_specs list;
   find_components_specs : find_component_specs list;
-  create_update_components_specs : create_update_component_specs list;
-  delete_components_specs : delete_component_specs list;
+  action_form_components_specs : action_form_component_specs list;
+  action_button_components_specs : action_button_component_specs list;
   pages_specs : page_specs list;
   types_specs : (string, type_specs) Hashtbl.t;
+  auth_specs : auth_specs option;
 }
 
 let convert_type typ =
@@ -67,7 +83,6 @@ let convert_type typ =
     | CustomType custom_type -> Fmt.str ": %s" custom_type
     | _ -> failwith "CompilationError: Something went wrong"
   in
-
   let convert_composite_type composite_type =
     match composite_type with
     | List scalar_type -> Fmt.str " %s[]" (convert_scalar_type scalar_type)
@@ -75,7 +90,6 @@ let convert_type typ =
     | OptionalList scalar_type ->
         Fmt.str "? %s[]" (convert_scalar_type scalar_type)
   in
-
   match typ with
   | Composite composite_type -> convert_composite_type composite_type
   | Scalar scalar_type -> convert_scalar_type scalar_type
@@ -90,7 +104,6 @@ let rec get_imported_components global_env xra_expression =
                 lst @ get_imported_components global_env attribute)
         | None -> []
       in
-
       let children =
         match children with
         | Some children ->
@@ -127,7 +140,6 @@ let rec generate_xra_specs xra_expression =
                 str ^ generate_xra_specs attribute)
         | None -> ""
       in
-
       let children =
         match children with
         | Some children ->
@@ -200,8 +212,20 @@ let rec generate_xra_specs xra_expression =
         (generate_xra_specs expression)
   | _ -> ""
 
-let generate_page_specs global_env page_declaration =
+let generate_page_specs global_env page_declaration auth_specs =
   let _, id, route, permissions, body = page_declaration in
+  let requires_auth =
+    match permissions with
+    | Some _ ->
+        Some
+          (match auth_specs with
+          | Some auth_specs ->
+              let { on_fail_redirect_to; _ } = auth_specs in
+              Some on_fail_redirect_to
+          | None -> None)
+        |> Option.value_exn
+    | None -> None
+  in
   let let_expressions, render_expression = body in
   let imported_components =
     (match let_expressions with
@@ -216,7 +240,7 @@ let generate_page_specs global_env page_declaration =
     List.fold render_expression ~init:"" ~f:(fun str expression ->
         str ^ generate_xra_specs expression)
   in
-  { id; route; permissions; imported_components; render_expression }
+  { id; route; requires_auth; imported_components; render_expression }
 
 let generate_general_component_specs global_env id args body =
   let imported_types =
@@ -229,7 +253,6 @@ let generate_general_component_specs global_env id args body =
             else lst)
     | None -> []
   in
-
   let args =
     match args with
     | Some args ->
@@ -238,7 +261,6 @@ let generate_general_component_specs global_env id args body =
             (arg_id, convert_type arg_type))
     | None -> []
   in
-
   let imported_components, render_expression =
     match body with
     | Component.GeneralBody (_, render_expression) ->
@@ -253,7 +275,6 @@ let generate_general_component_specs global_env id args body =
         (imported_components, render_expression)
     | _ -> ([ "" ], "")
   in
-
   { id; args; imported_types; imported_components; render_expression }
 
 let generate_find_component_specs global_env id query_id variable_id body
@@ -262,28 +283,24 @@ let generate_find_component_specs global_env id query_id variable_id body
     GlobalEnvironment.lookup global_env ~key:query_id
     |> GlobalEnvironment.get_query_value
   in
-
   let result_scalar_type =
     get_scalar_type query.return_type |> string_of_scalar_type
   in
-
-  (* Model of the result returned by the query
-     used to build a typescript type in the React client app *)
+  let requires_auth =
+    let permissions = query.permissions in
+    match permissions with Some _ -> true | None -> false
+  in
   if not (Hashtbl.mem types_specs result_scalar_type) then (
     let model_value =
       GlobalEnvironment.lookup global_env ~key:result_scalar_type
       |> GlobalEnvironment.get_model_value
     in
-
     let type_specs = Hashtbl.create ~size:17 (module String) in
-
     Hashtbl.iteri model_value ~f:(fun ~key ~data ->
         if not (is_custom_type data.typ) then
           let field_type = convert_type data.typ in
           Hashtbl.add_exn type_specs ~key ~data:field_type);
-
     Hashtbl.add_exn types_specs ~key:result_scalar_type ~data:type_specs);
-
   let imported_components, on_error, on_loading, render_expression =
     match body with
     | Component.FindBody (on_error, on_loading, render_expression) ->
@@ -310,7 +327,6 @@ let generate_find_component_specs global_env id query_id variable_id body
         (imported_components, on_error, on_loading, render_expression)
     | _ -> ([ "" ], "", "", "")
   in
-
   {
     id;
     find_from = Fmt.str "%ss" (result_scalar_type |> String.lowercase);
@@ -319,6 +335,7 @@ let generate_find_component_specs global_env id query_id variable_id body
     result_scalar_type =
       get_scalar_type query.return_type |> string_of_scalar_type;
     imported_components;
+    requires_auth;
     on_error;
     on_loading;
     render_expression;
@@ -326,93 +343,175 @@ let generate_find_component_specs global_env id query_id variable_id body
 
 let get_field_attr field_attr =
   match field_attr with
-  | Component.FormFieldName name -> ("name", name)
-  | Component.FormFieldVisibility literal ->
+  | Component.FormInputName name -> ("name", name)
+  | Component.FormInputVisibility literal ->
       ("visibility", string_of_literal literal)
-  | Component.FormFieldDefaultValue value -> ("defaultValue", value)
-  | Component.FormFieldStyle style -> ("style", style)
-  | Component.FormFieldType field_type ->
-      ("type", ComponentFormatter.string_form_field_type field_type)
+  | Component.FormInputDefaultValue value -> ("defaultValue", value)
+  | Component.FormInputStyle style -> ("style", style)
+  | Component.FormInputType input_type ->
+      ("type", ComponentFormatter.string_form_input_type input_type)
 
-let generate_create_update_components_specs global_env id query_id body =
-  let query =
-    GlobalEnvironment.lookup global_env ~key:query_id
-    |> GlobalEnvironment.get_query_value
+let get_form_field field =
+  let _, id, field_attrs = field in
+  List.fold field_attrs
+    ~init:[ ("name", id) ]
+    ~f:(fun lst attr ->
+      let key, data = get_field_attr attr in
+      lst @ [ (key, data) ])
+
+let get_button_specs form_button =
+  List.fold form_button ~init:[] ~f:(fun lst attr ->
+      let key, data = get_field_attr attr in
+      lst @ [ (key, data) ])
+
+let get_form_specs form_fields form_button =
+  let form_fields =
+    List.map form_fields ~f:(fun field -> get_form_field field)
   in
+  (form_fields, get_button_specs form_button)
 
-  let result_scalar_type =
-    get_scalar_type query.return_type |> string_of_scalar_type
-  in
-
-  let get_form_field field =
-    let _, id, field_attrs = field in
-    List.fold field_attrs
-      ~init:[ ("name", id) ]
-      ~f:(fun lst attr ->
-        let key, data = get_field_attr attr in
-        lst @ [ (key, data) ])
-  in
-
-  let form_fields, form_button =
+let generate_action_form_components_specs ?global_env ?query_id id body =
+  let post_to, requires_auth, typ, form_fields, form_button =
     (match body with
     | Component.CreateBody (form_fields, form_button)
     | Component.UpdateBody (form_fields, form_button) ->
-        let form_fields =
-          List.map form_fields ~f:(fun field -> get_form_field field)
+        let global_env = Option.value_exn global_env in
+        let query_id = Option.value_exn query_id in
+        let query =
+          GlobalEnvironment.lookup global_env ~key:query_id
+          |> GlobalEnvironment.get_query_value
         in
-
-        let form_button =
-          List.fold form_button ~init:[] ~f:(fun lst attr ->
-              let key, data = get_field_attr attr in
-              lst @ [ (key, data) ])
+        let result_scalar_type =
+          get_scalar_type query.return_type |> string_of_scalar_type
         in
-
-        Some (form_fields, form_button)
+        let requires_auth =
+          let permissions = query.permissions in
+          match permissions with Some _ -> true | None -> false
+        in
+        let form_fields, form_button = get_form_specs form_fields form_button in
+        Some
+          ( Fmt.str "%s" (result_scalar_type |> String.lowercase),
+            requires_auth,
+            QueryFormatter.string_of_query_type query.typ,
+            form_fields,
+            form_button )
+    | Component.SignupFormBody (form_fields, form_button) ->
+        let form_fields, form_button = get_form_specs form_fields form_button in
+        Some ("auth/signup", false, "signup", form_fields, form_button)
+    | Component.LoginFormBody (form_fields, form_button) ->
+        let form_fields, form_button = get_form_specs form_fields form_button in
+        Some ("auth/login", false, "logout", form_fields, form_button)
     | _ -> None)
     |> Option.value_exn
   in
+  { id; typ; post_to; requires_auth; form_fields; form_button }
 
-  {
-    id;
-    typ = QueryFormatter.string_of_query_type query.typ;
-    post_to = Fmt.str "%ss" (result_scalar_type |> String.lowercase);
-    form_fields;
-    form_button;
-  }
-
-let generate_delete_components_specs global_env id query_id body =
-  let query =
-    GlobalEnvironment.lookup global_env ~key:query_id
-    |> GlobalEnvironment.get_query_value
-  in
-
-  let result_scalar_type =
-    get_scalar_type query.return_type |> string_of_scalar_type
-  in
-
-  let form_button =
+let generate_action_button_components_specs ?global_env ?query_id id body =
+  let post_to, requires_auth, typ, form_button =
     (match body with
     | Component.DeleteBody form_button ->
-        let form_button =
-          List.fold form_button ~init:[] ~f:(fun lst attr ->
-              let key, data = get_field_attr attr in
-              lst @ [ (key, data) ])
+        let global_env = Option.value_exn global_env in
+        let query_id = Option.value_exn query_id in
+        let query =
+          GlobalEnvironment.lookup global_env ~key:query_id
+          |> GlobalEnvironment.get_query_value
         in
-
-        Some form_button
+        let result_scalar_type =
+          get_scalar_type query.return_type |> string_of_scalar_type
+        in
+        let requires_auth =
+          let permissions = query.permissions in
+          match permissions with Some _ -> true | None -> false
+        in
+        Some
+          ( Fmt.str "%s" (result_scalar_type |> String.lowercase),
+            requires_auth,
+            "delete",
+            get_button_specs form_button )
+    | Component.LogoutButtonBody form_button ->
+        Some ("auth/logout", false, "logout", get_button_specs form_button)
     | _ -> None)
     |> Option.value_exn
   in
 
-  {
-    id;
-    post_to = Fmt.str "%ss" (result_scalar_type |> String.lowercase);
-    form_button;
-  }
+  { id; post_to; requires_auth; typ; form_button }
 
-let generate_client_specs global_env component_declarations page_declarations =
+let generate_client_specs global_env app_declaration component_declarations
+    page_declarations =
   let types_specs = Hashtbl.create ~size:17 (module String) in
+  let auth_configs =
+    let _, app_configs = app_declaration in
+    List.map app_configs ~f:(fun config ->
+        match config with
+        | Auth auth_configs ->
+            let get_value field_name =
+              List.Assoc.find auth_configs field_name ~equal:String.equal
+              |> Option.value_exn
+            in
+            Some
+              ( get_value "userModel",
+                get_value "idField",
+                get_value "usernameField",
+                get_value "onSuccessRedirectTo",
+                get_value "onFailRedirectTo" )
+        | _ -> None)
+    |> List.find ~f:(function Some _ -> true | None -> false)
+    |> Option.value_or_thunk ~default:(fun () -> None)
+  in
+  let auth_specs =
+    match auth_configs with
+    | Some
+        ( user_model,
+          id_field,
+          username_field,
+          on_success_redirect_to,
+          on_fail_redirect_to ) ->
+        let signup_form =
+          List.filter_map component_declarations
+            ~f:(fun component_declaration ->
+              let _, id, typ, _, body = component_declaration in
 
+              match typ with
+              | Component.SignupForm _ | Component.LoginForm _ ->
+                  Some (generate_action_form_components_specs id body)
+              | _ -> None)
+          |> List.hd_exn
+        in
+        let login_form =
+          List.filter_map component_declarations
+            ~f:(fun component_declaration ->
+              let _, id, typ, _, body = component_declaration in
+
+              match typ with
+              | Component.LoginForm _ ->
+                  Some (generate_action_form_components_specs id body)
+              | _ -> None)
+          |> List.hd_exn
+        in
+        let logout_button =
+          List.filter_map component_declarations
+            ~f:(fun component_declaration ->
+              let _, id, typ, _, body = component_declaration in
+
+              match typ with
+              | Component.LogoutButton _ ->
+                  Some (generate_action_button_components_specs id body)
+              | _ -> None)
+          |> List.hd_exn
+        in
+        Some
+          {
+            signup_form;
+            login_form;
+            logout_button;
+            user_model;
+            id_field;
+            username_field;
+            on_success_redirect_to;
+            on_fail_redirect_to;
+          }
+    | None -> None
+  in
   let general_components_specs =
     List.filter_map component_declarations ~f:(fun component_declaration ->
         let _, id, typ, args, body = component_declaration in
@@ -421,11 +520,9 @@ let generate_client_specs global_env component_declarations page_declarations =
             Some (generate_general_component_specs global_env id args body)
         | _ -> None)
   in
-
   let find_components_specs =
     List.filter_map component_declarations ~f:(fun component_declaration ->
         let _, id, typ, _, body = component_declaration in
-
         match typ with
         | Component.FindMany (_, query_id, variable_id)
         | Component.FindUnique (_, query_id, variable_id) ->
@@ -434,39 +531,36 @@ let generate_client_specs global_env component_declarations page_declarations =
                  body types_specs)
         | _ -> None)
   in
-
-  let create_update_components_specs =
+  let action_form_components_specs =
     List.filter_map component_declarations ~f:(fun component_declaration ->
         let _, id, typ, _, body = component_declaration in
-
         match typ with
         | Component.Create (_, query_id) | Component.Update (_, query_id) ->
             Some
-              (generate_create_update_components_specs global_env id query_id
+              (generate_action_form_components_specs ~global_env ~query_id id
                  body)
         | _ -> None)
   in
-
-  let delete_components_specs =
+  let action_button_components_specs =
     List.filter_map component_declarations ~f:(fun component_declaration ->
         let _, id, typ, _, body = component_declaration in
-
         match typ with
         | Component.Delete (_, query_id) ->
-            Some (generate_delete_components_specs global_env id query_id body)
+            Some
+              (generate_action_button_components_specs ~global_env ~query_id id
+                 body)
         | _ -> None)
   in
-
   let pages_specs =
     List.map page_declarations ~f:(fun declaration_page ->
-        generate_page_specs global_env declaration_page)
+        generate_page_specs global_env declaration_page auth_specs)
   in
-
   {
     general_components_specs;
     find_components_specs;
-    create_update_components_specs;
-    delete_components_specs;
+    action_form_components_specs;
+    action_button_components_specs;
     pages_specs;
     types_specs;
+    auth_specs;
   }

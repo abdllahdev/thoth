@@ -20,6 +20,7 @@ let generate_app_specs global_env (app_declaration, declarations) =
     generate_server_specs global_env app_declaration query_declarations
   in
   let client =
-    generate_client_specs global_env component_declarations page_declarations
+    generate_client_specs global_env app_declaration component_declarations
+      page_declarations
   in
   { db; server; client }

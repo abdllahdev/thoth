@@ -1,14 +1,16 @@
 app Todo {
 	title: "Todo App Created by Ra",
+	notFound: NotFoundPage,
 	auth: {
 		userModel: User,
 		idField: id,
 		usernameField: username,
 		passwordField: password,
-		signupForm: SignupFrom,
-		loginForm: LoginForm,
-		logoutButton: LogoutButton,
-		onAuthFailedRedirectTo: "/login"
+		signupUsing: SignupFrom,
+		loginUsing: LoginForm,
+		logoutUsing: LogoutButton,
+		onSuccessRedirectTo: "/",
+		onFailRedirectTo: "/login"
 	}
 }
 
@@ -94,9 +96,9 @@ component<findMany:getTasks as tasks> TasksComponent {
 }
 
 component<create:createTask> TaskCreateForm {
-	formFields: {
+	formInputs: {
 		title: {
-			type: TextField,
+			type: TextInput,
 			isVisible: true,
 			style: "shadow appearance-none border rounded w-full border py-2 px-3 text-gray-700 leading-tight"
 		}
@@ -111,6 +113,48 @@ component<create:createTask> TaskCreateForm {
 component<delete:deleteTaskById> TaskDeleteButton {
 	formButton: {
 		name: "Delete"
+	}
+}
+
+component<signupForm> SignupForm {
+	formInputs: {
+		username: {
+			type: TextInput,
+			isVisible: true
+		},
+		password: {
+			type: PasswordInput,
+			isVisible: true
+		}
+	},
+
+	formButton: {
+		name: "Sign Up",
+		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+	}
+}
+
+component<loginForm> LoginForm {
+	formInputs: {
+		username: {
+			type: TextInput,
+			isVisible: true
+		},
+		password: {
+			type: PasswordInput,
+			isVisible: true
+		}
+	},
+
+	formButton: {
+		name: "Login",
+		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+	}
+}
+
+component<logoutButton> LogoutButton {
+	formButton: {
+		name: "Logout"
 	}
 }
 

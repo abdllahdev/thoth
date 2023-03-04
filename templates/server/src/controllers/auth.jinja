@@ -26,8 +26,14 @@ export const signup = async (
         status: httpStatus.BAD_REQUEST,
         code: 'bad_request',
         error: 'bad_request',
-        message: '{{ username_field }} already used',
-        details: [],
+        message: 'User sign up error',
+        details: [
+          {
+            code: 'invalid_arguments',
+            parameter: 'username',
+            message: 'Username already used',
+          },
+        ],
       });
 
     payload.data.{{ password_field }} = bcrypt.hashSync(payload.data.{{ password_field }}, 12);

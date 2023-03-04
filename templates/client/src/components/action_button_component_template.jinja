@@ -1,0 +1,65 @@
+{% if type == "logout" %}
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+{% endif %}
+{% if requires_auth or type == "logout" %}
+import { User } from "../types";
+{% endif %}
+import Button from "../ui/Button";
+
+{% if type != "logout" %}
+const baseUrl = "http://localhost:4000";
+{% endif %}
+
+const {{ id }} = () => {
+  {% if type == "delete" %}
+  const url = `${baseUrl}/{{ post_to }}`;
+    {% if requires_auth %}
+    const storedUser = localStorage.getItem("user");
+    const user: User | undefined = storedUser ? (JSON.parse(storedUser) as User) : undefined;
+    {% endif %}
+  {% endif %}
+
+  {% if type == "logout" %}
+  const navigate = useNavigate();
+  const storedUser = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user") as string)
+    : undefined;
+  const [user, setUser] = useState<User | undefined>(storedUser);
+
+  useEffect(() => {
+    if (!user) {
+      navigate("{{ on_fail_redirect_to }}");
+    }
+  }, [user]);
+  {% endif %}
+
+  const handleOnClick = async () => {
+    {% if type == "logout" %}
+    localStorage.removeItem("user");
+    setUser(undefined);
+    {% else %}
+    await fetch(url, {
+      method: "DELETE",
+      {% if requires_auth %}
+      headers: {
+        Authorization: `Bearer ${user?.accessToken}`
+      }
+      {% endif %}
+    });
+    {% endif %}
+  };
+
+  return (
+    <>
+      <Button
+        handleOnClick={{ "{" }}handleOnClick{{ "}" }}
+        {% for attr in form_button %}
+          {{ attr.name }}="{{ attr.value }}"
+        {% endfor %}
+      />
+    </>
+  );
+};
+
+export default {{ id }};

@@ -51,16 +51,20 @@
 %token          ON_ERROR
 %token          ON_LOADING
 %token          ON_SUCCESS
-%token          FORM_FIELDS
 %token          NAME
 %token          TYPE
 %token          IS_VISIBLE
 %token          STYLE
 %token          DEFAULT_VALUE
-%token          TEXT_FIELD
-%token          EMAIL_FIELD
-%token          PASSWORD_FIELD
-%token          NUMBER_FIELD
+%token          TEXT_INPUT
+%token          EMAIL_INPUT
+%token          PASSWORD_INPUT
+%token          NUMBER_INPUT
+%token          RELATION_INPUT
+%token          SIGNUP_FORM
+%token          LOGIN_FORM
+%token          LOGOUT_BUTTON
+%token          FORM_INPUTS
 %token          FORM_BUTTON
 %token          AS
 %token          FRAGMENT_OPENING
@@ -343,48 +347,51 @@ xra_find_component_declarations:
   ;
 
 (* TODO: check if there exist two attrs of the same name *)
-xra_action_component_form_field_attrs:
-  | TYPE; COLON; TEXT_FIELD
-    { FormFieldType(Component.TextField) }
-  | TYPE; COLON; EMAIL_FIELD
-    { FormFieldType(Component.EmailField) }
-  | TYPE; COLON; PASSWORD_FIELD
-    { FormFieldType(Component.PasswordField) }
-  | TYPE; COLON; NUMBER_FIELD
-    { FormFieldType(Component.NumberField) }
+xra_action_component_form_input_attrs:
+  | TYPE; COLON; TEXT_INPUT
+    { FormInputType(Component.TextInput) }
+  | TYPE; COLON; EMAIL_INPUT
+    { FormInputType(Component.EmailInput) }
+  | TYPE; COLON; PASSWORD_INPUT
+    { FormInputType(Component.PasswordInput) }
+  | TYPE; COLON; NUMBER_INPUT
+    { FormInputType(Component.NumberInput) }
+  | TYPE; COLON; RELATION_INPUT
+    { FormInputType(Component.RelationInput) }
   | DEFAULT_VALUE; COLON; default_value = STRING
-    { FormFieldDefaultValue(default_value) }
+    { FormInputDefaultValue(default_value) }
   | STYLE; COLON; style = STRING
-    { FormFieldStyle(style) }
+    { FormInputStyle(style) }
   | IS_VISIBLE; COLON; visibility = boolean
-    { FormFieldVisibility(visibility) }
+    { FormInputVisibility(visibility) }
   | NAME; COLON; name = STRING;
-    { FormFieldName(name) }
+    { FormInputName(name) }
   ;
 
-xra_action_component_form_field:
+xra_action_component_form_input:
   | id = ID; COLON; LEFT_BRACE;
-    attrs = separated_nonempty_list(COMMA, xra_action_component_form_field_attrs)
+    attrs = separated_nonempty_list(COMMA, xra_action_component_form_input_attrs)
     RIGHT_BRACE
     { ($startpos, id, attrs) }
   ;
 
-xra_action_component_form_fields:
-  | FORM_FIELDS;
+xra_action_component_form_inputs:
+  | FORM_INPUTS;
     COLON;
     LEFT_BRACE;
-    fields = separated_nonempty_list(COMMA, xra_action_component_form_field);
+    inputs = separated_nonempty_list(COMMA, xra_action_component_form_input);
     RIGHT_BRACE
-    { fields }
+    { inputs }
   ;
 
 xra_action_component_submit_button:
   | FORM_BUTTON; COLON; LEFT_BRACE;
-    attrs = separated_nonempty_list(COMMA, xra_action_component_form_field_attrs);
+    attrs = separated_nonempty_list(COMMA, xra_action_component_form_input_attrs);
     RIGHT_BRACE
     { attrs }
   ;
 
+(* FIXME: This part requires refactoring if possible *)
 xra_component:
   | COMPONENT;
     component_id = ID;
@@ -428,7 +435,7 @@ xra_component:
     LT; CREATE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    fromFields = xra_action_component_form_fields;
+    fromFields = xra_action_component_form_inputs;
     COMMA;
     submitButton = xra_action_component_submit_button;
     RIGHT_BRACE
@@ -442,7 +449,7 @@ xra_component:
     LT; UPDATE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    fromFields = xra_action_component_form_fields;
+    fromFields = xra_action_component_form_inputs;
     COMMA;
     submitButton = xra_action_component_submit_button;
     RIGHT_BRACE
@@ -464,6 +471,46 @@ xra_component:
         Component.Delete($startpos, query_id),
         None,
         Component.DeleteBody(submitButton)) }
+  | COMPONENT;
+    LT; SIGNUP_FORM; GT;
+    component_id = ID;
+    LEFT_BRACE;
+    fromFields = xra_action_component_form_inputs;
+    COMMA;
+    submitButton = xra_action_component_submit_button;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        Component.SignupForm($startpos),
+        None,
+        Component.SignupFormBody(fromFields, submitButton)) }
+  | COMPONENT;
+    LT; LOGIN_FORM; GT;
+    component_id = ID;
+    LEFT_BRACE;
+    fromFields = xra_action_component_form_inputs;
+    COMMA;
+    submitButton = xra_action_component_submit_button;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        Component.LoginForm($startpos),
+        None,
+        Component.LoginFormBody(fromFields, submitButton)) }
+  | COMPONENT;
+    LT; LOGOUT_BUTTON; GT;
+    component_id = ID;
+    LEFT_BRACE;
+    submitButton = xra_action_component_submit_button;
+    RIGHT_BRACE
+    { Component(
+        $startpos,
+        component_id,
+        Component.LogoutButton($startpos),
+        None,
+        Component.LogoutButtonBody(submitButton)) }
   ;
 
 xra_page_route:

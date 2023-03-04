@@ -325,7 +325,8 @@ let check_component global_env xra_env typ args body =
       XRAEnvironment.allocate xra_env loc ~key:variable ~data:query_return_type
   | Component.Create (loc, id) -> check_query loc id Query.Create
   | Component.Update (loc, id) -> check_query loc id Query.Update
-  | Component.Delete (loc, id) -> check_query loc id Query.Delete);
+  | Component.Delete (loc, id) -> check_query loc id Query.Delete
+  | _ -> ());
 
   let check_arg arg =
     let loc, id, typ = arg in
@@ -393,6 +394,8 @@ let check_component global_env xra_env typ args body =
         check_form_fields form_fields
   in
 
+  (* TODO: type check signup, login, logout bodies
+     HERE YOU CAN IMPLEMENT THE LOGIC WITHIN THE check_form_fields function *)
   let check_component_body body =
     match body with
     | Component.GeneralBody body -> check_general_body global_env xra_env body
@@ -404,6 +407,7 @@ let check_component global_env xra_env typ args body =
     | Component.UpdateBody (form_fields, _) ->
         check_form_fields form_fields
     | Component.DeleteBody _ -> ()
+    | _ -> ()
   in
 
   check_component_body body

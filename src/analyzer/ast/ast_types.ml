@@ -90,26 +90,37 @@ module Component = struct
     | Create of loc * query_id
     | Update of loc * query_id
     | Delete of loc * query_id
+    | SignupForm of loc
+    | LoginForm of loc
+    | LogoutButton of loc
 
-  type form_field_type = TextField | EmailField | PasswordField | NumberField
+  type form_field_type =
+    | TextInput
+    | EmailInput
+    | PasswordInput
+    | NumberInput
+    | RelationInput
 
-  type form_field_attrs =
-    | FormFieldName of string
-    | FormFieldType of form_field_type
-    | FormFieldVisibility of literal
-    | FormFieldStyle of string
-    | FormFieldDefaultValue of string
+  type form_input_attrs =
+    | FormInputName of string
+    | FormInputType of form_field_type
+    | FormInputVisibility of literal
+    | FormInputStyle of string
+    | FormInputDefaultValue of string
 
-  type form_field = loc * id * form_field_attrs list
-  type form_button = form_field_attrs list
+  type form_input = loc * id * form_input_attrs list
+  type form_button = form_input_attrs list
 
   type body =
     | GeneralBody of XRA.body
     | FindBody of
         XRA.expression list * XRA.expression list * XRA.expression list
-    | CreateBody of form_field list * form_button
-    | UpdateBody of form_field list * form_button
+    | CreateBody of form_input list * form_button
+    | UpdateBody of form_input list * form_button
     | DeleteBody of form_button
+    | SignupFormBody of form_input list * form_button
+    | LoginFormBody of form_input list * form_button
+    | LogoutButtonBody of form_button
 end
 
 module Page = struct
@@ -151,7 +162,11 @@ type obj_field =
   | ReferenceObjField of string
   | StringObjField of string
 
-type app_config = Title of string | Auth of (string * string) list
+type app_config =
+  | Title of string
+  | NotFound of string
+  | Auth of (string * string) list
+
 type app_declaration = string * app_config list
 
 type filtered_ast = {

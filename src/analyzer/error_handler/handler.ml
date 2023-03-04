@@ -239,3 +239,9 @@ let raise_unexpected_permissions_attr loc query_id =
           "@(%s): Unexpected attribute permissions in %s. The app must \
            implement auth to have permissions"
           (string_of_loc loc) query_id))
+
+let raise_unexpected_config loc config_id =
+  raise
+    (UnexpectedConfig
+       (Fmt.str "@(%s): Unexpected configuration %s." (string_of_loc loc)
+          config_id))

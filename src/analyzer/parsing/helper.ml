@@ -58,6 +58,10 @@ let parse_app_configs loc obj =
           match value with
           | StringObjField value -> Title value
           | _ -> raise_type_error loc (Scalar String))
+      | "notFound" -> (
+          match value with
+          | ReferenceObjField value -> NotFound value
+          | _ -> raise_type_error loc (Scalar Reference))
       | "auth" -> (
           match value with
           | AssocObjField value ->
@@ -65,18 +69,18 @@ let parse_app_configs loc obj =
                 (List.map value ~f:(fun (key, value) ->
                      match key with
                      | "userModel" | "idField" | "usernameField"
-                     | "passwordField" | "signupForm" | "loginForm"
-                     | "logoutButton" -> (
+                     | "passwordField" | "signupUsing" | "loginUsing"
+                     | "logoutUsing" -> (
                          match value with
                          | ReferenceObjField value -> (key, value)
                          | _ -> raise_type_error loc (Scalar Reference))
-                     | "onAuthFailedRedirectTo" -> (
+                     | "onSuccessRedirectTo" | "onFailRedirectTo" -> (
                          match value with
                          | StringObjField value -> (key, value)
                          | _ -> raise_type_error loc (Scalar String))
-                     | _ -> ("", "")))
+                     | config -> raise_unexpected_config loc config))
           | _ -> raise_type_error loc (Scalar Assoc))
-      | _ -> raise_name_error loc ModelDeclaration)
+      | config -> raise_unexpected_config loc config)
 
 let parse_xra_element loc opening_id closing_id attributes children =
   if not (String.equal opening_id closing_id) then

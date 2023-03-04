@@ -101,12 +101,13 @@ module QueryFormatter = struct
 end
 
 module ComponentFormatter = struct
-  let string_form_field_type field_type =
+  let string_form_input_type field_type =
     match field_type with
-    | Component.TextField -> "text"
-    | Component.NumberField -> "number"
-    | Component.EmailField -> "email"
-    | Component.PasswordField -> "password"
+    | Component.TextInput -> "text"
+    | Component.NumberInput -> "number"
+    | Component.EmailInput -> "email"
+    | Component.PasswordInput -> "password"
+    | Component.RelationInput -> "object"
 end
 
 let string_of_declaration_type declaration_type =
