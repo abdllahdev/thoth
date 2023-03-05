@@ -206,16 +206,14 @@ let generate_page page_specs =
     let splitted_route = String.split ~on:'/' route in
     let parameter_regex = Str.regexp "\\[[A-Za-z]+\\]" in
     let tail = List.nth_exn splitted_route (List.length splitted_route - 1) in
-    print_string (tail ^ "\n");
     let is_parameter = Str.string_match parameter_regex tail 0 in
     let path =
       String.concat ~sep:"/"
-        ([ "/client/src/pages" ]
-        @ List.slice splitted_route 1 (List.length splitted_route - 1))
+        ([ "/client/src/pages" ] @ List.slice splitted_route 1 0)
     in
     make_directory path;
-    if is_parameter then getcwd () ^ "/.out/client/src/pages/" ^ route ^ ".tsx"
-    else getcwd () ^ "/.out/client/src/pages/" ^ route ^ "/index.tsx"
+    if is_parameter then getcwd () ^ "/.out/client/src/pages" ^ route ^ ".tsx"
+    else getcwd () ^ "/.out/client/src/pages" ^ route ^ "/index.tsx"
   in
   write_file page_file page_code
 

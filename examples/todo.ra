@@ -18,8 +18,6 @@ model User {
 	id        Int     @id
 	username  String  @unique
 	password  String
-	firstName String
-	lastName  String
 }
 
 model Task {
@@ -159,8 +157,17 @@ component<logoutButton> LogoutButton {
 }
 
 @at("/")
-@permission(isAuthenticated)
 page Home {
+	render(
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<div className="text-white">{ "Home Page" }</div>
+		</div>
+	)
+}
+
+@at("/tasks")
+@permission(isAuthenticated)
+page Tasks {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="px-40 py-14 rounded-xl bg-white">
@@ -169,6 +176,24 @@ page Home {
 				<div className="font-bold text-size-[24px] py-2">{ "Tasks" }</div>
 				<TasksComponent />
 			</div>
+		</div>
+	)
+}
+
+@at("/login")
+page LoginPage {
+	render(
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<LoginForm/>
+		</div>
+	)
+}
+
+@at("/signup")
+page SignupPage {
+	render(
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<SignupForm/>
 		</div>
 	)
 }

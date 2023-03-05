@@ -1,21 +1,23 @@
-{% if requires_auth %}
-import { User } from "../../types";
+{% if on_fail_redirect_to %}
+import { User } from "@/types";
 import { useNavigate } from "react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 {% endif %}
 {% for imported_component in imported_components %}
-  import {{ imported_component }} from "../components/{{ imported_component }}"
+  import {{ imported_component }} from "@/components/{{ imported_component }}"
 {% endfor %}
 
 const {{ id }} = () => {
-  {% if requires_auth %}
+  {% if on_fail_redirect_to %}
   const storedUser = localStorage.getItem("user");
-  const user: User | undefined = storedUser ? (JSON.parse(storedUser) as User) : undefined;
+  const [user, _] = useState<User | undefined>(
+    storedUser ? (JSON.parse(storedUser) as User) : undefined
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) {
-      navigate("{{ requires_auth }}");
+      navigate("{{ on_fail_redirect_to }}");
     }
   }, [user]);
   {% endif %}

@@ -1,40 +1,34 @@
-{% if type == "login" %}
-import { useEffect, useState } from "react";
-{% endif %}
-{% if type == "signup" %}
-import { useEffect } from "react";
-{% endif %}
-{% if type == "signup" or type == "login" %}
+{% if type == "login" or type == "signup" %}
 import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { User } from "@/types";
 {% endif %}
-{% if requires_auth or type == "login" %}
-import { User } from "../types";
+{% if requires_auth %}
+import { useState } from "react";
+import { User } from "@/types";
 {% endif %}
-import Form from "../ui/Form";
+import Form from "@/ui/Form";
 
 const baseUrl = "http://localhost:4000";
 
 const {{ id }} = () => {
+  const url = `${baseUrl}/{{ post_to }}`;
+
   {% if requires_auth %}
   const storedUser = localStorage.getItem("user");
-  const user: User | undefined = storedUser ? (JSON.parse(storedUser) as User) : undefined;
+  const [user, _] = useState<User | undefined>(
+    storedUser ? (JSON.parse(storedUser) as User) : undefined
+  );
   {% endif %}
 
-  const url = `${baseUrl}/{{ post_to }}`;
-  {% if type == "signup" %}
+  {% if type == "login" or type == "signup" %}
   const navigate = useNavigate();
-  useEffect(() => {
-    if (localStorage.getItem("user")) {
-      navigate("{{ on_success_redirect_to }}");
-    }
-  });
-  {% endif %}
+  const storedUser = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user") as string)
+    : undefined;
+  const [user, setUser] = useState<User | undefined>(storedUser);
 
-  {% if type == "login" %}
-  const navigate = useNavigate();
-  const [user, setUser] = useState<User>();
-
-  const handleResponse = async (response: LoginResponse) => {
+  const handleResponse = async (response: User) => {
     localStorage.setItem("user", JSON.stringify(response));
     const storedUser = localStorage.getItem("user") as string;
     setUser(JSON.parse(storedUser) as User);
@@ -52,9 +46,8 @@ const {{ id }} = () => {
       <Form
         method={% if type == "create" or type == "signup" or type == "login" %}"POST"{% else %}"PUT"{% endif %}
         url={url}
-        {% if requires_auth %}
-        accessToken={user?.accessToken}
-        {% endif %}
+        {% if type == "login" or type == "signup" %}handleResponse={handleResponse}{% endif %}
+        {% if requires_auth %}accessToken={user?.accessToken}{% endif %}
         formInputs={[
           {% for field in form_fields %}
             {

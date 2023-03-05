@@ -1,5 +1,5 @@
 {% for imported_type in imported_types %}
-  import { {{ imported_type }} } from "../types"
+import { {{ imported_type }} } from "@/types"
 {% endfor %}
 {% for imported_component in imported_components %}
   import {{ imported_component }} from "./{{ imported_component }}"

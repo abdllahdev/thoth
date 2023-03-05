@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 {% endif %}
 {% if requires_auth or type == "logout" %}
-import { User } from "../types";
+import { useState } from "react";
+import { User } from "@/types";
 {% endif %}
-import Button from "../ui/Button";
+import Button from "@/ui/Button";
 
 {% if type != "logout" %}
 const baseUrl = "http://localhost:4000";
@@ -16,7 +17,9 @@ const {{ id }} = () => {
   const url = `${baseUrl}/{{ post_to }}`;
     {% if requires_auth %}
     const storedUser = localStorage.getItem("user");
-    const user: User | undefined = storedUser ? (JSON.parse(storedUser) as User) : undefined;
+    const [user, _] = useState<User | undefined>(
+      storedUser ? (JSON.parse(storedUser) as User) : undefined
+    );
     {% endif %}
   {% endif %}
 

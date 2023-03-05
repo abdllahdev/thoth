@@ -38,8 +38,16 @@ export const signup = async (
 
     payload.data.{{ password_field }} = bcrypt.hashSync(payload.data.{{ password_field }}, 12);
 
-    await prismaClient.{{ user_model }}.create(payload);
-    res.status(httpStatus.CREATED).json();
+    const user = await prismaClient.user.create(payload);
+
+    const accessToken = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_ACCESS_SECRET as string,
+      {},
+    );
+
+    const { password, ...createdUser } = user;
+    res.status(httpStatus.CREATED).json({ ...createdUser, accessToken });
   } catch (err) {
     next(err);
   }

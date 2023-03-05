@@ -329,7 +329,7 @@ let generate_find_component_specs global_env id query_id variable_id body
   in
   {
     id;
-    find_from = Fmt.str "%ss" (result_scalar_type |> String.lowercase);
+    find_from = Fmt.str "%s" (result_scalar_type |> String.lowercase);
     result_variable = variable_id;
     result_type = string_of_type query.return_type;
     result_scalar_type =
@@ -400,7 +400,7 @@ let generate_action_form_components_specs ?global_env ?query_id id body =
         Some ("auth/signup", false, "signup", form_fields, form_button)
     | Component.LoginFormBody (form_fields, form_button) ->
         let form_fields, form_button = get_form_specs form_fields form_button in
-        Some ("auth/login", false, "logout", form_fields, form_button)
+        Some ("auth/login", false, "login", form_fields, form_button)
     | _ -> None)
     |> Option.value_exn
   in
