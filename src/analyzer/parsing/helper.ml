@@ -52,6 +52,11 @@ let parse_permissions loc permissions =
   List.map permissions ~f:check_permission
 
 let parse_app_configs loc obj =
+  List.fold obj ~init:[] ~f:(fun seen (key, _) ->
+      if List.mem seen key ~equal:String.equal then
+        raise_multi_definitions_error loc key
+      else seen @ [ key ])
+  |> ignore;
   List.map obj ~f:(fun (key, value) ->
       match key with
       | "title" -> (
@@ -64,9 +69,14 @@ let parse_app_configs loc obj =
           | _ -> raise_type_error loc (Scalar Reference))
       | "auth" -> (
           match value with
-          | AssocObjField value ->
+          | AssocObjField auth_obj ->
               Auth
-                (List.map value ~f:(fun (key, value) ->
+                (List.fold auth_obj ~init:[] ~f:(fun seen (key, _) ->
+                     if List.mem seen key ~equal:String.equal then
+                       raise_multi_definitions_error loc key
+                     else seen @ [ key ])
+                 |> ignore;
+                 List.map auth_obj ~f:(fun (key, value) ->
                      match key with
                      | "userModel" | "idField" | "usernameField"
                      | "passwordField" | "signupUsing" | "loginUsing"
