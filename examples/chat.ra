@@ -1,0 +1,197 @@
+app ChatRoom {
+	title: "Chat Room Created by Ra",
+	auth: {
+		userModel: User,
+		idField: id,
+		usernameField: username,
+		passwordField: password,
+		signupUsing: SignupFrom,
+		loginUsing: LoginForm,
+		logoutUsing: LogoutButton,
+		onSuccessRedirectTo: "/",
+		onFailRedirectTo: "/login"
+	}
+}
+
+model User {
+	id        Int     @id
+	username  String  @unique
+	password  String
+	message   Message[]
+}
+
+model Message {
+	id        Int      @id
+  content   String
+	user 			User 		 @relation(userId, id)
+	userId		Int
+	createdAt DateTime @default(now)
+	updatedAt DateTime @updatedAt
+}
+
+@on(Message)
+@permission(isAuthenticated)
+query<findMany> getMessages {
+  search: {
+    content
+  }
+}
+
+@on(Message)
+@permission(isAuthenticated)
+query<create> createMessage {
+  data: {
+    content,
+    user: {
+      id: userId
+    }
+  }
+}
+
+component<findMany:getMessages as messages> MessagesComponent {
+	onError: render(
+		<div>{ "An error occured" }</div>
+	)
+
+	onLoading: render(
+		<div>{ "Loading..." }</div>
+	)
+
+	onSuccess: render(
+		<>
+			{
+				for message in messages: (
+          <>
+						<div className="flex space-x-3 text-white">
+            	<div>{ message.userId }</div>
+            	<div>{ message.content }</div>
+						</div>
+          </>
+				)
+			}
+		</>
+	)
+}
+
+component<create:createMessage> CreateMessageForm {
+	formInputs: {
+		content: {
+			input: {
+				type: TextInput,
+				placeholder: "Enter message",
+				isVisible: true
+			}
+		},
+		user: {
+			input: {
+				type: RelationInput,
+				isVisible: false,
+				defaultValue: {
+					connect: {
+						id: LoggedInUser.id
+					}
+				}
+			}
+		}
+	},
+	formButton: {
+		name: "Send",
+		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+	}
+}
+
+component<signupForm> SignupForm {
+	style: "space-y-2",
+
+	formInputs: {
+		username: {
+			input: {
+				type: TextInput,
+				isVisible: true,
+				placeholder: "Enter username"
+			}
+		},
+		password: {
+			input: {
+				type: PasswordInput,
+				isVisible: true,
+				placeholder: "Enter password"
+			}
+		}
+	},
+
+	formButton: {
+		name: "Sign Up",
+		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+	}
+}
+
+component<loginForm> LoginForm {
+	style: "space-y-2",
+
+	formInputs: {
+		username: {
+			input: {
+				type: TextInput,
+				isVisible: true,
+				placeholder: "Enter username"
+			}
+		},
+		password: {
+			input: {
+				type: PasswordInput,
+				isVisible: true,
+				placeholder: "Enter password"
+			}
+		}
+	},
+
+	formButton: {
+		name: "Login",
+		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+	}
+}
+
+component<logoutButton> LogoutButton {
+	formButton: {
+		name: "Logout"
+	}
+}
+
+@at("/")
+@permission(isAuthenticated)
+page Home {
+	render(
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<div className="space-y-2">
+				<MessagesComponent />
+				<CreateMessageForm />
+				<LogoutButton />
+			</div>
+		</div>
+	)
+}
+
+@at("/login")
+page LoginPage {
+	render(
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<div className="space-y-2">
+				<span className="text-xl text-white">{"Login form"}</span>
+				<LoginForm/>
+			</div>
+		</div>
+	)
+}
+
+@at("/signup")
+page SignupPage {
+	render(
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<div className="space-y-2">
+				<span className="text-xl text-white">{"Sign up form"}</span>
+				<SignupForm/>
+			</div>
+		</div>
+	)
+}
