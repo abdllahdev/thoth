@@ -34,6 +34,18 @@ let string_of_literal literal =
   | BooleanLiteral (_, boolean) -> Fmt.str "%b" boolean
   | IntLiteral (_, num) -> Fmt.str "%d" num
 
+let rec string_of_obj_field obj_field =
+  match obj_field with
+  | StringObjField str -> str
+  | ReferenceObjField str -> str
+  | BooleanObjField boolean -> string_of_bool boolean
+  | IntObjField number -> string_of_int number
+  | AssocObjField assoc ->
+      Fmt.str "{ %s }"
+        (List.fold assoc ~init:"" ~f:(fun accum e ->
+             let id, obj_field = e in
+             accum ^ Fmt.str "%s: %s," id (string_of_obj_field obj_field)))
+
 module ModelFormatter = struct
   let string_of_field_unique_type field_unique_type =
     match field_unique_type with

@@ -94,7 +94,7 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_form_component_template.jinja"
   in
-  let { id; typ; post_to; form_fields; form_button; requires_auth } =
+  let { id; typ; post_to; form_inputs; form_button; requires_auth } =
     action_form_component_specs
   in
   let action_form_component_code =
@@ -107,7 +107,7 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
           ("requires_auth", Jg_types.Tbool requires_auth);
           ( "form_fields",
             Jg_types.Tlist
-              (List.map form_fields ~f:(fun form_field ->
+              (List.map form_inputs ~f:(fun form_field ->
                    Jg_types.Tlist
                      (List.map form_field ~f:(fun (attr_name, attr_value) ->
                           Jg_types.Tobj

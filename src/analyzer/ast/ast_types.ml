@@ -24,6 +24,13 @@ type literal =
   | IntLiteral of loc * int
   | BooleanLiteral of loc * bool
 
+type obj_field =
+  | AssocObjField of (string * obj_field) list
+  | ReferenceObjField of string
+  | StringObjField of string
+  | BooleanObjField of bool
+  | IntObjField of int
+
 type permission = loc * id
 
 module Model = struct
@@ -101,25 +108,32 @@ module Component = struct
     | NumberInput
     | RelationInput
 
-  type form_input_attrs =
-    | FormInputName of string
-    | FormInputType of form_field_type
-    | FormInputVisibility of literal
-    | FormInputStyle of string
-    | FormInputDefaultValue of string
+  type form_attr =
+    | FormAttrName of string
+    | FormAttrType of form_field_type
+    | FormAttrVisibility of bool
+    | FormAttrStyle of string
+    | FormAttrDefaultValue of obj_field
+    | FormAttrPlaceholder of string
 
-  type form_input = loc * id * form_input_attrs list
-  type form_button = form_input_attrs list
+  type style = form_attr
+  type form_input = form_attr list
+  type form_input_label = form_attr list
+
+  type form_element =
+    loc * id * style option * form_input_label option * form_input
+
+  type form_button = form_attr list
 
   type body =
     | GeneralBody of XRA.body
     | FindBody of
         XRA.expression list * XRA.expression list * XRA.expression list
-    | CreateBody of form_input list * form_button
-    | UpdateBody of form_input list * form_button
+    | CreateBody of style option * form_element list * form_button
+    | UpdateBody of style option * form_element list * form_button
     | DeleteBody of form_button
-    | SignupFormBody of form_input list * form_button
-    | LoginFormBody of form_input list * form_button
+    | SignupFormBody of style option * form_element list * form_button
+    | LoginFormBody of style option * form_element list * form_button
     | LogoutButtonBody of form_button
 end
 
@@ -156,11 +170,6 @@ type declaration =
   | Query of query_declaration
   | Component of component_declaration
   | Page of page_declaration
-
-type obj_field =
-  | AssocObjField of (string * obj_field) list
-  | ReferenceObjField of string
-  | StringObjField of string
 
 type app_config =
   | Title of string

@@ -30,7 +30,7 @@ type action_form_component_specs = {
   typ : string;
   post_to : string;
   requires_auth : bool;
-  form_fields : (string * string) list list;
+  form_inputs : (string * string) list list;
   form_button : (string * string) list;
 }
 
@@ -341,40 +341,42 @@ let generate_find_component_specs global_env id query_id variable_id body
     render_expression;
   }
 
-let get_field_attr field_attr =
+let get_input_attr field_attr =
   match field_attr with
-  | Component.FormInputName name -> ("name", name)
-  | Component.FormInputVisibility literal ->
-      ("visibility", string_of_literal literal)
-  | Component.FormInputDefaultValue value -> ("defaultValue", value)
-  | Component.FormInputStyle style -> ("style", style)
-  | Component.FormInputType input_type ->
+  | Component.FormAttrName name -> ("name", name)
+  | Component.FormAttrVisibility boolean ->
+      ("visibility", string_of_bool boolean)
+  | Component.FormAttrDefaultValue value ->
+      ("defaultValue", string_of_obj_field value)
+  | Component.FormAttrStyle style -> ("style", style)
+  | Component.FormAttrType input_type ->
       ("type", ComponentFormatter.string_form_input_type input_type)
+  | Component.FormAttrPlaceholder placeholder -> ("placeholder", placeholder)
 
-let get_form_field field =
-  let _, id, field_attrs = field in
-  List.fold field_attrs
+let get_form_input input =
+  let _, id, _, _, input_attrs = input in
+  List.fold input_attrs
     ~init:[ ("name", id) ]
     ~f:(fun lst attr ->
-      let key, data = get_field_attr attr in
+      let key, data = get_input_attr attr in
       lst @ [ (key, data) ])
 
 let get_button_specs form_button =
   List.fold form_button ~init:[] ~f:(fun lst attr ->
-      let key, data = get_field_attr attr in
+      let key, data = get_input_attr attr in
       lst @ [ (key, data) ])
 
-let get_form_specs form_fields form_button =
-  let form_fields =
-    List.map form_fields ~f:(fun field -> get_form_field field)
+let get_form_specs form_inputs form_button =
+  let form_inputs =
+    List.map form_inputs ~f:(fun field -> get_form_input field)
   in
-  (form_fields, get_button_specs form_button)
+  (form_inputs, get_button_specs form_button)
 
 let generate_action_form_components_specs ?global_env ?query_id id body =
-  let post_to, requires_auth, typ, form_fields, form_button =
+  let post_to, requires_auth, typ, form_inputs, form_button =
     (match body with
-    | Component.CreateBody (form_fields, form_button)
-    | Component.UpdateBody (form_fields, form_button) ->
+    | Component.CreateBody (_, form_inputs, form_button)
+    | Component.UpdateBody (_, form_inputs, form_button) ->
         let global_env = Option.value_exn global_env in
         let query_id = Option.value_exn query_id in
         let query =
@@ -388,23 +390,23 @@ let generate_action_form_components_specs ?global_env ?query_id id body =
           let permissions = query.permissions in
           match permissions with Some _ -> true | None -> false
         in
-        let form_fields, form_button = get_form_specs form_fields form_button in
+        let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some
           ( Fmt.str "%s" (result_scalar_type |> String.lowercase),
             requires_auth,
             QueryFormatter.string_of_query_type query.typ,
-            form_fields,
+            form_inputs,
             form_button )
-    | Component.SignupFormBody (form_fields, form_button) ->
-        let form_fields, form_button = get_form_specs form_fields form_button in
-        Some ("auth/signup", false, "signup", form_fields, form_button)
-    | Component.LoginFormBody (form_fields, form_button) ->
-        let form_fields, form_button = get_form_specs form_fields form_button in
-        Some ("auth/login", false, "login", form_fields, form_button)
+    | Component.SignupFormBody (_, form_inputs, form_button) ->
+        let form_inputs, form_button = get_form_specs form_inputs form_button in
+        Some ("auth/signup", false, "signup", form_inputs, form_button)
+    | Component.LoginFormBody (_, form_inputs, form_button) ->
+        let form_inputs, form_button = get_form_specs form_inputs form_button in
+        Some ("auth/login", false, "login", form_inputs, form_button)
     | _ -> None)
     |> Option.value_exn
   in
-  { id; typ; post_to; requires_auth; form_fields; form_button }
+  { id; typ; post_to; requires_auth; form_inputs; form_button }
 
 let generate_action_button_components_specs ?global_env ?query_id id body =
   let post_to, requires_auth, typ, form_button =

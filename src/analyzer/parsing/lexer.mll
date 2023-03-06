@@ -78,18 +78,6 @@ rule token =
   | "onError"       { ON_ERROR }
   | "onLoading"     { ON_LOADING }
   | "onSuccess"     { ON_SUCCESS }
-  | "formInputs"    { FORM_INPUTS }
-  | "TextInput"     { TEXT_INPUT }
-  | "EmailInput"    { EMAIL_INPUT }
-  | "PasswordInput" { PASSWORD_INPUT }
-  | "RelationInput" { RELATION_INPUT }
-  | "NumberInput"   { NUMBER_INPUT }
-  | "name"          { NAME }
-  | "type"          { TYPE }
-  | "isVisible"     { IS_VISIBLE }
-  | "style"         { STYLE }
-  | "defaultValue"  { DEFAULT_VALUE }
-  | "formButton"    { FORM_BUTTON }
   | "@on"           { ON }
   | "@permission"   { PERMISSION }
   | "@at"           { AT }

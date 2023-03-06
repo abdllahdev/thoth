@@ -51,21 +51,9 @@
 %token          ON_ERROR
 %token          ON_LOADING
 %token          ON_SUCCESS
-%token          NAME
-%token          TYPE
-%token          IS_VISIBLE
-%token          STYLE
-%token          DEFAULT_VALUE
-%token          TEXT_INPUT
-%token          EMAIL_INPUT
-%token          PASSWORD_INPUT
-%token          NUMBER_INPUT
-%token          RELATION_INPUT
 %token          SIGNUP_FORM
 %token          LOGIN_FORM
 %token          LOGOUT_BUTTON
-%token          FORM_INPUTS
-%token          FORM_BUTTON
 %token          AS
 %token          FRAGMENT_OPENING
 %token          FRAGMENT_CLOSING
@@ -104,6 +92,26 @@ literal:
     { number }
   | str = str
     { str }
+  ;
+
+obj_field_value:
+  | value = ID
+    { ReferenceObjField value }
+  | TRUE
+    { BooleanObjField true }
+  | FALSE
+    { BooleanObjField false }
+  | value = INT
+    { IntObjField value }
+  | value = STRING
+    { StringObjField value }
+  | LEFT_BRACE; value = separated_list(COMMA, obj_field); RIGHT_BRACE
+    { AssocObjField value }
+  ;
+
+obj_field:
+  | key = ID; COLON; value = obj_field_value
+    { (key, value) }
   ;
 
 (* Model rules *)
@@ -346,52 +354,7 @@ xra_find_component_declarations:
     { (xra_render_expression) }
   ;
 
-(* TODO: check if there exist two attrs of the same name *)
-xra_action_component_form_input_attrs:
-  | TYPE; COLON; TEXT_INPUT
-    { FormInputType(Component.TextInput) }
-  | TYPE; COLON; EMAIL_INPUT
-    { FormInputType(Component.EmailInput) }
-  | TYPE; COLON; PASSWORD_INPUT
-    { FormInputType(Component.PasswordInput) }
-  | TYPE; COLON; NUMBER_INPUT
-    { FormInputType(Component.NumberInput) }
-  | TYPE; COLON; RELATION_INPUT
-    { FormInputType(Component.RelationInput) }
-  | DEFAULT_VALUE; COLON; default_value = STRING
-    { FormInputDefaultValue(default_value) }
-  | STYLE; COLON; style = STRING
-    { FormInputStyle(style) }
-  | IS_VISIBLE; COLON; visibility = boolean
-    { FormInputVisibility(visibility) }
-  | NAME; COLON; name = STRING;
-    { FormInputName(name) }
-  ;
-
-xra_action_component_form_input:
-  | id = ID; COLON; LEFT_BRACE;
-    attrs = separated_nonempty_list(COMMA, xra_action_component_form_input_attrs)
-    RIGHT_BRACE
-    { ($startpos, id, attrs) }
-  ;
-
-xra_action_component_form_inputs:
-  | FORM_INPUTS;
-    COLON;
-    LEFT_BRACE;
-    inputs = separated_nonempty_list(COMMA, xra_action_component_form_input);
-    RIGHT_BRACE
-    { inputs }
-  ;
-
-xra_action_component_submit_button:
-  | FORM_BUTTON; COLON; LEFT_BRACE;
-    attrs = separated_nonempty_list(COMMA, xra_action_component_form_input_attrs);
-    RIGHT_BRACE
-    { attrs }
-  ;
-
-(* FIXME: This part requires refactoring if possible *)
+(* FIXME: This part requires refactoring *)
 xra_component:
   | COMPONENT;
     component_id = ID;
@@ -435,82 +398,74 @@ xra_component:
     LT; CREATE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    fromFields = xra_action_component_form_inputs;
-    COMMA;
-    submitButton = xra_action_component_submit_button;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.Create($startpos, query_id),
         None,
-        Component.CreateBody(fromFields, submitButton)) }
+        (parse_component_body $startpos body "CREATE")) }
   | COMPONENT;
     LT; UPDATE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    fromFields = xra_action_component_form_inputs;
-    COMMA;
-    submitButton = xra_action_component_submit_button;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.Update($startpos, query_id),
         None,
-        Component.UpdateBody(fromFields, submitButton)) }
+        (parse_component_body $startpos body "UPDATE")) }
   | COMPONENT;
     LT; DELETE; COLON; query_id = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    submitButton = xra_action_component_submit_button;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.Delete($startpos, query_id),
         None,
-        Component.DeleteBody(submitButton)) }
+        (parse_component_body $startpos body "DELETE")) }
   | COMPONENT;
     LT; SIGNUP_FORM; GT;
     component_id = ID;
     LEFT_BRACE;
-    fromFields = xra_action_component_form_inputs;
-    COMMA;
-    submitButton = xra_action_component_submit_button;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.SignupForm($startpos),
         None,
-        Component.SignupFormBody(fromFields, submitButton)) }
+        (parse_component_body $startpos body "SIGNUP_FORM")) }
   | COMPONENT;
     LT; LOGIN_FORM; GT;
     component_id = ID;
     LEFT_BRACE;
-    fromFields = xra_action_component_form_inputs;
-    COMMA;
-    submitButton = xra_action_component_submit_button;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.LoginForm($startpos),
         None,
-        Component.LoginFormBody(fromFields, submitButton)) }
+        (parse_component_body $startpos body "LOGIN_FORM")) }
   | COMPONENT;
     LT; LOGOUT_BUTTON; GT;
     component_id = ID;
     LEFT_BRACE;
-    submitButton = xra_action_component_submit_button;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.LogoutButton($startpos),
         None,
-        Component.LogoutButtonBody(submitButton)) }
+        (parse_component_body $startpos body "LOGOUT_BUTTON")) }
   ;
 
 xra_page_route:
@@ -543,20 +498,6 @@ declaration:
         route,
         permissions,
         xra_general_body) }
-  ;
-
-obj_field_value:
-  | value = ID
-    { ReferenceObjField value }
-  | value = STRING
-    { StringObjField value }
-  | LEFT_BRACE; value = separated_list(COMMA, obj_field); RIGHT_BRACE
-    { AssocObjField value }
-  ;
-
-obj_field:
-  | key = ID; COLON; value = obj_field_value
-    { (key, value) }
   ;
 
 app_declaration:

@@ -12,8 +12,13 @@ type FormInput = {
   style?: string;
   defaultValue?: string | number | { [x: string]: any };
   placeholder?: string;
-  label?: FormInputLabel;
 };
+
+type FormElement = {
+  style?: string;
+  formInputLabel?: FormInputLabel;
+  formInput: FormInput;
+}
 
 type FormButton = {
   name: string;
@@ -23,7 +28,7 @@ type FormButton = {
 type FormProps = {
   method: "POST" | "PUT";
   url: string;
-  formInputs: FormInput[];
+  formElements: FormElement[];
   formButton: FormButton;
   handleResponse?: (response: any) => void;
   style?: string;
@@ -33,7 +38,7 @@ type FormProps = {
 const Form = ({
   method,
   url,
-  formInputs,
+  formElements,
   formButton,
   style,
   handleResponse,
@@ -41,8 +46,9 @@ const Form = ({
 }: FormProps) => {
   const formInitialData: { [key: string]: any } = {};
 
-  formInputs.map((input) => {
-    formInitialData[input.name] = input.defaultValue ? input.defaultValue : "";
+  formElements.map((formElement) => {
+    const formInput = formElement.formInput;
+    formInitialData[formInput.name] = formInput.defaultValue ? formInput.defaultValue : "";
   });
 
   const [formData, setFormData] = useState(formInitialData);
@@ -78,18 +84,21 @@ const Form = ({
 
   return (
     <form className={style} onSubmit={handleFormSubmit}>
-      {formInputs.map((input, idx) => {
-        if (input.visibility === "true" && input.type !== "object")
+      {formElements.map((formElement, idx) => {
+        const formInput = formElement.formInput;
+        const formLabel = formElement?.formInputLabel;
+        const formElementStyle = formElement?.style;
+        if (formInput.visibility === "true" && formInput.type !== "object")
           return (
-            <div key={idx}>
-              {input.label && (
-                <label className={input.label.style}>{input.label.name}</label>
+            <div key={idx} className={formElementStyle}>
+              {formLabel && (
+                <label className={formLabel.style}>{formLabel.name}</label>
               )}
               <input
-                type={input.type}
-                name={input.name}
-                value={formData[input.name]}
-                placeholder={input.placeholder}
+                type={formInput.type}
+                name={formInput.name}
+                value={formData[formInput.name]}
+                placeholder={formInput.placeholder}
                 onChange={handleInputChange}
               />
             </div>

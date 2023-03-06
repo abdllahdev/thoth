@@ -368,7 +368,7 @@ let check_component global_env xra_env typ args body =
     match form_fields with
     | [] -> ()
     | form_field :: form_fields ->
-        let loc, id, _ = form_field in
+        let loc, id, _, _, _ = form_field in
 
         let rec check_args args =
           match args with
@@ -403,8 +403,8 @@ let check_component global_env xra_env typ args body =
         check_render_expression global_env xra_env on_error;
         check_render_expression global_env xra_env on_loading;
         check_render_expression global_env xra_env on_success
-    | Component.CreateBody (form_fields, _)
-    | Component.UpdateBody (form_fields, _) ->
+    | Component.CreateBody (_, form_fields, _)
+    | Component.UpdateBody (_, form_fields, _) ->
         check_form_fields form_fields
     | Component.DeleteBody _ -> ()
     | _ -> ()
