@@ -114,13 +114,25 @@ module QueryFormatter = struct
 end
 
 module ComponentFormatter = struct
-  let string_form_input_type field_type =
+  let string_of_form_input_type field_type =
     match field_type with
     | Component.TextInput -> "text"
     | Component.NumberInput -> "number"
     | Component.EmailInput -> "email"
     | Component.PasswordInput -> "password"
     | Component.RelationInput -> "object"
+
+  let string_of_component_type component_type =
+    match component_type with
+    | Component.General -> "General"
+    | Component.FindUnique _ -> "FindUnique"
+    | Component.FindMany _ -> "FindMany"
+    | Component.Create _ -> "Create"
+    | Component.Delete _ -> "Delete"
+    | Component.Update _ -> "Update"
+    | Component.SignupForm _ -> "SignupForm"
+    | Component.LoginForm _ -> "LoginForm"
+    | Component.LogoutButton _ -> "LogoutButton"
 end
 
 let string_of_declaration_type declaration_type =
@@ -129,6 +141,7 @@ let string_of_declaration_type declaration_type =
   | QueryDeclaration -> "Query"
   | ComponentDeclaration -> "Component"
   | PageDeclaration -> "Page"
+  | AppDeclaration -> "AppConfig"
 
 let string_of_declaration declaration =
   match declaration with

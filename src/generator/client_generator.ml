@@ -94,7 +94,8 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_form_component_template.jinja"
   in
-  let { id; typ; post_to; style; form_inputs; form_button; requires_auth } =
+  let { id; args; typ; post_to; style; form_inputs; form_button; requires_auth }
+      =
     action_form_component_specs
   in
   let action_form_component_code =
@@ -102,6 +103,15 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
       ~models:
         [
           ("id", Jg_types.Tstr id);
+          ( "args",
+            Jg_types.Tlist
+              (List.map args ~f:(fun arg ->
+                   let arg_id, arg_type = arg in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr arg_id);
+                       ("type", Jg_types.Tstr arg_type);
+                     ])) );
           ("type", Jg_types.Tstr typ);
           ( "style",
             Jg_types.Tstr
@@ -178,7 +188,7 @@ let generate_action_button_component ?on_success_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_button_component_template.jinja"
   in
-  let { id; post_to; typ; form_button; requires_auth } =
+  let { id; args; post_to; typ; form_button; requires_auth } =
     action_button_component_specs
   in
   let action_button_component_code =
@@ -186,6 +196,15 @@ let generate_action_button_component ?on_success_redirect_to
       ~models:
         [
           ("id", Jg_types.Tstr id);
+          ( "args",
+            Jg_types.Tlist
+              (List.map args ~f:(fun arg ->
+                   let arg_id, arg_type = arg in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr arg_id);
+                       ("type", Jg_types.Tstr arg_type);
+                     ])) );
           ("post_to", Jg_types.Tstr post_to);
           ("requires_auth", Jg_types.Tbool requires_auth);
           ("type", Jg_types.Tstr typ);

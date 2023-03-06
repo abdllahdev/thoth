@@ -289,17 +289,15 @@ let check_general_body global_env xra_env body =
 
 let check_page = check_general_body
 
-let check_component global_env xra_env typ args body =
+let check_component global_env xra_env app_declaration loc id typ args body =
   let check_query loc id expected_query_type =
     if not (GlobalEnvironment.contains global_env ~key:id) then
       raise_undefined_error loc "query" id;
-
     let declaration_value = GlobalEnvironment.lookup global_env ~key:id in
     if not (GlobalEnvironment.check_type declaration_value QueryDeclaration)
     then
       raise_declaration_type_error loc QueryDeclaration id
         (GlobalEnvironment.infer_type declaration_value);
-
     let query_value = GlobalEnvironment.get_query_value declaration_value in
     if
       not
@@ -308,9 +306,48 @@ let check_component global_env xra_env typ args body =
            (QueryFormatter.string_of_query_type expected_query_type))
     then raise_query_type_error loc expected_query_type id query_value.typ
   in
+  let check_args loc args component_type =
+    let args = match args with Some args -> args | None -> [] in
+    match component_type with
+    | "General" ->
+        List.iter args ~f:(fun arg ->
+            let loc, id, typ = arg in
+            let scalar_typ = get_scalar_type typ in
+            (match scalar_typ with
+            | String | Int | Boolean | DateTime -> ()
+            | Reference | Nil | Assoc ->
+                raise_argument_type_error loc component_type (Scalar Reference)
+            | CustomType custom_type ->
+                if not (GlobalEnvironment.contains global_env ~key:custom_type)
+                then raise_undefined_error loc "type" custom_type;
 
+                let declaration_value =
+                  GlobalEnvironment.lookup global_env ~key:custom_type
+                in
+                if
+                  not
+                    (GlobalEnvironment.check_type declaration_value
+                       ModelDeclaration)
+                then
+                  raise_declaration_type_error loc ModelDeclaration custom_type
+                    (GlobalEnvironment.infer_type declaration_value));
+            XRAEnvironment.allocate xra_env loc ~key:id ~data:typ)
+    | "Delete" | "Update" -> (
+        let args_count = List.length args in
+        if args_count > 1 || args_count < 1 then
+          raise_argument_number_error loc 1 args_count id
+        else
+          let loc, _, typ = List.hd_exn args in
+          let scalar_type = get_scalar_type typ in
+          match scalar_type with
+          | Int -> ()
+          | _ as received_type ->
+              raise_argument_type_error loc component_type
+                (Scalar received_type))
+    | _ -> ()
+  in
   (match typ with
-  | Component.General -> ()
+  | Component.General -> check_args loc args "General"
   | Component.FindMany (loc, id, variable) ->
       check_query loc id Query.FindMany;
       let query_return_type =
@@ -328,76 +365,84 @@ let check_component global_env xra_env typ args body =
       in
       XRAEnvironment.allocate xra_env loc ~key:variable ~data:query_return_type
   | Component.Create (loc, id) -> check_query loc id Query.Create
-  | Component.Update (loc, id) -> check_query loc id Query.Update
-  | Component.Delete (loc, id) -> check_query loc id Query.Delete
+  | Component.Update (loc, id) ->
+      check_args loc args "Update";
+      check_query loc id Query.Update
+  | Component.Delete (loc, id) ->
+      check_args loc args "Delete";
+      check_query loc id Query.Delete
   | _ -> ());
-
-  let check_arg arg =
-    let loc, id, typ = arg in
-    let scalar_typ = get_scalar_type typ in
-    (match scalar_typ with
-    | String | Int | Boolean | DateTime -> ()
-    | Reference | Nil | Assoc ->
-        raise_argument_type_error loc (Scalar Reference)
-    | CustomType custom_type ->
-        if not (GlobalEnvironment.contains global_env ~key:custom_type) then
-          raise_undefined_error loc "type" custom_type;
-
-        let declaration_value =
-          GlobalEnvironment.lookup global_env ~key:custom_type
-        in
-        if not (GlobalEnvironment.check_type declaration_value ModelDeclaration)
-        then
-          raise_declaration_type_error loc ModelDeclaration custom_type
-            (GlobalEnvironment.infer_type declaration_value));
-    XRAEnvironment.allocate xra_env loc ~key:id ~data:typ
-  in
-
-  (match args with Some args -> List.iter ~f:check_arg args | None -> ());
-
-  let rec check_form_fields form_fields =
-    let query_id =
-      (match typ with
-      | Component.Create (_, id) | Component.Update (_, id) -> Some id
-      | _ -> None)
-      |> Option.value_exn
+  let check_form_fields form_fields =
+    let declaration_id, declaration_type, required_fields =
+      match typ with
+      | Component.Create (_, id) | Component.Update (_, id) ->
+          ( id,
+            QueryDeclaration,
+            (GlobalEnvironment.lookup global_env ~key:id
+            |> GlobalEnvironment.get_query_value)
+              .body
+            |> List.find_map ~f:(function
+                 | Query.Data (_, fields) -> Some fields
+                 | _ -> None)
+            |> Option.value_exn
+            |> List.fold ~init:[] ~f:(fun lst field ->
+                   let field, _ = field in
+                   lst @ [ field ]) )
+      | Component.SignupForm loc -> (
+          let auth_config = get_auth_config app_declaration in
+          match auth_config with
+          | Some { user_model; _ } ->
+              let required_fields =
+                GlobalEnvironment.lookup global_env ~key:user_model
+                |> GlobalEnvironment.get_model_value
+                |> Hashtbl.filter
+                     ~f:(fun (data : GlobalEnvironment.field_value) ->
+                       if
+                         not
+                           (LocalEnvironment.contains data.field_attrs_table
+                              ~key:"@default"
+                           || LocalEnvironment.contains data.field_attrs_table
+                                ~key:"@id"
+                           || LocalEnvironment.contains data.field_attrs_table
+                                ~key:"@updatedAt"
+                           || is_custom_type data.typ)
+                       then true
+                       else false)
+                |> Hashtbl.keys
+              in
+              (user_model, ModelDeclaration, required_fields)
+          | None -> raise_requires_configuration loc typ)
+      | Component.LoginForm loc -> (
+          let auth_config = get_auth_config app_declaration in
+          match auth_config with
+          | Some { username_field; password_field; _ } ->
+              let id, _ = app_declaration in
+              (id, AppDeclaration, [ username_field; password_field ])
+          | None -> raise_requires_configuration loc typ)
+      | _ -> failwith "CompilationError"
     in
-
-    let query =
-      GlobalEnvironment.lookup global_env ~key:query_id
-      |> GlobalEnvironment.get_query_value
+    let check_required_fields required_fields =
+      let implemented_form_field =
+        List.map form_fields ~f:(fun field ->
+            let _, id, _, _, _ = field in
+            id)
+      in
+      List.iter required_fields ~f:(fun required_field ->
+          if
+            not
+              (List.mem implemented_form_field required_field
+                 ~equal:String.equal)
+          then raise_required_form_input_error loc required_field id)
     in
-
-    (* TODO: check if required fields are implemented in the form and check the types *)
-    match form_fields with
-    | [] -> ()
-    | form_field :: form_fields ->
-        let loc, id, _, _, _ = form_field in
-
-        let rec check_args args =
-          match args with
-          | [] -> ()
-          | arg :: args ->
-              (match arg with
-              | Query.Data (_, fields) -> (
-                  try
-                    List.find_exn
-                      ~f:(fun field ->
-                        let field, _ = field in
-                        String.equal id field)
-                      fields
-                    |> ignore
-                  with Not_found_s _ | Caml.Not_found ->
-                    raise_undefined_error loc "field" id
-                      ~declaration_type:QueryDeclaration
-                      ~declaration_id:query_id)
-              | _ -> ());
-              check_args args
-        in
-        check_args query.body;
-        check_form_fields form_fields
+    check_required_fields required_fields;
+    List.iter form_fields ~f:(fun field ->
+        let loc, id, _, _, _ = field in
+        try
+          List.find_exn required_fields ~f:(fun field -> String.equal id field)
+          |> ignore
+        with Not_found_s _ | Caml.Not_found ->
+          raise_undefined_error loc "field" id ~declaration_type ~declaration_id)
   in
-
   (* TODO: type check signup, login, logout bodies
      HERE YOU CAN IMPLEMENT THE LOGIC WITHIN THE check_form_fields function *)
   let check_component_body body =
@@ -408,10 +453,10 @@ let check_component global_env xra_env typ args body =
         check_render_expression global_env xra_env on_loading;
         check_render_expression global_env xra_env on_success
     | Component.CreateBody (_, form_fields, _)
-    | Component.UpdateBody (_, form_fields, _) ->
+    | Component.UpdateBody (_, form_fields, _)
+    | Component.SignupFormBody (_, form_fields, _)
+    | Component.LoginFormBody (_, form_fields, _) ->
         check_form_fields form_fields
-    | Component.DeleteBody _ -> ()
     | _ -> ()
   in
-
   check_component_body body

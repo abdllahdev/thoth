@@ -17,5 +17,7 @@ exception QueryArgumentError of string
 exception QueryTypeError of string
 exception UniqueFieldError of string
 exception DeclarationTypeError of string
-exception UnexpectedAttribute of string
-exception UnexpectedConfig of string
+exception UnexpectedAttributeError of string
+exception UnexpectedConfigError of string
+exception RequiredFormInputError of string
+exception RequiredConfigError of string

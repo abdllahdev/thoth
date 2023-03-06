@@ -165,6 +165,7 @@ type declaration_type =
   | QueryDeclaration
   | ComponentDeclaration
   | PageDeclaration
+  | AppDeclaration
 
 type declaration =
   | Model of model_declaration
@@ -176,6 +177,15 @@ type app_config =
   | Title of string
   | NotFound of string
   | Auth of (string * string) list
+
+type auth_config = {
+  user_model : string;
+  id_field : string;
+  username_field : string;
+  password_field : string;
+  on_success_redirect_to : string;
+  on_fail_redirect_to : string;
+}
 
 type app_declaration = string * app_config list
 

@@ -411,6 +411,7 @@ xra_component:
   | COMPONENT;
     LT; UPDATE; COLON; query_id = ID; GT;
     component_id = ID;
+    args = xra_component_args;
     LEFT_BRACE;
     body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
@@ -418,11 +419,12 @@ xra_component:
         $startpos,
         component_id,
         Component.Update($startpos, query_id),
-        None,
+        Some args,
         (parse_component_body $startpos body "UPDATE")) }
   | COMPONENT;
     LT; DELETE; COLON; query_id = ID; GT;
     component_id = ID;
+    args = xra_component_args;
     LEFT_BRACE;
     body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
@@ -430,7 +432,7 @@ xra_component:
         $startpos,
         component_id,
         Component.Delete($startpos, query_id),
-        None,
+        Some args,
         (parse_component_body $startpos body "DELETE")) }
   | COMPONENT;
     LT; SIGNUP_FORM; GT;

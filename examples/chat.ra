@@ -5,9 +5,6 @@ app ChatRoom {
 		idField: id,
 		usernameField: username,
 		passwordField: password,
-		signupUsing: SignupFrom,
-		loginUsing: LoginForm,
-		logoutUsing: LogoutButton,
 		onSuccessRedirectTo: "/",
 		onFailRedirectTo: "/login"
 	}

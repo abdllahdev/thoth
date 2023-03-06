@@ -33,6 +33,7 @@ type form_input = {
 
 type action_form_component_specs = {
   id : string;
+  args : (string * string) list;
   typ : string;
   post_to : string;
   requires_auth : bool;
@@ -43,6 +44,7 @@ type action_form_component_specs = {
 
 type action_button_component_specs = {
   id : string;
+  args : (string * string) list;
   post_to : string;
   requires_auth : bool;
   typ : string;
@@ -136,6 +138,24 @@ let rec get_imported_components global_env xra_expression =
       get_imported_components global_env then_block
       @ get_imported_components global_env else_block
   | _ -> []
+
+let get_component_args args =
+  match args with
+  | Some args ->
+      List.map args ~f:(fun arg ->
+          let _, arg_id, arg_type = arg in
+          (arg_id, convert_type arg_type))
+  | None -> []
+
+let get_imported_types args =
+  match args with
+  | Some args ->
+      List.fold args ~init:[] ~f:(fun lst arg ->
+          let _, _, arg_type = arg in
+          if is_custom_type arg_type then
+            lst @ [ get_scalar_type arg_type |> string_of_scalar_type ]
+          else lst)
+  | None -> []
 
 let rec generate_xra_specs xra_expression =
   match xra_expression with
@@ -250,24 +270,8 @@ let generate_page_specs global_env page_declaration auth_specs =
   { id; route; requires_auth; imported_components; render_expression }
 
 let generate_general_component_specs global_env id args body =
-  let imported_types =
-    match args with
-    | Some args ->
-        List.fold args ~init:[] ~f:(fun lst arg ->
-            let _, _, arg_type = arg in
-            if is_custom_type arg_type then
-              lst @ [ get_scalar_type arg_type |> string_of_scalar_type ]
-            else lst)
-    | None -> []
-  in
-  let args =
-    match args with
-    | Some args ->
-        List.map args ~f:(fun arg ->
-            let _, arg_id, arg_type = arg in
-            (arg_id, convert_type arg_type))
-    | None -> []
-  in
+  let imported_types = get_imported_types args in
+  let args = get_component_args args in
   let imported_components, render_expression =
     match body with
     | Component.GeneralBody (_, render_expression) ->
@@ -357,7 +361,7 @@ let get_from_attr field_attr =
       ("defaultValue", string_of_obj_field value)
   | Component.FormAttrStyle style -> ("style", style)
   | Component.FormAttrType input_type ->
-      ("type", ComponentFormatter.string_form_input_type input_type)
+      ("type", ComponentFormatter.string_of_form_input_type input_type)
   | Component.FormAttrPlaceholder placeholder -> ("placeholder", placeholder)
 
 let get_form_input input =
@@ -396,16 +400,16 @@ let get_form_specs form_inputs form_button =
   in
   (form_inputs, get_button_specs form_button)
 
-let generate_action_form_components_specs ?global_env ?query_id id body =
+let generate_action_form_components_specs ?global_env ?query_id id args body =
+  let get_style style =
+    match style with Some style -> Some (get_from_attr style) | None -> None
+  in
+  let args = get_component_args args in
   let post_to, requires_auth, typ, style, form_inputs, form_button =
     (match body with
     | Component.CreateBody (style, form_inputs, form_button)
     | Component.UpdateBody (style, form_inputs, form_button) ->
-        let style =
-          match style with
-          | Some style -> Some (get_from_attr style)
-          | None -> None
-        in
+        let style = get_style style in
         let global_env = Option.value_exn global_env in
         let query_id = Option.value_exn query_id in
         let query =
@@ -428,27 +432,20 @@ let generate_action_form_components_specs ?global_env ?query_id id body =
             form_inputs,
             form_button )
     | Component.SignupFormBody (style, form_inputs, form_button) ->
-        let style =
-          match style with
-          | Some style -> Some (get_from_attr style)
-          | None -> None
-        in
+        let style = get_style style in
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some ("auth/signup", false, "signup", style, form_inputs, form_button)
     | Component.LoginFormBody (style, form_inputs, form_button) ->
-        let style =
-          match style with
-          | Some style -> Some (get_from_attr style)
-          | None -> None
-        in
+        let style = get_style style in
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some ("auth/login", false, "login", style, form_inputs, form_button)
     | _ -> None)
     |> Option.value_exn
   in
-  { id; typ; post_to; requires_auth; style; form_inputs; form_button }
+  { id; args; typ; post_to; requires_auth; style; form_inputs; form_button }
 
-let generate_action_button_components_specs ?global_env ?query_id id body =
+let generate_action_button_components_specs ?global_env ?query_id id args body =
+  let args = get_component_args args in
   let post_to, requires_auth, typ, form_button =
     (match body with
     | Component.DeleteBody form_button ->
@@ -475,69 +472,52 @@ let generate_action_button_components_specs ?global_env ?query_id id body =
     | _ -> None)
     |> Option.value_exn
   in
-
-  { id; post_to; requires_auth; typ; form_button }
+  { id; args; post_to; requires_auth; typ; form_button }
 
 let generate_client_specs global_env app_declaration component_declarations
     page_declarations =
   let types_specs = Hashtbl.create ~size:17 (module String) in
-  let auth_configs =
-    let _, app_configs = app_declaration in
-    List.map app_configs ~f:(fun config ->
-        match config with
-        | Auth auth_configs ->
-            let get_value field_name =
-              List.Assoc.find auth_configs field_name ~equal:String.equal
-              |> Option.value_exn
-            in
-            Some
-              ( get_value "userModel",
-                get_value "idField",
-                get_value "usernameField",
-                get_value "onSuccessRedirectTo",
-                get_value "onFailRedirectTo" )
-        | _ -> None)
-    |> List.find ~f:(function Some _ -> true | None -> false)
-    |> Option.value_or_thunk ~default:(fun () -> None)
-  in
   let auth_specs =
-    match auth_configs with
+    match get_auth_config app_declaration with
     | Some
-        ( user_model,
-          id_field,
-          username_field,
-          on_success_redirect_to,
-          on_fail_redirect_to ) ->
+        {
+          user_model;
+          id_field;
+          username_field;
+          on_success_redirect_to;
+          on_fail_redirect_to;
+          _;
+        } ->
         let signup_form =
           List.filter_map component_declarations
             ~f:(fun component_declaration ->
-              let _, id, typ, _, body = component_declaration in
+              let _, id, typ, args, body = component_declaration in
 
               match typ with
               | Component.SignupForm _ | Component.LoginForm _ ->
-                  Some (generate_action_form_components_specs id body)
+                  Some (generate_action_form_components_specs id args body)
               | _ -> None)
           |> List.hd_exn
         in
         let login_form =
           List.filter_map component_declarations
             ~f:(fun component_declaration ->
-              let _, id, typ, _, body = component_declaration in
+              let _, id, typ, args, body = component_declaration in
 
               match typ with
               | Component.LoginForm _ ->
-                  Some (generate_action_form_components_specs id body)
+                  Some (generate_action_form_components_specs id args body)
               | _ -> None)
           |> List.hd_exn
         in
         let logout_button =
           List.filter_map component_declarations
             ~f:(fun component_declaration ->
-              let _, id, typ, _, body = component_declaration in
+              let _, id, typ, args, body = component_declaration in
 
               match typ with
               | Component.LogoutButton _ ->
-                  Some (generate_action_button_components_specs id body)
+                  Some (generate_action_button_components_specs id args body)
               | _ -> None)
           |> List.hd_exn
         in
@@ -575,22 +555,22 @@ let generate_client_specs global_env app_declaration component_declarations
   in
   let action_form_components_specs =
     List.filter_map component_declarations ~f:(fun component_declaration ->
-        let _, id, typ, _, body = component_declaration in
+        let _, id, typ, args, body = component_declaration in
         match typ with
         | Component.Create (_, query_id) | Component.Update (_, query_id) ->
             Some
               (generate_action_form_components_specs ~global_env ~query_id id
-                 body)
+                 args body)
         | _ -> None)
   in
   let action_button_components_specs =
     List.filter_map component_declarations ~f:(fun component_declaration ->
-        let _, id, typ, _, body = component_declaration in
+        let _, id, typ, args, body = component_declaration in
         match typ with
         | Component.Delete (_, query_id) ->
             Some
               (generate_action_button_components_specs ~global_env ~query_id id
-                 body)
+                 args body)
         | _ -> None)
   in
   let pages_specs =

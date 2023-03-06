@@ -12,15 +12,12 @@ let check_where_arg global_env loc id model fields =
     GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
-
   if not (LocalEnvironment.contains model_value ~key:field) then
     raise_undefined_error loc "field" field ~declaration_id:model_id
       ~declaration_type:ModelDeclaration;
-
   let field_info : GlobalEnvironment.field_value =
     LocalEnvironment.lookup model_value ~key:field
   in
-
   let field_attrs_table = field_info.field_attrs_table in
   if not (LocalEnvironment.contains model_value ~key:field) then
     raise_undefined_error loc "field" field ~declaration_id:model_id
@@ -50,7 +47,6 @@ let check_data_arg global_env loc query_id query_type model fields =
     GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
-
   (* Check for required fields *)
   (if
    String.equal
@@ -76,29 +72,23 @@ let check_data_arg global_env loc query_id query_type model fields =
          raise_required_argument_error loc key data.typ query_id
    in
    Hashtbl.iteri model_table ~f:check_required_fields);
-
   (* Check if data fields exists in the model *)
   let check_fields field =
     let field, relation_fields = field in
     if not (LocalEnvironment.contains model_table ~key:field) then
       raise_undefined_error loc "field" field ~declaration_id:model_id
         ~declaration_type:ModelDeclaration;
-
     (* Check model relation fields *)
     match relation_fields with
     | Some (reference_field, model_field) -> (
         if not (LocalEnvironment.contains model_table ~key:model_field) then
           raise_undefined_error loc "field" model_field ~declaration_id:model_id
             ~declaration_type:ModelDeclaration;
-
         let relation_field = LocalEnvironment.lookup model_table ~key:field in
-
         let attributes_table = relation_field.field_attrs_table in
-
         let relation_args =
           LocalEnvironment.lookup attributes_table ~key:"@relation"
         in
-
         match List.nth_exn relation_args 1 with
         | Model.AttrArgRef (_, ref) ->
             if not (String.equal reference_field ref) then
@@ -172,7 +162,7 @@ let check_args global_env loc typ id model args : unit =
       | Query.Where (loc, field) ->
           check_where_arg global_env loc id model field)
 
-let check_query global_env requiresAuth user_model query =
+let check_query global_env app_declaration query =
   let loc, id, typ, return_type, args, models, permissions = query in
   (* Check query models *)
   let check_model model =
@@ -190,16 +180,13 @@ let check_query global_env requiresAuth user_model query =
             ~id
   in
   List.iter models ~f:check_model;
-
   (* Check query arguments *)
   check_args global_env loc typ id (List.hd_exn models) args;
-
   let expected_return_type =
     (GlobalEnvironment.lookup global_env ~key:id
     |> GlobalEnvironment.get_query_value)
       .return_type
   in
-
   (* Check query return type *)
   (match return_type with
   | Some return_type ->
@@ -211,26 +198,31 @@ let check_query global_env requiresAuth user_model query =
       then
         raise_query_return_type_error loc typ expected_return_type return_type
   | None -> ());
-
   (* Check query permissions *)
   match permissions with
-  | Some permissions ->
-      if not requiresAuth then raise_unexpected_permissions_attr loc id;
-      List.iter permissions ~f:(fun (loc, permission) ->
-          if String.equal permission "ownsEntry" then
-            let model_fields =
-              GlobalEnvironment.lookup global_env
-                ~key:
-                  (get_scalar_type expected_return_type |> string_of_scalar_type)
-              |> GlobalEnvironment.get_model_value
-            in
-            let relation_exists =
-              Hashtbl.fold model_fields ~init:false ~f:(fun ~key:_ ~data flag ->
-                  let field_type =
-                    get_scalar_type data.typ |> string_of_scalar_type
-                  in
-                  if String.equal field_type user_model then not flag else flag)
-            in
-            if not relation_exists then
-              raise_unexpected_argument_error loc "ownsEntry" id)
+  | Some permissions -> (
+      let auth_config = get_auth_config app_declaration in
+      match auth_config with
+      | Some { user_model; _ } ->
+          List.iter permissions ~f:(fun (loc, permission) ->
+              if String.equal permission "ownsEntry" then
+                let model_fields =
+                  GlobalEnvironment.lookup global_env
+                    ~key:
+                      (get_scalar_type expected_return_type
+                      |> string_of_scalar_type)
+                  |> GlobalEnvironment.get_model_value
+                in
+                let relation_exists =
+                  Hashtbl.fold model_fields ~init:false
+                    ~f:(fun ~key:_ ~data flag ->
+                      let field_type =
+                        get_scalar_type data.typ |> string_of_scalar_type
+                      in
+                      if String.equal field_type user_model then not flag
+                      else flag)
+                in
+                if not relation_exists then
+                  raise_unexpected_argument_error loc "ownsEntry" id)
+      | None -> raise_unexpected_permissions_attr loc id)
   | None -> ()

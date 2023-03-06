@@ -3,6 +3,7 @@ open Core
 open Core_unix
 open Specs.Server_specs
 open File_generator
+open Ast.Ast_types
 
 let string_of_option = function Some str -> str | None -> ""
 let list_of_option = function Some lst -> lst | None -> []
@@ -50,8 +51,7 @@ let generate_controllers controllers_specs auth_specs =
           Jg_types.Tstr (String.uncapitalize name))
     in
     match auth_specs with
-    | Some auth_specs ->
-        let { user_model; _ } = auth_specs in
+    | Some { user_model; _ } ->
         names
         @ [
             Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
@@ -113,8 +113,7 @@ let generate_routes routes_specs auth_specs =
           Jg_types.Tstr (String.uncapitalize name))
     in
     match auth_specs with
-    | Some auth_specs ->
-        let { user_model; _ } = auth_specs in
+    | Some { user_model; _ } ->
         names
         @ [
             Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
@@ -244,8 +243,7 @@ let generate_validators validators_specs auth_specs =
           Jg_types.Tstr (String.uncapitalize name))
     in
     match auth_specs with
-    | Some auth_specs ->
-        let { user_model; _ } = auth_specs in
+    | Some { user_model; _ } ->
         names
         @ [
             Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
@@ -266,10 +264,7 @@ let generate_validators validators_specs auth_specs =
 
 let generate_auth auth_specs =
   match auth_specs with
-  | Some auth_specs ->
-      let { user_model; id_field; username_field; password_field } =
-        auth_specs
-      in
+  | Some { user_model; id_field; username_field; password_field; _ } ->
       List.iter [ "controllers"; "routes"; "validators" ] ~f:(fun component ->
           List.iter
             [ "auth"; String.uncapitalize user_model ]

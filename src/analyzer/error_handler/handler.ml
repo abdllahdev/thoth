@@ -195,11 +195,11 @@ let raise_bad_assignment_error loc id =
        (Fmt.str "@(%s): The value of '%s' cannot be assigned to a variable"
           (string_of_loc loc) id))
 
-let raise_argument_type_error loc typ =
+let raise_argument_type_error loc component_type typ =
   raise
     (ArgumentTypeError
-       (Fmt.str "@(%s): Component argument type cannot be of type '%s'"
-          (string_of_loc loc) (string_of_type typ)))
+       (Fmt.str "@(%s): %s components cannot receive an argument of type '%s'"
+          (string_of_loc loc) component_type (string_of_type typ)))
 
 let raise_element_type_error loc expected_type received_type =
   raise
@@ -226,6 +226,12 @@ let raise_required_argument_error loc arg_id arg_typ id =
        (Fmt.str "@(%s): Required argument '%s' of type '%s' in '%s"
           (string_of_loc loc) arg_id (string_of_type arg_typ) id))
 
+let raise_required_form_input_error loc input_id id =
+  raise
+    (RequiredFormInputError
+       (Fmt.str "@(%s): Required form input '%s' in '%s" (string_of_loc loc)
+          input_id id))
+
 let raise_unexpected_argument_error loc arg_id id =
   raise
     (UnexpectedArgumentError
@@ -234,7 +240,7 @@ let raise_unexpected_argument_error loc arg_id id =
 
 let raise_unexpected_permissions_attr loc query_id =
   raise
-    (UnexpectedAttribute
+    (UnexpectedAttributeError
        (Fmt.str
           "@(%s): Unexpected attribute permissions in %s. The app must \
            implement auth to have permissions"
@@ -242,6 +248,12 @@ let raise_unexpected_permissions_attr loc query_id =
 
 let raise_unexpected_config loc config_id =
   raise
-    (UnexpectedConfig
+    (UnexpectedConfigError
        (Fmt.str "@(%s): Unexpected configuration %s." (string_of_loc loc)
           config_id))
+
+let raise_requires_configuration loc component_type =
+  raise
+    (RequiredConfigError
+       (Fmt.str "@(%s): %s requires auth configuration" (string_of_loc loc)
+          (ComponentFormatter.string_of_component_type component_type)))

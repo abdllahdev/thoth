@@ -64,10 +64,6 @@ let parse_app_configs loc obj =
           match value with
           | StringObjField value -> Title value
           | _ -> raise_type_error loc (Scalar String))
-      | "notFound" -> (
-          match value with
-          | ReferenceObjField value -> NotFound value
-          | _ -> raise_type_error loc (Scalar Reference))
       | "auth" -> (
           match value with
           | AssocObjField auth_obj ->
@@ -80,8 +76,7 @@ let parse_app_configs loc obj =
                  List.map auth_obj ~f:(fun (key, value) ->
                      match key with
                      | "userModel" | "idField" | "usernameField"
-                     | "passwordField" | "signupUsing" | "loginUsing"
-                     | "logoutUsing" -> (
+                     | "passwordField" -> (
                          match value with
                          | ReferenceObjField value -> (key, value)
                          | _ -> raise_type_error loc (Scalar Reference))

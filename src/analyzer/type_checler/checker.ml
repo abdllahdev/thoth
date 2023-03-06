@@ -9,23 +9,6 @@ open Xra_checker
 let check_app_declaration _ = ()
 
 let check_declarations global_env app_declaration declarations =
-  let rec get_user_model auth_configs =
-    match auth_configs with
-    | [] -> ""
-    | element :: auth_configs ->
-        let key, value = element in
-        if String.equal key "userModel" then value
-        else get_user_model auth_configs
-  in
-
-  let requiresAuth, user_model =
-    let _, app_configs = app_declaration in
-    List.fold app_configs ~init:(false, "") ~f:(fun (flag, _) app_config ->
-        match app_config with
-        | Auth auth_configs -> (not flag, get_user_model auth_configs)
-        | _ -> (flag, ""))
-  in
-
   let check_declaration declaration =
     match declaration with
     | Model model ->
@@ -35,10 +18,10 @@ let check_declarations global_env app_declaration declarations =
           |> GlobalEnvironment.get_model_value
         in
         check_model global_env model_value model
-    | Query query -> check_query global_env requiresAuth user_model query
-    | Component (_, _, typ, args, body) ->
+    | Query query -> check_query global_env app_declaration query
+    | Component (loc, id, typ, args, body) ->
         let xra_env = XRAEnvironment.create_env () in
-        check_component global_env xra_env typ args body
+        check_component global_env xra_env app_declaration loc id typ args body
     | Page (_, _, _, _, body) ->
         let xra_env = XRAEnvironment.create_env () in
         check_page global_env xra_env body

@@ -7,15 +7,26 @@ import { User } from "@/types";
 import { useState } from "react";
 import { User } from "@/types";
 {% endif %}
+{% for imported_type in imported_types %}
+import { {{ imported_type }} } from "@/types"
+{% endfor %}
 import Button from "@/ui/Button";
 
 {% if type != "logout" %}
 const baseUrl = "http://localhost:4000";
 {% endif %}
 
-const {{ id }} = () => {
-  {% if type == "delete" %}
-  const url = `${baseUrl}/{{ post_to }}`;
+{% if args %}
+type {{ id }}Props = {
+  {% for arg in args %}
+  {{ arg.id }}{{ arg.type }};
+  {% endfor %}
+}
+{% endif %}
+
+const {{ id }} = ({ {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props) => {
+    {% if type == "delete" %}
+    const url = `${baseUrl}/{{ post_to }}/${ {{args[0].id}} }`;
     {% if requires_auth %}
     const storedUser = localStorage.getItem("LoggedInUser");
     const [LoggedInUser, _] = useState<User | undefined>(
