@@ -22,8 +22,8 @@ const {{ name }}Router = express.Router();
   {% endif %}
   (
     '/{% if route.where %}:{{ route.where }}{% endif %}',
-    {% for middleware in route.middlewares %}middlewares.{{ middleware }},{% endfor %}
     middlewares.validate({{ name }}Validators.{{ route.id }}Validator),
+    {% for middleware in route.middlewares %}middlewares.{{ middleware }},{% endfor %}
     {{ name }}Controller.{{ route.id }},
   );
 {% endfor %}

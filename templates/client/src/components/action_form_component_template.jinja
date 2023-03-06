@@ -46,14 +46,33 @@ const {{ id }} = () => {
       <Form
         method={% if type == "create" or type == "signup" or type == "login" %}"POST"{% else %}"PUT"{% endif %}
         url={url}
+        {% if style %}style="{{ style }}"{% endif %}
         {% if type == "login" or type == "signup" %}handleResponse={handleResponse}{% endif %}
         {% if requires_auth %}accessToken={user?.accessToken}{% endif %}
-        formInputs={[
-          {% for field in form_fields %}
+        formElements={[
+          {% for input in form_inputs %}
             {
-              {% for attr in field %}
-                {{ attr.name }}: "{{ attr.value }}",
-              {% endfor %}
+              {% if input.wrapper_style %}
+              style: "{{ input.wrapper_style }}",
+              {% endif %}
+
+              {% if input.label_attrs %}
+              formInputLabel: {
+                {% for attr in input.label_attrs %}
+                  {{ attr.name }}: "{{ attr.value }}",
+                {% endfor %}
+              },
+              {% endif %}
+
+              formInput: {
+                {% for attr in input.input_attrs %}
+                  {% if attr.name == "defaultValue" or attr.name == "visibility" %}
+                  {{ attr.name }}: {{ attr.value }},
+                  {% else %}
+                  {{ attr.name }}: "{{ attr.value }}",
+                  {% endif %}
+                {% endfor %}
+              }
             },
           {% endfor %}
         ]}

@@ -8,9 +8,10 @@ export async function ownsEntry(req: Request, _: Response, next: NextFunction) {
       ...req.validatedPayload,
       where: {
         user: { id: userId },
-        ...req.validatedPayload.where,
+        ...req.validatedPayload?.where,
       },
     };
+
 
     next();
   } catch (err) {

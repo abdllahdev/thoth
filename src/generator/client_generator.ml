@@ -94,7 +94,7 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_form_component_template.jinja"
   in
-  let { id; typ; post_to; form_inputs; form_button; requires_auth } =
+  let { id; typ; post_to; style; form_inputs; form_button; requires_auth } =
     action_form_component_specs
   in
   let action_form_component_code =
@@ -103,18 +103,52 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
         [
           ("id", Jg_types.Tstr id);
           ("type", Jg_types.Tstr typ);
+          ( "style",
+            Jg_types.Tstr
+              (match style with
+              | Some style ->
+                  let _, style = style in
+                  style
+              | None -> "") );
           ("post_to", Jg_types.Tstr post_to);
           ("requires_auth", Jg_types.Tbool requires_auth);
-          ( "form_fields",
+          ( "form_inputs",
             Jg_types.Tlist
-              (List.map form_inputs ~f:(fun form_field ->
-                   Jg_types.Tlist
-                     (List.map form_field ~f:(fun (attr_name, attr_value) ->
-                          Jg_types.Tobj
-                            [
-                              ("name", Jg_types.Tstr attr_name);
-                              ("value", Jg_types.Tstr attr_value);
-                            ])))) );
+              (List.map form_inputs ~f:(fun form_input ->
+                   let { wrapper_style; label_attrs; input_attrs } =
+                     form_input
+                   in
+                   Jg_types.Tobj
+                     [
+                       ( "wrapper_style",
+                         Jg_types.Tstr
+                           (match wrapper_style with
+                           | Some wrapper_style ->
+                               let _, wrapper_style = wrapper_style in
+                               wrapper_style
+                           | None -> "") );
+                       ( "label_attrs",
+                         Jg_types.Tlist
+                           (match label_attrs with
+                           | Some label_attrs ->
+                               List.map label_attrs ~f:(fun label_attr ->
+                                   let name, value = label_attr in
+                                   Jg_types.Tobj
+                                     [
+                                       ("name", Jg_types.Tstr name);
+                                       ("value", Jg_types.Tstr value);
+                                     ])
+                           | None -> []) );
+                       ( "input_attrs",
+                         Jg_types.Tlist
+                           (List.map input_attrs ~f:(fun input_attr ->
+                                let name, value = input_attr in
+                                Jg_types.Tobj
+                                  [
+                                    ("name", Jg_types.Tstr name);
+                                    ("value", Jg_types.Tstr value);
+                                  ])) );
+                     ])) );
           ( "form_button",
             Jg_types.Tlist
               (List.map form_button ~f:(fun (attr_name, attr_value) ->

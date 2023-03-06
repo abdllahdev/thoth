@@ -8,7 +8,7 @@ type FormInputLabel = {
 type FormInput = {
   type: "text" | "email" | "password" | "number" | "object";
   name: string;
-  visibility: string;
+  visibility: boolean;
   style?: string;
   defaultValue?: string | number | { [x: string]: any };
   placeholder?: string;
@@ -88,7 +88,7 @@ const Form = ({
         const formInput = formElement.formInput;
         const formLabel = formElement?.formInputLabel;
         const formElementStyle = formElement?.style;
-        if (formInput.visibility === "true" && formInput.type !== "object")
+        if (formInput.visibility == true && formInput.type !== "object")
           return (
             <div key={idx} className={formElementStyle}>
               {formLabel && (

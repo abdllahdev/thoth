@@ -14,7 +14,7 @@ export const {{ func.id }} = async (
   try {
     const payload = {
       {% if func.requires_where or func.requires_search %}
-      where: req.validatedPayload.where,
+      where: {...req.validatedPayload?.where, ...req.validatedPayload?.search },
       {% endif %}
 
       {% if func.requires_data %}

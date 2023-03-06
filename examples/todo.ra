@@ -18,24 +18,27 @@ model User {
 	id        Int     @id
 	username  String  @unique
 	password  String
+	tasks 		Task[]
 }
 
 model Task {
 	id        Int      @id
 	title     String
 	isDone    Boolean  @default(false)
+	user 			User 		 @relation(userId, id)
+	userId		Int
 	createdAt DateTime @default(now)
 	updatedAt DateTime @updatedAt
 }
 
 @on(Task)
-@permission(isAuthenticated)
+@permission(isAuthenticated, ownsEntry)
 query<findMany> getTasks : Task[] {
 	search: { title, isDone }
 }
 
 @on(Task)
-@permission(isAuthenticated)
+@permission(isAuthenticated, ownsEntry)
 query<findUnique> getTaskById {
 	where: { id }
 }
@@ -44,19 +47,22 @@ query<findUnique> getTaskById {
 @permission(isAuthenticated)
 query<create> createTask {
 	data: {
-		title
+		title,
+		user: {
+			id: userId
+		}
 	}
 }
 
 @on(Task)
-@permission(isAuthenticated)
+@permission(isAuthenticated, ownsEntry)
 query<update> updateTaskById {
 	where: { id },
 	data: { title, isDone }
 }
 
 @on(Task)
-@permission(isAuthenticated)
+@permission(isAuthenticated, ownsEntry)
 query<delete> deleteTaskById {
 	where: { id }
 }
@@ -94,19 +100,24 @@ component<findMany:getTasks as tasks> TasksComponent {
 }
 
 component<create:createTask> TaskCreateForm {
-	style: "some-style",
-
 	formInputs: {
 		title: {
-			style: "some-style",
-			label: {
-				name: "Title",
-				style: "some-style"
-			},
 			input: {
 				type: TextInput,
+				placeholder: "Enter title",
 				isVisible: true,
 				style: "shadow appearance-none border rounded w-full border py-2 px-3 text-gray-700 leading-tight"
+			}
+		},
+		user: {
+			input: {
+				type: RelationInput,
+				isVisible: false,
+				defaultValue: {
+					connect: {
+						id: user.id
+					}
+				}
 			}
 		}
 	},
@@ -124,17 +135,21 @@ component<delete:deleteTaskById> TaskDeleteButton {
 }
 
 component<signupForm> SignupForm {
+	style: "space-y-2",
+
 	formInputs: {
 		username: {
 			input: {
 				type: TextInput,
-				isVisible: true
+				isVisible: true,
+				placeholder: "Enter username"
 			}
 		},
 		password: {
 			input: {
 				type: PasswordInput,
-				isVisible: true
+				isVisible: true,
+				placeholder: "Enter password"
 			}
 		}
 	},
@@ -146,17 +161,21 @@ component<signupForm> SignupForm {
 }
 
 component<loginForm> LoginForm {
+	style: "space-y-2",
+
 	formInputs: {
 		username: {
 			input: {
 				type: TextInput,
-				isVisible: true
+				isVisible: true,
+				placeholder: "Enter username"
 			}
 		},
 		password: {
 			input: {
 				type: PasswordInput,
-				isVisible: true
+				isVisible: true,
+				placeholder: "Enter password"
 			}
 		}
 	},
@@ -201,7 +220,10 @@ page Tasks {
 page LoginPage {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
-			<LoginForm/>
+			<div className="space-y-2">
+				<span className="text-xl text-white">{"Login form"}</span>
+				<LoginForm/>
+			</div>
 		</div>
 	)
 }
@@ -210,7 +232,10 @@ page LoginPage {
 page SignupPage {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
-			<SignupForm/>
+			<div className="space-y-2">
+				<span className="text-xl text-white">{"Sign up form"}</span>
+				<SignupForm/>
+			</div>
 		</div>
 	)
 }
