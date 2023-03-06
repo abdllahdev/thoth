@@ -15,30 +15,30 @@ const {{ id }} = () => {
   const url = `${baseUrl}/{{ post_to }}`;
 
   {% if requires_auth %}
-  const storedUser = localStorage.getItem("user");
-  const [user, _] = useState<User | undefined>(
+  const storedUser = localStorage.getItem("LoggedInUser");
+  const [LoggedInUser, _] = useState<User | undefined>(
     storedUser ? (JSON.parse(storedUser) as User) : undefined
   );
   {% endif %}
 
   {% if type == "login" or type == "signup" %}
   const navigate = useNavigate();
-  const storedUser = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user") as string)
+  const storedUser = localStorage.getItem("LoggedInUser")
+    ? JSON.parse(localStorage.getItem("LoggedInUser") as string)
     : undefined;
-  const [user, setUser] = useState<User | undefined>(storedUser);
+  const [LoggedInUser, setUser] = useState<User | undefined>(storedUser);
 
   const handleResponse = async (response: User) => {
-    localStorage.setItem("user", JSON.stringify(response));
-    const storedUser = localStorage.getItem("user") as string;
+    localStorage.setItem("LoggedInUser", JSON.stringify(response));
+    const storedUser = localStorage.getItem("LoggedInUser") as string;
     setUser(JSON.parse(storedUser) as User);
   };
 
   useEffect(() => {
-    if (user) {
+    if (LoggedInUser) {
       navigate("{{ on_success_redirect_to }}");
     }
-  }, [user]);
+  }, [LoggedInUser]);
   {% endif %}
 
   return (
@@ -48,7 +48,7 @@ const {{ id }} = () => {
         url={url}
         {% if style %}style="{{ style }}"{% endif %}
         {% if type == "login" or type == "signup" %}handleResponse={handleResponse}{% endif %}
-        {% if requires_auth %}accessToken={user?.accessToken}{% endif %}
+        {% if requires_auth %}accessToken={LoggedInUser?.accessToken}{% endif %}
         formElements={[
           {% for input in form_inputs %}
             {

@@ -98,7 +98,7 @@ obj_field_value:
   | value = ID
     { ReferenceObjField value }
   | left = ID; DOT; right = ID
-    { ReferenceObjField (Fmt.str "%s.%s" left right) }
+    { DotReferenceObjField(left, right) }
   | TRUE
     { BooleanObjField true }
   | FALSE

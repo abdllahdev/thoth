@@ -9,17 +9,17 @@ import { useEffect, useState } from "react";
 
 const {{ id }} = () => {
   {% if on_fail_redirect_to %}
-  const storedUser = localStorage.getItem("user");
-  const [user, _] = useState<User | undefined>(
+  const storedUser = localStorage.getItem("LoggedInUser");
+  const [LoggedInUser, _] = useState<User | undefined>(
     storedUser ? (JSON.parse(storedUser) as User) : undefined
   );
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
+    if (!LoggedInUser) {
       navigate("{{ on_fail_redirect_to }}");
     }
-  }, [user]);
+  }, [LoggedInUser]);
   {% endif %}
 
   return (

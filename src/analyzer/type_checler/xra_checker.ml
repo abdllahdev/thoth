@@ -168,29 +168,33 @@ let rec check_expressions global_env xra_env expressions =
   let rec check_expression expression =
     match expression with
     | XRA.VariableExpression (loc, id) ->
-        if not (XRAEnvironment.contains xra_env id) then
-          raise_undefined_error loc "variable" id
-    | XRA.DotExpression (loc, id, expanded_id) -> (
-        if not (XRAEnvironment.contains xra_env id) then
-          raise_undefined_error loc "variable" id;
+        if not (String.equal id "LoggedInUser") then
+          if not (XRAEnvironment.contains xra_env id) then
+            raise_undefined_error loc "variable" id
+    | XRA.DotExpression (loc, id, expanded_id) ->
+        if not (String.equal id "LoggedInUser") then (
+          if not (XRAEnvironment.contains xra_env id) then
+            raise_undefined_error loc "variable" id;
 
-        let id_type = XRAEnvironment.lookup xra_env loc id in
+          let id_type = XRAEnvironment.lookup xra_env loc id in
 
-        let custom_type = get_custom_type id_type in
-        match custom_type with
-        | Some custom_type ->
-            let model_value =
-              GlobalEnvironment.lookup global_env ~key:custom_type
-            in
+          let custom_type = get_custom_type id_type in
+          match custom_type with
+          | Some custom_type ->
+              let model_value =
+                GlobalEnvironment.lookup global_env ~key:custom_type
+              in
 
-            if not (GlobalEnvironment.check_type model_value ModelDeclaration)
-            then raise_dot_operator_error loc expanded_id id id_type
-            else
-              let model_table = GlobalEnvironment.get_model_value model_value in
-
-              if not (LocalEnvironment.contains model_table ~key:expanded_id)
+              if not (GlobalEnvironment.check_type model_value ModelDeclaration)
               then raise_dot_operator_error loc expanded_id id id_type
-        | None -> raise_dot_operator_error loc expanded_id id id_type)
+              else
+                let model_table =
+                  GlobalEnvironment.get_model_value model_value
+                in
+
+                if not (LocalEnvironment.contains model_table ~key:expanded_id)
+                then raise_dot_operator_error loc expanded_id id id_type
+          | None -> raise_dot_operator_error loc expanded_id id id_type)
     | XRA.Element (loc, id, attributes, children) ->
         check_element loc id attributes children
     | XRA.Attribute (_, _, expression) -> check_expression expression

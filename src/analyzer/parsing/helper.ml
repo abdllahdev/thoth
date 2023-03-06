@@ -287,6 +287,9 @@ and get_input_default_value _ obj =
       | ReferenceObjField default_value ->
           Some
             (Component.FormAttrDefaultValue (ReferenceObjField default_value))
+      | DotReferenceObjField (left, right) ->
+          Some
+            (Component.FormAttrDefaultValue (DotReferenceObjField (left, right)))
       | AssocObjField default_value ->
           Some (Component.FormAttrDefaultValue (AssocObjField default_value)))
   | None -> None

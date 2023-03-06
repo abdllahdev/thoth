@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// TODO: should be create dynamically
 export const findUniqueValidator = z.object({
   where: z.object({
     {{ id_field }}: z

@@ -1,8 +1,9 @@
 {% if type == "logout" %}
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { User } from "@/types";
 {% endif %}
-{% if requires_auth or type == "logout" %}
+{% if requires_auth %}
 import { useState } from "react";
 import { User } from "@/types";
 {% endif %}
@@ -16,8 +17,8 @@ const {{ id }} = () => {
   {% if type == "delete" %}
   const url = `${baseUrl}/{{ post_to }}`;
     {% if requires_auth %}
-    const storedUser = localStorage.getItem("user");
-    const [user, _] = useState<User | undefined>(
+    const storedUser = localStorage.getItem("LoggedInUser");
+    const [LoggedInUser, _] = useState<User | undefined>(
       storedUser ? (JSON.parse(storedUser) as User) : undefined
     );
     {% endif %}
@@ -25,28 +26,28 @@ const {{ id }} = () => {
 
   {% if type == "logout" %}
   const navigate = useNavigate();
-  const storedUser = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user") as string)
+  const storedUser = localStorage.getItem("LoggedInUser")
+    ? JSON.parse(localStorage.getItem("LoggedInUser") as string)
     : undefined;
-  const [user, setUser] = useState<User | undefined>(storedUser);
+  const [LoggedInUser, setUser] = useState<User | undefined>(storedUser);
 
   useEffect(() => {
-    if (!user) {
+    if (!LoggedInUser) {
       navigate("{{ on_fail_redirect_to }}");
     }
-  }, [user]);
+  }, [LoggedInUser]);
   {% endif %}
 
   const handleOnClick = async () => {
     {% if type == "logout" %}
-    localStorage.removeItem("user");
+    localStorage.removeItem("LoggedInUser");
     setUser(undefined);
     {% else %}
     await fetch(url, {
       method: "DELETE",
       {% if requires_auth %}
       headers: {
-        Authorization: `Bearer ${user?.accessToken}`
+        Authorization: `Bearer ${LoggedInUser?.accessToken}`
       }
       {% endif %}
     });

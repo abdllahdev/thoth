@@ -115,7 +115,7 @@ component<create:createTask> TaskCreateForm {
 				isVisible: false,
 				defaultValue: {
 					connect: {
-						id: user.id
+						id: LoggedInUser.id
 					}
 				}
 			}

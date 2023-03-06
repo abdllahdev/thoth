@@ -13,15 +13,15 @@ const baseUrl = "http://localhost:4000";
 
 const {{ id }} = () => {
   {% if requires_auth %}
-  const storedUser = localStorage.getItem("user");
-  const [user, _] = useState<User | undefined>(
+  const storedUser = localStorage.getItem("LoggedInUser");
+  const [LoggedInUser, _] = useState<User | undefined>(
     storedUser ? (JSON.parse(storedUser) as User) : undefined
   );
   {% endif %}
   const url = `${baseUrl}/{{ find_from }}`;
   const { data: {{ variable.id }}, isLoading, error } = useFetch<{{ variable.type }}>(url,
   {% if requires_auth %}
-  user?.accessToken
+  LoggedInUser?.accessToken
   {% endif %});
 
   if (error) {

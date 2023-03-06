@@ -38,6 +38,7 @@ let rec string_of_obj_field obj_field =
   match obj_field with
   | StringObjField str -> str
   | ReferenceObjField str -> str
+  | DotReferenceObjField (left, right) -> Fmt.str "%s?.%s" left right
   | BooleanObjField boolean -> string_of_bool boolean
   | IntObjField number -> string_of_int number
   | AssocObjField assoc ->

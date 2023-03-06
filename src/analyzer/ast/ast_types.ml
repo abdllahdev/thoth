@@ -27,6 +27,7 @@ type literal =
 type obj_field =
   | AssocObjField of (string * obj_field) list
   | ReferenceObjField of string
+  | DotReferenceObjField of string * string
   | StringObjField of string
   | BooleanObjField of bool
   | IntObjField of int
