@@ -11,7 +11,7 @@ const {{ name }}Router = express.Router();
 
 {% for route in list %}
   {{ name }}Router.
-  {% if route.type == "findMany" or route.type == "findUnique" %}
+  {% if route.type == "findMany" or route.type == "findFirst" %}
   get
   {% elif route.type == "create" %}
   post

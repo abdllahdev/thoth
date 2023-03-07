@@ -33,6 +33,7 @@ type required_args = {
 type controller_function_specs = {
   function_id : string;
   function_type : string;
+  middlewares : string list;
   required_args : required_args;
 }
 
@@ -200,7 +201,7 @@ let group_queries queries =
 
 let generate_controllers_specs queries =
   let get_controller_function lst query =
-    let { query_id; query_type; query_args; _ } = query in
+    let { query_id; query_type; query_args; query_permissions; _ } = query in
     let function_type = QueryFormatter.string_of_query_type query_type in
     let required_args =
       let { where; search; data } = query_args in
@@ -211,8 +212,13 @@ let generate_controllers_specs queries =
       let requires_data = match data with Some _ -> true | None -> false in
       { requires_where; requires_search; requires_data }
     in
+    let middlewares =
+      match query_permissions with
+      | Some permissions -> permissions
+      | None -> []
+    in
     let controller_function =
-      { function_id = query_id; function_type; required_args }
+      { function_id = query_id; function_type; middlewares; required_args }
     in
     controller_function :: lst
   in

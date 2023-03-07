@@ -109,7 +109,7 @@ module QueryFormatter = struct
     | Query.Create -> "create"
     | Query.Update -> "update"
     | Query.Delete -> "delete"
-    | Query.FindUnique -> "findUnique"
+    | Query.FindUnique -> "findFirst"
     | Query.FindMany -> "findMany"
 end
 

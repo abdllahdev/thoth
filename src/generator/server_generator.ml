@@ -20,8 +20,23 @@ let generate_controller name controller_functions =
           ( "functions",
             Jg_types.Tlist
               (List.map controller_functions ~f:(fun controller_function ->
-                   let { function_id; function_type; required_args } =
+                   let {
+                     function_id;
+                     function_type;
+                     required_args;
+                     middlewares;
+                   } =
                      controller_function
+                   in
+                   let ownsEntry =
+                     match
+                       List.filter middlewares ~f:(fun middleware ->
+                           if String.equal middleware "ownsEntry" then true
+                           else false)
+                       |> List.hd
+                     with
+                     | Some _ -> true
+                     | None -> false
                    in
                    let { requires_where; requires_search; requires_data } =
                      required_args
@@ -30,6 +45,7 @@ let generate_controller name controller_functions =
                      [
                        ("id", Jg_types.Tstr function_id);
                        ("type", Jg_types.Tstr function_type);
+                       ("ownsEntry", Jg_types.Tbool ownsEntry);
                        ("requires_where", Jg_types.Tbool requires_where);
                        ("requires_search", Jg_types.Tbool requires_search);
                        ("requires_data", Jg_types.Tbool requires_data);

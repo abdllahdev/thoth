@@ -14,7 +14,13 @@ export const {{ func.id }} = async (
   try {
     const payload = {
       {% if func.requires_where or func.requires_search %}
-      where: {...req.validatedPayload?.where, ...req.validatedPayload?.search },
+      where: {
+        {% if func.requires_where %}
+        ...req.validatedPayload?.where,
+        {% endif %}
+        {% if func.requires_search %}
+        ...req.validatedPayload?.search
+        {% endif %} },
       {% endif %}
 
       {% if func.requires_data %}
@@ -24,11 +30,11 @@ export const {{ func.id }} = async (
 
     {% if func.type == "update" or func.type == "delete" %}
       {% if func.type == "update" %}
-      const item = await prismaClient.{{ name }}.findUnique({
+      const item = await prismaClient.{{ name }}.findFirst({
         where: payload.where
       });
       {% elif func.type == "delete" %}
-      const item = await prismaClient.{{ name  }}.findUnique(payload);
+      const item = await prismaClient.{{ name  }}.findFirst(payload);
       {% endif %}
     if (!item)
       throw new ApiError({
@@ -40,12 +46,27 @@ export const {{ func.id }} = async (
       });
     {% endif %}
 
+    {% if func.ownsEntry and (func.type == "update" or func.type == "delete") %}
+      const {user, ...wherePayload} = payload.where
+      const {{ func.type }}Payload = {where: wherePayload,
+        {% if func.type == "update" %}
+        data: payload.data
+        {% endif %}
+      }
+    {% endif %}
+
     {% if func.type != "delete" %}
     const result =
     {% endif %}
-    await prismaClient.{{ name  }}.{{ func.type }}(payload);
+    await prismaClient.{{ name  }}.{{ func.type }}(
+      {% if func.ownsEntry and (func.type == "update" or func.type == "delete") %}
+        {{ func.type }}Payload
+      {% else %}
+      payload
+      {% endif %}
+    );
 
-    {% if func.type == "findUnique" %}
+    {% if func.type == "findFirst" %}
     if (!result)
       throw new ApiError({
         status: httpStatus.NOT_FOUND,
