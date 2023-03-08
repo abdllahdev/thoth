@@ -12,7 +12,7 @@ app ChatRoom {
 
 model User {
 	id        Int     @id
-	username  String  @unique
+	username  String  @unique @id
 	password  String
 	message   Message[]
 }
@@ -22,12 +22,12 @@ model Message {
   content   String
 	user 			User 		 @relation(userId, id)
 	userId		Int
-	createdAt DateTime @default(now)
+	createdAt DateTime @default(Now)
 	updatedAt DateTime @updatedAt
 }
 
 @on(Message)
-@permission(isAuthenticated)
+@permission(IsAuth)
 query<findMany> getMessages {
   search: {
     content
@@ -35,7 +35,7 @@ query<findMany> getMessages {
 }
 
 @on(Message)
-@permission(isAuthenticated)
+@permission(IsAuth)
 query<create> createMessage {
   data: {
     content,
@@ -48,12 +48,10 @@ query<create> createMessage {
 component<findMany:getMessages as messages> MessagesComponent {
 	onError: render(
 		<div>{ "An error occured" }</div>
-	)
-
+	),
 	onLoading: render(
 		<div>{ "Loading..." }</div>
-	)
-
+	),
 	onSuccess: render(
 		<>
 			{
@@ -99,7 +97,6 @@ component<create:createMessage> CreateMessageForm {
 
 component<signupForm> SignupForm {
 	style: "space-y-2",
-
 	formInputs: {
 		username: {
 			input: {
@@ -116,7 +113,6 @@ component<signupForm> SignupForm {
 			}
 		}
 	},
-
 	formButton: {
 		name: "Sign Up",
 		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
@@ -125,7 +121,6 @@ component<signupForm> SignupForm {
 
 component<loginForm> LoginForm {
 	style: "space-y-2",
-
 	formInputs: {
 		username: {
 			input: {
@@ -142,7 +137,6 @@ component<loginForm> LoginForm {
 			}
 		}
 	},
-
 	formButton: {
 		name: "Login",
 		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
@@ -156,7 +150,7 @@ component<logoutButton> LogoutButton {
 }
 
 @at("/")
-@permission(isAuthenticated)
+@permission(IsAuth)
 page Home {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
@@ -175,7 +169,7 @@ page LoginPage {
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Login form"}</span>
-				<LoginForm/>
+				<LoginForm />
 			</div>
 		</div>
 	)
@@ -187,7 +181,7 @@ page SignupPage {
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Sign up form"}</span>
-				<SignupForm/>
+				<SignupForm />
 			</div>
 		</div>
 	)

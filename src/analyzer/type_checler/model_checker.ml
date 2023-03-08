@@ -83,7 +83,7 @@ let check_field_attr global_env model_env model_id field_id
             match field_type with
             | DateTime -> ()
             | _ ->
-                raise_type_error loc (Scalar field_type) ~received_value:"now"
+                raise_type_error loc (Scalar field_type) ~received_value:"Now"
                   ~received_type:(Scalar DateTime) ~id)
         | Model.AttrArgLiteral literal ->
             check_attribute_argument id literal field_type)
@@ -103,7 +103,7 @@ let check_field_attr global_env model_env model_id field_id
             raise_undefined_error loc "field" field ~declaration_id:model_id
               ~declaration_type:ModelDeclaration
       | Model.AttrArgNow loc ->
-          raise_type_error loc (Scalar Reference) ~received_value:"now"
+          raise_type_error loc (Scalar Reference) ~received_value:"Now"
             ~received_type:(Scalar DateTime) ~id
       | Model.AttrArgLiteral literal ->
           check_attribute_argument id literal Reference);
@@ -163,7 +163,7 @@ let check_field_attr global_env model_env model_id field_id
       | Model.AttrArgLiteral literal ->
           check_attribute_argument id literal Reference
       | Model.AttrArgNow loc ->
-          raise_type_error loc (Scalar Reference) ~received_value:"now"
+          raise_type_error loc (Scalar Reference) ~received_value:"Now"
             ~received_type:(Scalar DateTime) ~id)
   | _ -> raise_undefined_error loc "attribute" id
 

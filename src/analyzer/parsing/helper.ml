@@ -13,7 +13,7 @@ let parse_id loc id =
       "component";
       "let";
       "render";
-      "now";
+      "Now";
       "on";
       "permission";
       "delete";
@@ -46,8 +46,8 @@ let parse_type ?(list_modifier = false) ?(optional_modifier = false) typ =
 let parse_permissions loc permissions =
   let check_permission permission =
     match permission with
-    | "isAuthenticated" -> (loc, "isAuthenticated")
-    | "ownsEntry" -> (loc, "ownsEntry")
+    | "IsAuth" -> (loc, "isAuth")
+    | "OwnsEntry" -> (loc, "ownsEntry")
     | _ -> raise_undefined_error loc "permission" permission
   in
   List.map permissions ~f:check_permission

@@ -299,18 +299,18 @@ xra_expression:
     { xra_basic_expression }
   | xra_element_or_fragment = xra_element_or_fragment
     { xra_element_or_fragment }
-  | IF; conditional_expression = xra_conditional_expression;
-    THEN; option(LEFT_PARAN); then_block = xra_expression; option(RIGHT_PARAN)
-    ELSE; option(LEFT_PARAN); else_block = xra_expression; option(RIGHT_PARAN)
+  | IF; LEFT_PARAN; conditional_expression = xra_conditional_expression; RIGHT_PARAN;
+    LEFT_BRACE; then_block = xra_expression; RIGHT_BRACE
+    ELSE; LEFT_BRACE; else_block = xra_expression; RIGHT_BRACE
     { XRA.IfThenElseExpression($startpos, conditional_expression, then_block, else_block) }
-  | IF; conditional_expression = xra_conditional_expression
-    THEN; option(LEFT_PARAN); then_block = xra_expression; option(RIGHT_PARAN)
+  | IF; LEFT_PARAN; conditional_expression = xra_conditional_expression; RIGHT_PARAN;
+    LEFT_BRACE; then_block = xra_expression; RIGHT_BRACE
     { XRA.IfThenExpression($startpos, conditional_expression, then_block) }
   | FOR; var = ID; IN;
-    lst = xra_variable_expression; COLON;
-    option(LEFT_PARAN); output = xra_expression; option(RIGHT_PARAN)
+    lst = xra_variable_expression;
+    LEFT_BRACE; output = xra_expression; RIGHT_BRACE
     { XRA.ForExpression ($startpos, var, lst, output) }
-  | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
+  | LEFT_PARAN; xra_expression = xra_expression; RIGHT_BRACE
     { xra_expression }
   ;
 

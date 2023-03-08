@@ -65,7 +65,7 @@ rule token =
   | "app"           { APP }
   | "render"        { RENDER }
   | "let"           { LET }
-  | "now"           { NOW }
+  | "Now"           { NOW }
   | "findMany"      { FIND_MANY }
   | "findUnique"    { FIND_UNIQUE }
   | "create"        { CREATE }

@@ -23,24 +23,24 @@ model Task {
 	isDone    Boolean  @default(false)
 	user 			User 		 @relation(userId, id)
 	userId		Int
-	createdAt DateTime @default(now)
+	createdAt DateTime @default(Now)
 	updatedAt DateTime @updatedAt
 }
 
 @on(Task)
-@permission(isAuthenticated, ownsEntry)
+@permission(IsAuth, ownsEntry)
 query<findMany> getTasks : Task[] {
 	search: { title, isDone }
 }
 
 @on(Task)
-@permission(isAuthenticated, ownsEntry)
+@permission(IsAuth, ownsEntry)
 query<findUnique> getTaskById {
 	where: { id }
 }
 
 @on(Task)
-@permission(isAuthenticated)
+@permission(IsAuth)
 query<create> createTask {
 	data: {
 		title,
@@ -51,14 +51,14 @@ query<create> createTask {
 }
 
 @on(Task)
-@permission(isAuthenticated, ownsEntry)
+@permission(IsAuth, ownsEntry)
 query<update> updateTaskById {
 	where: { id },
 	data: { title, isDone }
 }
 
 @on(Task)
-@permission(isAuthenticated, ownsEntry)
+@permission(IsAuth, ownsEntry)
 query<delete> deleteTaskById {
 	where: { id }
 }
@@ -199,7 +199,7 @@ page Home {
 }
 
 @at("/tasks")
-@permission(isAuthenticated)
+@permission(IsAuth)
 page Tasks {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">

@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import ApiError from '../utils/apiError';
 import { errorHandler } from './errorHandler';
 
-export function isAuthenticated(
+export function isAuth(
   req: Request,
   res: Response,
   next: NextFunction,

@@ -58,7 +58,7 @@ module ModelFormatter = struct
     | Model.AttrArgLiteral literal ->
         Fmt.str "\"%s\"" (string_of_literal literal)
     | Model.AttrArgRef (_, ref) -> Fmt.str "%s" ref
-    | Model.AttrArgNow _ -> "now()"
+    | Model.AttrArgNow _ -> "Now()"
 
   let rec string_of_field_attr_args args =
     match args with

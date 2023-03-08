@@ -41,7 +41,7 @@ const useFetch = <T>(url: string, accessToken?: string | null) => {
       fetcher();
     });
 
-    eventSource.addEventListener("destroy", (event) => {
+    eventSource.addEventListener("delete", (event) => {
       fetcher();
     });
 
