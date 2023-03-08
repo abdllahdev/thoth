@@ -23,7 +23,7 @@ let newline = '\r' | '\n' | "\r\n"
 let attribute = ('@')(id)
 
 (* Lexer rules *)
-rule token =
+rule read_token =
   parse
   | '{'             { LEFT_BRACE }
   | '}'             { RIGHT_BRACE }
@@ -48,6 +48,8 @@ rule token =
   | "</"            { CLOSING_TAG }
   | "<>"            { FRAGMENT_OPENING }
   | "</>"           { FRAGMENT_CLOSING }
+  | "//"            { read_single_line_comment lexbuf }
+  | "/*"            { read_multi_line_comment lexbuf }
   | "true"          { TRUE }
   | "false"         { FALSE }
   | "if"            { IF }
@@ -84,8 +86,8 @@ rule token =
   | attribute       { ATTRIBUTE (Lexing.lexeme lexbuf) }
   | int             { INT (int_of_string (Lexing.lexeme lexbuf))}
   | id              { ID (Lexing.lexeme lexbuf) }
-  | whitespace      { token lexbuf }
-  | newline         { next_line lexbuf; token lexbuf }
+  | whitespace      { read_token lexbuf }
+  | newline         { next_line lexbuf; read_token lexbuf }
   | eof             { EOF }
   | _               { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
 
@@ -101,3 +103,14 @@ and read_string buf = parse
   | [^ '"' '\\']+ { Buffer.add_string buf (Lexing.lexeme lexbuf); read_string buf lexbuf }
   | _             { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
   | eof           { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
+
+and read_single_line_comment = parse
+  | newline { next_line lexbuf; read_token lexbuf }
+  | eof     { EOF }
+  | _       { read_single_line_comment lexbuf }
+
+and read_multi_line_comment = parse
+  | "*/"    { read_token lexbuf }
+  | newline { next_line lexbuf; read_multi_line_comment lexbuf }
+  | eof     { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
+  | _       { read_multi_line_comment lexbuf }

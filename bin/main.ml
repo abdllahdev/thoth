@@ -2,7 +2,7 @@ open Sys
 open Core
 
 let parse_with_error (lexbuf : Lexing.lexbuf) =
-  try Ok (Parsing.Parser.ast Parsing.Lexer.token lexbuf)
+  try Ok (Parsing.Parser.ast Parsing.Lexer.read_token lexbuf)
   with Parsing.Parser.Error ->
     Error_handler.Handler.raise_syntax_error lexbuf.lex_curr_p
       (Lexing.lexeme lexbuf)
