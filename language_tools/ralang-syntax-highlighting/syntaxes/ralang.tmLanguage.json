@@ -1,0 +1,463 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "scopeName": "source.ra",
+  "name": "RaLang",
+  "patterns": [
+    {
+      "include": "#double_quoted_string"
+    },
+    {
+      "include": "#builtin_types"
+    },
+    {
+      "include": "#line_comment"
+    },
+    {
+      "include": "#block_comment"
+    },
+    {
+      "include": "#attribute_with_arguments"
+    },
+    {
+      "include": "#attribute"
+    },
+    {
+      "include": "#app_declaration"
+    },
+    {
+      "include": "#model_declaration"
+    },
+    {
+      "include": "#query_declaration"
+    },
+    {
+      "include": "#component_declaration"
+    },
+    {
+      "include": "#page_declaration"
+    },
+    {
+      "include": "#declaration_keywords"
+    },
+    {
+      "include": "#declaration_type_keywords"
+    }
+  ],
+  "repository": {
+    "app_declaration": {
+      "name": "source.ralang.embedded.source",
+      "match": "\\s*(app)\\s+([A-Za-z][\\w]*)\\s*\\{",
+      "captures": {
+        "1": { "name": "storage.type.app.ralang" },
+        "2": { "name": "entity.name.type.app.ralang" }
+      }
+    },
+    "model_declaration": {
+      "name": "source.ralang.embedded.source",
+      "begin": "^\\s*(model)\\s+([A-Za-z][\\w]*)\\s*({)",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.model.ralang"
+        },
+        "2": {
+          "name": "entity.name.type.model.ralang"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      },
+      "end": "\\s*\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#triple_comment"
+        },
+        {
+          "include": "#double_comment"
+        },
+        {
+          "include": "#field_definition"
+        }
+      ]
+    },
+    "field_definition": {
+      "name": "scalar.field",
+      "patterns": [
+        {
+          "match": "^\\s*(\\w+)(\\s*:)?\\s+((?!(?:Int|String|DateTime|Boolean)\\b)\\b\\w+)?(Int|String|DateTime|Boolean)?(\\[\\])?(\\?)?(\\!)?",
+          "captures": {
+            "1": {
+              "name": "variable.other.assignment.ralang"
+            },
+            "2": {
+              "name": "invalid.illegal.colon.ralang"
+            },
+            "3": {
+              "name": "variable.language.relations.ralang"
+            },
+            "4": {
+              "name": "support.type.ralang"
+            },
+            "5": {
+              "name": "keyword.operator.list_type.ralang"
+            },
+            "6": {
+              "name": "keyword.operator.optional_type.ralang"
+            },
+            "7": {
+              "name": "invalid.illegal.required_type.ralang"
+            }
+          }
+        },
+        {
+          "include": "#attribute_with_arguments"
+        },
+        {
+          "include": "#attribute"
+        }
+      ]
+    },
+    "query_declaration": {
+      "name": "source.ralang.embedded.source",
+      "match": "\\s*(query)\\s*<\\s*(findMany|findUnique|delete|update|create)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*))?\\s*\\{",
+      "captures": {
+        "1": { "name": "storage.type.query.ralang" },
+        "2": { "name": "support.type.query_type.ralang" },
+        "3": { "name": "entity.name.type.ralang" },
+        "5": { "name": "punctuation.definition.tag.ralang" },
+        "6": { "name": "support.type.query_type.ralang" }
+      }
+    },
+    "component_declaration": {
+      "name": "source.ralang.embedded.source",
+      "begin": "\\s*(component)\\s*(<\\s*(create|findMany|findUnique|delete|update|signupForm|loginForm|logoutButton)\\s*(:\\s*)?([A-Za-z][\\w]*)?\\s*(as\\s+([A-Za-z][\\w]*))?\\s*>)?\\s*([A-Za-z][\\w]*)\\s*(\\((([A-Za-z][\\w]*)\\s*:\\s*([A-Za-z][\\w]*))*\\))?\\s*\\{",
+      "beginCaptures": {
+        "1": { "name": "storage.type.component.ralang" },
+        "2": { "name": "support.type.component_type.ralang" },
+        "5": { "name": "entity.name.function.ralang" },
+        "6": { "name": "keyword.operator.as.ralang" },
+        "7": { "name": "variable.other.ralang" },
+        "8": { "name": "entity.name.type.ralang" },
+        "11": { "name": "variable.other.ralang" },
+        "12": { "name": "support.type.parameter_type.ralang" }
+      },
+      "end": "(\\s*\\})(?=(\\s*\\}\\s*(,|\\n)?)*$)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#literal"
+        },
+        {
+          "include": "#form_input_type"
+        },
+        {
+          "name": "source.json.embedded.source",
+          "begin": "{",
+          "end": "}",
+          "patterns": [
+            {
+              "include": "#literal"
+            },
+            {
+              "include": "#form_input_type"
+            },
+            {
+              "match": "\\}",
+              "name": "invalid.illegal.json"
+            }
+          ],
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.embedded.json"
+            }
+          }
+        },
+        {
+          "include": "#render_expression"
+        }
+      ]
+    },
+    "page_declaration": {
+      "name": "source.ralang.embedded.source",
+      "begin": "\\s*(page)\\s+([A-Za-z][\\w]*)\\s*\\{",
+      "beginCaptures": {
+        "1": { "name": "storage.type.page.ralang" },
+        "2": { "name": "entity.name.type.ralang" }
+      },
+      "end": "\\s*\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#render_expression"
+        }
+      ]
+    },
+    "attribute_with_arguments": {
+      "name": "source.ralang.attribute_with_arguments",
+      "begin": "(@[\\w\\.]+)(\\()",
+      "beginCaptures": {
+        "1": {
+          "name": "entity.name.function.attribute.ralang"
+        },
+        "2": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#literal"
+        }
+      ],
+      "end": "\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      }
+    },
+    "attribute": {
+      "name": "source.ralang.attribute",
+      "match": "(@[\\w\\.]+)",
+      "captures": {
+        "1": {
+          "name": "entity.name.function.attribute.ralang"
+        }
+      }
+    },
+    "render_expression": {
+      "name": "source.ralang.embedded.ralang",
+      "begin": "\\b(render)\\(",
+      "beginCaptures": {
+        "1": { "name": "support.function.render.ralang" }
+      },
+      "end": "\\s*(\\))",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.ralang" }
+      },
+      "patterns": [
+        {
+          "include": "#xra"
+        }
+      ]
+    },
+    "xra": {
+      "name": "meta.xra",
+      "patterns": [
+        {
+          "include": "#control_keywords"
+        },
+        {
+          "include": "#literal"
+        },
+        {
+          "include": "#xra_tag"
+        },
+        {
+          "include": "#xra_if_expression"
+        },
+        {
+          "include": "#xra_for_expression"
+        },
+        {
+          "include": "#xra_literal_expression"
+        }
+      ]
+    },
+    "xra_if_expression": {
+      "name": "meta.xra.if_expression",
+      "begin": "\\[%\\s*(if)\\s*",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.keyword.ralang" },
+        "1": { "name": "keyword.control.ralang" }
+      },
+      "end": "\\s*(endif)\\s*%\\]",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.keyword.ralang" },
+        "1": { "name": "keyword.control.ralang" }
+      },
+      "patterns": [
+        {
+          "include": "#control_keywords"
+        },
+        {
+          "include": "#literal"
+        },
+        {
+          "include": "#xra_tag"
+        },
+        {
+          "include": "#xra_if_expression"
+        },
+        {
+          "include": "#xra_for_expression"
+        },
+        {
+          "include": "#xra_literal_expression"
+        }
+      ]
+    },
+    "xra_for_expression": {
+      "name": "meta.xra.for_expression",
+      "begin": "\\[%\\s*(for)\\s+([A-Za-z][\\w]*)s+(in)s+([A-Za-z][\\w]*)s*%\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.keyword.ralang" }
+      },
+      "end": "\\[%\\s*(endfor)\\s*%\\]",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.keyword.ralang" }
+      }
+    },
+    "xra_literal_expression": {
+      "name": "xra_literal_expression",
+      "begin": "{",
+      "end": "}",
+      "patterns": [
+        {
+          "name": "xra_literal_expression",
+          "match": "(\\+\\+|\\-\\-|\\~\\~|\\!\\=|\\=\\=\\=|\\=\\=|\\>|\\<|\\<\\=|\\>\\=|\\!|\\&\\&|\\|\\|)",
+          "captures": {
+            "0": {
+              "name": "keyword.operator.xra"
+            }
+          }
+        },
+        {
+          "include": "#literal"
+        }
+      ]
+    },
+    "xra_tag": {
+      "name": "meta.xra.tag",
+      "patterns": [
+        {
+          "begin": "<",
+          "end": "/?>",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.tag.ralang"
+            }
+          },
+          "contentName": "entity.name.tag.ralang",
+          "patterns": [
+            {
+              "include": "#xra_tag_attribute"
+            }
+          ]
+        }
+      ]
+    },
+    "xra_tag_attribute": {
+      "name": "meta.xra.tag_attribute",
+      "patterns": [
+        {
+          "match": "\\b\\w+\\b(?=\\s*=)",
+          "name": "entity.other.attribute-name.jsx"
+        },
+        {
+          "include": "#literal"
+        },
+        {
+          "include": "#control_keywords"
+        }
+      ]
+    },
+    "declaration_keywords": {
+      "name": "keyword.declaration.ralang",
+      "match": "\\b(app|model|query|component|page)\\b"
+    },
+    "declaration_type_keywords": {
+      "name": "support.type.declaration_type.ralang",
+      "match": "\\b(create|findMany|findUnique|delete|update|signupForm|loginForm|logoutButton)\\b"
+    },
+    "builtin_types": {
+      "name": "support.type.ralang",
+      "match": "\\b(Int|String|DateTime|Boolean)\\b"
+    },
+    "control_keywords": {
+      "name": "keyword.control.ralang",
+      "match": "\\b(if|then|else|endif|for|endfor|in)\\b"
+    },
+    "line_comment": {
+      "begin": "//",
+      "end": "$\\n?",
+      "name": "comment.line.ralang"
+    },
+    "block_comment": {
+      "begin": "\\/\\*",
+      "end": "\\*\\/",
+      "name": "comment.block.ralang"
+    },
+    "literal": {
+      "name": "source.ralang.literal",
+      "patterns": [
+        {
+          "include": "#boolean"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "include": "#double_quoted_string"
+        },
+        {
+          "include": "#language_constants"
+        },
+        {
+          "include": "#identifier"
+        }
+      ]
+    },
+    "boolean": {
+      "name": "constant.language.boolean.ralang",
+      "match": "\\b(true|false)\\b"
+    },
+    "number": {
+      "name": "constant.numeric.ralang",
+      "match": "((0(x|X)[0-9a-fA-F]*)|(\\+|-)?\\b(([0-9]+\\.?[0-9]*)|(\\.[0-9]+))((e|E)(\\+|-)?[0-9]+)?)([LlFfUuDdg]|UL|ul)?\\b"
+    },
+    "language_constants": {
+      "name": "constant.language.boolean.ralang",
+      "match": "\\b(IsAuth|OwnsEntry|LoggedInUser|Now)\\b"
+    },
+    "form_input_type": {
+      "name": "support.type.form_input_type.ralang",
+      "match": "\\b(TextInput|PasswordInput|EmailInput|RelationInput)\\b"
+    },
+    "double_quoted_string": {
+      "begin": "\"",
+      "beginCaptures": {
+        "0": {
+          "name": "string.quoted.double.start.prisma"
+        }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": {
+          "name": "string.quoted.double.end.prisma"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#string_interpolation"
+        },
+        {
+          "match": "([\\w\\-\\/\\._\\\\%@:\\?=]+)",
+          "name": "string.quoted.double.prisma"
+        }
+      ],
+      "name": "unnamed"
+    }
+  }
+}

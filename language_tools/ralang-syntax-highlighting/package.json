@@ -1,0 +1,34 @@
+{
+  "name": "ralang-syntax-highlighting",
+  "displayName": "RaLang",
+  "description": "RaLang Syntax Highlighting for VSCode",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.76.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "ralang",
+        "aliases": [
+          "RaLang",
+          "ralang"
+        ],
+        "extensions": [
+          ".ra"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ralang",
+        "scopeName": "source.ra",
+        "path": "./syntaxes/ralang.tmLanguage.json"
+      }
+    ]
+  }
+}
