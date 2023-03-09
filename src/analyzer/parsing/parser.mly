@@ -14,10 +14,13 @@
 %token          NOT_EQ
 %token          LT_OR_EQ
 %token          GT_OR_EQ
+%token          EXPRESSION_OPENING
+%token          EXPRESSION_CLOSING
 %token          IF
-%token          THEN
+%token          ENDIF
 %token          ELSE
 %token          FOR
+%token          ENDFOR
 %token          IN
 %token          LEFT_BRACE
 %token          RIGHT_BRACE
@@ -213,7 +216,7 @@ xra_variable_expression:
     { XRA.DotExpression($startpos, id, expanded_id) }
   ;
 
-xra_basic_expression:
+xra_literal_expression:
   | literal = literal
     { XRA.Literal(literal) }
   | xra_variable_expression = xra_variable_expression
@@ -221,8 +224,8 @@ xra_basic_expression:
   ;
 
 xra_attribute:
-  | id = ID; EQUAL; xra_expression_declaration = xra_expression_declaration
-    { XRA.Attribute($startpos, id, xra_expression_declaration) }
+  | id = ID; EQUAL; xra_expression = xra_expression
+    { XRA.Attribute($startpos, id, xra_expression) }
   | id = ID; EQUAL; str = STRING;
     { XRA.Attribute($startpos, id, XRA.Literal(StringLiteral($startpos, str))) }
   ;
@@ -269,22 +272,22 @@ xra_element_or_fragment:
 xra_children:
   | xra_element = xra_element
     { xra_element }
-  | xra_expression_declaration = xra_expression_declaration
-    { xra_expression_declaration }
+  | xra_expression = xra_expression
+    { xra_expression }
   ;
 
 xra_conditional_expression:
-  | left_expression = xra_basic_expression; EQ; right_expression = xra_basic_expression
+  | left_expression = xra_literal_expression; EQ; right_expression = xra_literal_expression
     { XRA.EqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_basic_expression; NOT_EQ; right_expression = xra_basic_expression
+  | left_expression = xra_literal_expression; NOT_EQ; right_expression = xra_literal_expression
     { XRA.NotEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_basic_expression; LT; right_expression = xra_basic_expression
+  | left_expression = xra_literal_expression; LT; right_expression = xra_literal_expression
     { XRA.LtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_basic_expression; GT; right_expression = xra_basic_expression
+  | left_expression = xra_literal_expression; GT; right_expression = xra_literal_expression
     { XRA.GtConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_basic_expression; LT_OR_EQ; right_expression = xra_basic_expression
+  | left_expression = xra_literal_expression; LT_OR_EQ; right_expression = xra_literal_expression
     { XRA.LtOrEqConditionalExpression($startpos, left_expression, right_expression) }
-  | left_expression = xra_basic_expression; GT_OR_EQ; right_expression = xra_basic_expression
+  | left_expression = xra_literal_expression; GT_OR_EQ; right_expression = xra_literal_expression
     { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
   | NOT; xra_conditional_expression = xra_conditional_expression
     { XRA.NotConditionalExpression($startpos, xra_conditional_expression) }
@@ -294,29 +297,33 @@ xra_conditional_expression:
     { XRA.LiteralConditionalExpression($startpos, XRA.Literal(boolean)) }
   ;
 
-xra_expression:
-  | xra_basic_expression = xra_basic_expression
-    { xra_basic_expression }
-  | xra_element_or_fragment = xra_element_or_fragment
-    { xra_element_or_fragment }
-  | IF; LEFT_PARAN; conditional_expression = xra_conditional_expression; RIGHT_PARAN;
-    LEFT_BRACE; then_block = xra_expression; RIGHT_BRACE
-    ELSE; LEFT_BRACE; else_block = xra_expression; RIGHT_BRACE
-    { XRA.IfThenElseExpression($startpos, conditional_expression, then_block, else_block) }
-  | IF; LEFT_PARAN; conditional_expression = xra_conditional_expression; RIGHT_PARAN;
-    LEFT_BRACE; then_block = xra_expression; RIGHT_BRACE
-    { XRA.IfThenExpression($startpos, conditional_expression, then_block) }
-  | FOR; var = ID; IN;
-    lst = xra_variable_expression;
-    LEFT_BRACE; output = xra_expression; RIGHT_BRACE
-    { XRA.ForExpression ($startpos, var, lst, output) }
+xra_literal:
+  | xra_literal_expression = xra_literal_expression
+    { xra_literal_expression }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_BRACE
     { xra_expression }
   ;
 
-xra_expression_declaration:
-  | LEFT_BRACE; xra_expression = xra_expression; RIGHT_BRACE
-    { xra_expression }
+xra_expression:
+  | EXPRESSION_OPENING; IF; conditional_expression = xra_conditional_expression; EXPRESSION_CLOSING;
+    then_block = xra_expression;
+    EXPRESSION_OPENING; ELSE; EXPRESSION_CLOSING;
+    else_block = xra_expression;
+    EXPRESSION_OPENING; ENDIF; EXPRESSION_CLOSING
+    { XRA.IfThenElseExpression($startpos, conditional_expression, then_block, else_block) }
+  | EXPRESSION_OPENING; IF; conditional_expression = xra_conditional_expression; EXPRESSION_CLOSING;
+    then_block = xra_expression;
+    EXPRESSION_OPENING; ENDIF; EXPRESSION_CLOSING
+    { XRA.IfThenExpression($startpos, conditional_expression, then_block) }
+  | EXPRESSION_OPENING; FOR; var = ID; IN;
+    lst = xra_variable_expression; EXPRESSION_CLOSING
+    output = xra_expression;
+    EXPRESSION_OPENING; ENDFOR; EXPRESSION_CLOSING
+    { XRA.ForExpression ($startpos, var, lst, output) }
+  | xra_element_or_fragment = xra_element_or_fragment
+    { xra_element_or_fragment }
+  | LEFT_BRACE; xra_literal = xra_literal; RIGHT_BRACE
+    { xra_literal }
   ;
 
 xra_let_expression:

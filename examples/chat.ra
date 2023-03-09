@@ -54,16 +54,14 @@ component<findMany:getMessages as messages> MessagesComponent {
 	)
 	onSuccess: render(
 		<>
-			{
-				for message in messages {
-          <>
-						<div className="flex space-x-3 text-white">
-            	<div>{ message.userId }</div>
-            	<div>{ message.content }</div>
-						</div>
-          </>
-				}
-			}
+			[% for message in messages %]
+				<>
+					<div className="flex space-x-3 text-white">
+						<div>{ message.userId }</div>
+						<div>{ message.content }</div>
+					</div>
+				</>
+			[% endfor %]
 		</>
 	)
 }

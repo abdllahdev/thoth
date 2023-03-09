@@ -48,14 +48,17 @@ rule read_token =
   | "</"            { CLOSING_TAG }
   | "<>"            { FRAGMENT_OPENING }
   | "</>"           { FRAGMENT_CLOSING }
+  | "[%"            { EXPRESSION_OPENING }
+  | "%]"            { EXPRESSION_CLOSING }
   | "//"            { read_single_line_comment lexbuf }
   | "/*"            { read_multi_line_comment lexbuf }
   | "true"          { TRUE }
   | "false"         { FALSE }
   | "if"            { IF }
-  | "then"          { THEN }
   | "else"          { ELSE }
+  | "endif"         { ENDIF }
   | "for"           { FOR }
+  | "endfor"        { ENDFOR }
   | "in"            { IN }
   | "model"         { MODEL }
   | "query"         { QUERY }
