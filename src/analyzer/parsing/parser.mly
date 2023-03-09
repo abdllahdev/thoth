@@ -53,9 +53,6 @@
 %token          CREATE
 %token          UPDATE
 %token          DELETE
-%token          ON_ERROR
-%token          ON_LOADING
-%token          ON_SUCCESS
 %token          SIGNUP_FORM
 %token          LOGIN_FORM
 %token          LOGOUT_BUTTON
@@ -105,19 +102,21 @@ literal:
 
 obj_field_value:
   | value = ID
-    { ReferenceObjField value }
+    { ReferenceObjField ($startpos, value) }
   | left = ID; DOT; right = ID
-    { DotReferenceObjField(left, right) }
+    { DotReferenceObjField($startpos, (left, right)) }
   | TRUE
-    { BooleanObjField true }
+    { BooleanObjField ($startpos, true) }
   | FALSE
-    { BooleanObjField false }
+    { BooleanObjField ($startpos, false) }
   | value = INT
-    { IntObjField value }
+    { IntObjField ($startpos, value) }
   | value = STRING
-    { StringObjField value }
+    { StringObjField ($startpos, value) }
+  | value = xra_render_expression
+    { RenderObjField ($startpos, value) }
   | LEFT_BRACE; value = separated_list(COMMA, obj_field); RIGHT_BRACE
-    { AssocObjField value }
+    { AssocObjField ($startpos, value) }
   ;
 
 obj_field:
@@ -366,16 +365,6 @@ xra_component_args:
     { args }
   ;
 
-xra_find_component_declarations:
-  | ON_ERROR; COLON; xra_render_expression = xra_render_expression
-    { (xra_render_expression) }
-  | ON_LOADING; COLON; xra_render_expression = xra_render_expression
-    { (xra_render_expression) }
-  | ON_SUCCESS; COLON; xra_render_expression = xra_render_expression
-    { (xra_render_expression) }
-  ;
-
-(* FIXME: This part requires refactoring *)
 xra_component:
   | COMPONENT;
     component_id = ID;
@@ -391,30 +380,27 @@ xra_component:
     LT; FIND_MANY; COLON; query_id = ID; AS; variable = ID; GT;
     component_id = ID;
     LEFT_BRACE;
-    on_error = xra_find_component_declarations;
-    on_loading = xra_find_component_declarations;
-    on_success = xra_find_component_declarations;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.FindMany($startpos, query_id, variable),
         None,
-        Component.FindBody(on_error, on_loading, on_success)) }
+        (parse_component_body $startpos body "FIND_MANY")) }
   | COMPONENT;
     LT; FIND_UNIQUE; COLON; query_id = ID; AS; variable = ID; GT;
     component_id = ID;
+    args = xra_component_args;
     LEFT_BRACE;
-    on_error = xra_find_component_declarations;
-    on_loading = xra_find_component_declarations;
-    on_success = xra_find_component_declarations;
+    body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
     { Component(
         $startpos,
         component_id,
         Component.FindUnique($startpos, query_id, variable),
-        None,
-        Component.FindBody(on_error, on_loading, on_success)) }
+        Some args,
+        (parse_component_body $startpos body "FIND_UNIQUE")) }
   | COMPONENT;
     LT; CREATE; COLON; query_id = ID; GT;
     component_id = ID;

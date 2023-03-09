@@ -24,14 +24,6 @@ type literal =
   | IntLiteral of loc * int
   | BooleanLiteral of loc * bool
 
-type obj_field =
-  | AssocObjField of (string * obj_field) list
-  | ReferenceObjField of string
-  | DotReferenceObjField of string * string
-  | StringObjField of string
-  | BooleanObjField of bool
-  | IntObjField of int
-
 type permission = loc * id
 
 module Model = struct
@@ -88,6 +80,15 @@ module XRA = struct
 
   type body = expression list option * expression list
 end
+
+type obj_field =
+  | AssocObjField of loc * (string * obj_field) list
+  | ReferenceObjField of loc * string
+  | DotReferenceObjField of loc * (string * string)
+  | StringObjField of loc * string
+  | BooleanObjField of loc * bool
+  | IntObjField of loc * int
+  | RenderObjField of loc * XRA.expression list
 
 module Component = struct
   type arg = loc * id * typ

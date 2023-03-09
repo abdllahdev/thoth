@@ -82,9 +82,6 @@ rule read_token =
   | "loginForm"     { LOGIN_FORM }
   | "logoutButton"  { LOGOUT_BUTTON }
   | "as"            { AS }
-  | "onError"       { ON_ERROR }
-  | "onLoading"     { ON_LOADING }
-  | "onSuccess"     { ON_SUCCESS }
   | "@on"           { ON }
   | "@permission"   { PERMISSION }
   | "@at"           { AT }

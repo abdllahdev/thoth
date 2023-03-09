@@ -48,10 +48,10 @@ query<create> createMessage {
 component<findMany:getMessages as messages> MessagesComponent {
 	onError: render(
 		<div>{ "An error occured" }</div>
-	)
+	),
 	onLoading: render(
 		<div>{ "Loading..." }</div>
-	)
+	),
 	onSuccess: render(
 		<>
 			[% for message in messages %]

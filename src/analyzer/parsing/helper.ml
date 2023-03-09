@@ -62,11 +62,11 @@ let parse_app_configs loc obj =
       match key with
       | "title" -> (
           match value with
-          | StringObjField value -> Title value
+          | StringObjField (_, value) -> Title value
           | _ -> raise_type_error loc (Scalar String))
       | "auth" -> (
           match value with
-          | AssocObjField auth_obj ->
+          | AssocObjField (loc, auth_obj) ->
               Auth
                 (List.fold auth_obj ~init:[] ~f:(fun seen (key, _) ->
                      if List.mem seen key ~equal:String.equal then
@@ -78,11 +78,11 @@ let parse_app_configs loc obj =
                      | "userModel" | "idField" | "usernameField"
                      | "passwordField" -> (
                          match value with
-                         | ReferenceObjField value -> (key, value)
+                         | ReferenceObjField (_, value) -> (key, value)
                          | _ -> raise_type_error loc (Scalar Reference))
                      | "onSuccessRedirectTo" | "onFailRedirectTo" -> (
                          match value with
-                         | StringObjField value -> (key, value)
+                         | StringObjField (_, value) -> (key, value)
                          | _ -> raise_type_error loc (Scalar String))
                      | config -> raise_unexpected_config loc config))
           | _ -> raise_type_error loc (Scalar Assoc))
@@ -96,6 +96,11 @@ let parse_xra_element loc opening_id closing_id attributes children =
 let rec parse_component_body loc (obj : (string * obj_field) list)
     component_type =
   match component_type with
+  | "FIND_MANY" | "FIND_UNIQUE" ->
+      let on_error = get_on_error loc obj in
+      let on_loading = get_on_loading loc obj in
+      let on_success = get_on_success loc obj in
+      Component.FindBody (on_error, on_loading, on_success)
   | "CREATE" ->
       let style = get_style loc obj in
       let form_inputs = get_form_inputs loc obj in
@@ -121,19 +126,48 @@ let rec parse_component_body loc (obj : (string * obj_field) list)
       Component.LoginFormBody (style, form_inputs, form_button)
   | "LOGOUT_BUTTON" ->
       let form_button = get_form_button loc obj in
-
       Component.LogoutButtonBody form_button
   | _ -> failwith "CompilationError: Something wrong happened"
+
+and get_on_error loc obj =
+  let on_error = List.Assoc.find obj "onError" ~equal:String.equal in
+  (match on_error with
+  | Some on_error -> (
+      match on_error with
+      | RenderObjField (_, on_error) -> Some on_error
+      | _ -> raise_type_error loc (Scalar String))
+  | None -> None)
+  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+
+and get_on_loading loc obj =
+  let on_loading = List.Assoc.find obj "onLoading" ~equal:String.equal in
+  (match on_loading with
+  | Some on_loading -> (
+      match on_loading with
+      | RenderObjField (_, on_loading) -> Some on_loading
+      | _ -> raise_type_error loc (Scalar String))
+  | None -> None)
+  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+
+and get_on_success loc obj =
+  let on_success = List.Assoc.find obj "onSuccess" ~equal:String.equal in
+  (match on_success with
+  | Some on_success -> (
+      match on_success with
+      | RenderObjField (_, on_success) -> Some on_success
+      | _ -> raise_type_error loc (Scalar String))
+  | None -> None)
+  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
 
 and get_form_inputs loc obj =
   let form_inputs = List.Assoc.find obj "formInputs" ~equal:String.equal in
   match form_inputs with
   | Some form_inputs -> (
       match form_inputs with
-      | AssocObjField form_inputs ->
+      | AssocObjField (loc, form_inputs) ->
           List.map form_inputs ~f:(fun (id, input_obj) ->
               match input_obj with
-              | AssocObjField form_input ->
+              | AssocObjField (loc, form_input) ->
                   let style, label, input = get_from_input loc form_input in
                   (loc, id, style, label, input)
               | _ -> raise_type_error loc (Scalar Assoc))
@@ -151,7 +185,7 @@ and get_form_input_attrs loc obj =
   match input with
   | Some input -> (
       match input with
-      | AssocObjField input_attrs ->
+      | AssocObjField (loc, input_attrs) ->
           let input_type =
             match get_input_type loc input_attrs with
             | Some input_type -> [ input_type ]
@@ -187,7 +221,7 @@ and get_input_label_attrs loc obj =
   match input_label with
   | Some label -> (
       match label with
-      | AssocObjField label_attrs ->
+      | AssocObjField (loc, label_attrs) ->
           let style =
             match get_style loc label_attrs with
             | Some style -> [ style ]
@@ -207,7 +241,7 @@ and get_form_button loc obj =
   match button with
   | Some button -> (
       match button with
-      | AssocObjField button_attrs ->
+      | AssocObjField (loc, button_attrs) ->
           let style =
             match get_style loc button_attrs with
             | Some style -> [ style ]
@@ -227,7 +261,7 @@ and get_style loc obj =
   match style with
   | Some style -> (
       match style with
-      | StringObjField style -> Some (Component.FormAttrStyle style)
+      | StringObjField (_, style) -> Some (Component.FormAttrStyle style)
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
 
@@ -236,7 +270,7 @@ and get_name loc obj =
   match name with
   | Some name -> (
       match name with
-      | StringObjField name -> Some (Component.FormAttrName name)
+      | StringObjField (_, name) -> Some (Component.FormAttrName name)
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
 
@@ -245,7 +279,7 @@ and get_input_type loc obj =
   match input_type with
   | Some input_type -> (
       match input_type with
-      | ReferenceObjField input_type -> (
+      | ReferenceObjField (loc, input_type) -> (
           match input_type with
           | "TextInput" -> Some (Component.FormAttrType Component.TextInput)
           | "EmailInput" -> Some (Component.FormAttrType Component.EmailInput)
@@ -263,7 +297,7 @@ and get_input_visibility loc obj =
   match visibility with
   | Some visibility -> (
       match visibility with
-      | BooleanObjField visibility ->
+      | BooleanObjField (_, visibility) ->
           Some (Component.FormAttrVisibility visibility)
       | _ -> raise_type_error loc (Scalar Boolean))
   | None -> None
@@ -273,20 +307,29 @@ and get_input_default_value _ obj =
   match default_value with
   | Some default_value -> (
       match default_value with
-      | StringObjField default_value ->
-          Some (Component.FormAttrDefaultValue (StringObjField default_value))
-      | BooleanObjField default_value ->
-          Some (Component.FormAttrDefaultValue (BooleanObjField default_value))
-      | IntObjField default_value ->
-          Some (Component.FormAttrDefaultValue (IntObjField default_value))
-      | ReferenceObjField default_value ->
+      | StringObjField (loc, default_value) ->
           Some
-            (Component.FormAttrDefaultValue (ReferenceObjField default_value))
-      | DotReferenceObjField (left, right) ->
+            (Component.FormAttrDefaultValue
+               (StringObjField (loc, default_value)))
+      | BooleanObjField (loc, default_value) ->
           Some
-            (Component.FormAttrDefaultValue (DotReferenceObjField (left, right)))
-      | AssocObjField default_value ->
-          Some (Component.FormAttrDefaultValue (AssocObjField default_value)))
+            (Component.FormAttrDefaultValue
+               (BooleanObjField (loc, default_value)))
+      | IntObjField (loc, default_value) ->
+          Some
+            (Component.FormAttrDefaultValue (IntObjField (loc, default_value)))
+      | ReferenceObjField (loc, default_value) ->
+          Some
+            (Component.FormAttrDefaultValue
+               (ReferenceObjField (loc, default_value)))
+      | DotReferenceObjField (loc, (left, right)) ->
+          Some
+            (Component.FormAttrDefaultValue
+               (DotReferenceObjField (loc, (left, right))))
+      | AssocObjField (loc, default_value) ->
+          Some
+            (Component.FormAttrDefaultValue (AssocObjField (loc, default_value)))
+      | _ -> failwith "unimplemented")
   | None -> None
 
 and get_input_placeholder loc obj =
@@ -294,7 +337,7 @@ and get_input_placeholder loc obj =
   match placeholder with
   | Some placeholder -> (
       match placeholder with
-      | StringObjField placeholder ->
+      | StringObjField (_, placeholder) ->
           Some (Component.FormAttrPlaceholder placeholder)
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
