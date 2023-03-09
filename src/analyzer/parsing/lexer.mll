@@ -34,7 +34,6 @@ rule read_token =
   | '<'             { LT }
   | '>'             { GT }
   | '='             { EQUAL }
-  | '!'             { NOT }
   | "=="            { EQ }
   | "!="            { NOT_EQ }
   | "<="            { LT_OR_EQ }
@@ -54,6 +53,9 @@ rule read_token =
   | "/*"            { read_multi_line_comment lexbuf }
   | "true"          { TRUE }
   | "false"         { FALSE }
+  | "not"           { NOT }
+  | "and"           { AND }
+  | "or"            { OR }
   | "if"            { IF }
   | "else"          { ELSE }
   | "endif"         { ENDIF }

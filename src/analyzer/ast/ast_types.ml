@@ -77,6 +77,8 @@ module XRA = struct
     | GtConditionalExpression of loc * expression * expression
     | LtOrEqConditionalExpression of loc * expression * expression
     | GtOrEqConditionalExpression of loc * expression * expression
+    | AndConditionalExpression of loc * expression * expression
+    | OrConditionalExpression of loc * expression * expression
     | IfThenElseExpression of loc * expression * expression * expression
     | IfThenExpression of loc * expression * expression
     | ForExpression of loc * id * expression * expression

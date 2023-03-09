@@ -10,6 +10,8 @@
 %token          TRUE
 %token          FALSE
 %token          NOT
+%token          AND
+%token          OR
 %token          EQ
 %token          NOT_EQ
 %token          LT_OR_EQ
@@ -66,6 +68,10 @@
 %token          COLON
 %token          SEMICOLON
 %token          EOF
+
+%left NOT
+%right AND
+%right OR
 
 %start <ast> ast
 
@@ -277,6 +283,10 @@ xra_children:
   ;
 
 xra_conditional_expression:
+  | xra_literal_expression = xra_literal_expression
+    { XRA.LiteralConditionalExpression($startpos, xra_literal_expression) }
+  | LEFT_PARAN; xra_conditional_expression = xra_conditional_expression; RIGHT_PARAN
+    { xra_conditional_expression }
   | left_expression = xra_literal_expression; EQ; right_expression = xra_literal_expression
     { XRA.EqConditionalExpression($startpos, left_expression, right_expression) }
   | left_expression = xra_literal_expression; NOT_EQ; right_expression = xra_literal_expression
@@ -291,16 +301,18 @@ xra_conditional_expression:
     { XRA.GtOrEqConditionalExpression($startpos, left_expression, right_expression) }
   | NOT; xra_conditional_expression = xra_conditional_expression
     { XRA.NotConditionalExpression($startpos, xra_conditional_expression) }
-  | xra_variable_expression = xra_variable_expression
-    { XRA.LiteralConditionalExpression($startpos, xra_variable_expression) }
-  | boolean = boolean
-    { XRA.LiteralConditionalExpression($startpos, XRA.Literal(boolean)) }
+  | left_expression = xra_conditional_expression; AND; right_expression = xra_conditional_expression
+    { XRA.AndConditionalExpression($startpos, left_expression, right_expression) }
+  | left_expression = xra_conditional_expression; OR; right_expression = xra_conditional_expression
+    { XRA.OrConditionalExpression($startpos, left_expression, right_expression) }
   ;
 
-xra_literal:
+xra_basic_expressions:
   | xra_literal_expression = xra_literal_expression
     { xra_literal_expression }
-  | LEFT_PARAN; xra_expression = xra_expression; RIGHT_BRACE
+  | xra_conditional_expression = xra_conditional_expression
+    { xra_conditional_expression }
+  | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
   ;
 
@@ -322,8 +334,8 @@ xra_expression:
     { XRA.ForExpression ($startpos, var, lst, output) }
   | xra_element_or_fragment = xra_element_or_fragment
     { xra_element_or_fragment }
-  | LEFT_BRACE; xra_literal = xra_literal; RIGHT_BRACE
-    { xra_literal }
+  | LEFT_BRACE; xra_basic_expressions = xra_basic_expressions; RIGHT_BRACE
+    { xra_basic_expressions }
   ;
 
 xra_let_expression:

@@ -193,13 +193,21 @@ let rec generate_xra_specs xra_expression =
   | XRA.Literal literal -> (
       match literal with
       | StringLiteral (_, str) -> Fmt.str "'%s'" str
-      | _ -> Fmt.str "'%s'" (string_of_literal literal))
+      | _ -> Fmt.str "%s" (string_of_literal literal))
   | XRA.VariableExpression (_, id) -> Fmt.str "%s" id
   | XRA.DotExpression (_, id, expanded_id) -> Fmt.str "%s.%s" id expanded_id
   | LiteralConditionalExpression (_, expression) ->
       generate_xra_specs expression
   | NotConditionalExpression (_, expression) ->
       Fmt.str "!(%s)" (generate_xra_specs expression)
+  | AndConditionalExpression (_, left_expression, right_expression) ->
+      Fmt.str "((%s) && %s)"
+        (generate_xra_specs left_expression)
+        (generate_xra_specs right_expression)
+  | OrConditionalExpression (_, left_expression, right_expression) ->
+      Fmt.str "((%s) || %s)"
+        (generate_xra_specs left_expression)
+        (generate_xra_specs right_expression)
   | EqConditionalExpression (_, left_expression, right_expression) ->
       Fmt.str "%s === %s"
         (generate_xra_specs left_expression)

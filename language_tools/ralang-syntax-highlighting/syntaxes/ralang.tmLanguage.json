@@ -387,7 +387,7 @@
     },
     "control_keywords": {
       "name": "keyword.control.ralang",
-      "match": "\\b(if|then|else|endif|for|endfor|in)\\b"
+      "match": "\\b(if|then|else|endif|for|endfor|in|and|or|not)\\b"
     },
     "line_comment": {
       "begin": "//",
