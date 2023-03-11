@@ -73,6 +73,7 @@ type auth_specs = {
 }
 
 type client_specs = {
+  app_title : string;
   general_components_specs : general_component_specs list;
   find_components_specs : find_component_specs list;
   action_form_components_specs : action_form_component_specs list;
@@ -485,6 +486,7 @@ let generate_action_button_components_specs ?global_env ?query_id id args body =
 let generate_client_specs global_env app_declaration component_declarations
     page_declarations =
   let types_specs = Hashtbl.create ~size:17 (module String) in
+  let _, app_title, _ = app_declaration in
   let auth_specs =
     match get_auth_config app_declaration with
     | Some
@@ -586,6 +588,7 @@ let generate_client_specs global_env app_declaration component_declarations
         generate_page_specs global_env declaration_page auth_specs)
   in
   {
+    app_title;
     general_components_specs;
     find_components_specs;
     action_form_components_specs;

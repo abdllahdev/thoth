@@ -358,9 +358,19 @@ let generate_auth auth_specs =
       generate_user_type ()
   | None -> ()
 
+let generate_app_title app_title =
+  let app_index_template = getcwd () ^ "/templates/client/index.jinja" in
+  let app_index_code =
+    Jg_template.from_file app_index_template
+      ~models:[ ("app_title", Jg_types.Tstr app_title) ]
+  in
+  let app_index_file = getcwd () ^ "/.out/client/index.html" in
+  write_file app_index_file app_index_code
+
 let setup_client_folder =
   let destination = getcwd () ^ "/templates/client" in
   create_folder destination;
+  system (Fmt.str "rm %s/.out/client/index.jinja" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/components/*" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/pages/*" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/types/*" (getcwd ())) |> ignore
@@ -368,6 +378,7 @@ let setup_client_folder =
 let generate_client client_specs =
   setup_client_folder;
   let {
+    app_title;
     general_components_specs;
     find_components_specs;
     action_form_components_specs;
@@ -383,5 +394,6 @@ let generate_client client_specs =
   List.iter ~f:generate_action_form_component action_form_components_specs;
   List.iter ~f:generate_action_button_component action_button_components_specs;
   List.iter ~f:generate_page pages_specs;
+  generate_app_title app_title;
   generate_auth auth_specs;
   generate_types types_specs auth_specs
