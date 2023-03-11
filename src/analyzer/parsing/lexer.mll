@@ -27,6 +27,8 @@ rule read_token =
   parse
   | '{'             { LEFT_BRACE }
   | '}'             { RIGHT_BRACE }
+  | '['             { LEFT_BRACKET }
+  | ']'             { RIGHT_BRACKET }
   | '('             { LEFT_PARAN }
   | ')'             { RIGHT_PARAN }
   | '/'             { SLASH }

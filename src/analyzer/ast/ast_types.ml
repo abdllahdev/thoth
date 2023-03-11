@@ -89,6 +89,7 @@ type obj_field =
   | BooleanObjField of loc * bool
   | IntObjField of loc * int
   | RenderObjField of loc * XRA.expression list
+  | ListObjField of loc * obj_field list
 
 module Component = struct
   type arg = loc * id * typ

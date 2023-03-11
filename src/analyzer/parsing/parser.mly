@@ -28,6 +28,8 @@
 %token          RIGHT_BRACE
 %token          LEFT_PARAN
 %token          RIGHT_PARAN
+%token          LEFT_BRACKET
+%token          RIGHT_BRACKET
 %token          LIST_MODIFIER
 %token          LT
 %token          GT
@@ -117,6 +119,8 @@ obj_field_value:
     { RenderObjField ($startpos, value) }
   | LEFT_BRACE; value = separated_list(COMMA, obj_field); RIGHT_BRACE
     { AssocObjField ($startpos, value) }
+  | LEFT_BRACKET; value = separated_list(COMMA, obj_field_value); RIGHT_BRACKET
+    { ListObjField ($startpos, value) }
   ;
 
 obj_field:
@@ -191,11 +195,11 @@ query_data_field:
   ;
 
 query_body_arg:
-  | WHERE; COLON; LEFT_BRACE; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACE
+  | WHERE; COLON; LEFT_BRACKET; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACKET
     { Query.Where($startpos, fields) }
-  | DATA; COLON; LEFT_BRACE; query_data_fields = separated_nonempty_list(COMMA, query_data_field); RIGHT_BRACE
+  | DATA; COLON; LEFT_BRACKET; query_data_fields = separated_nonempty_list(COMMA, query_data_field); RIGHT_BRACKET
     { Query.Data($startpos, query_data_fields) }
-  | SEARCH; COLON; LEFT_BRACE; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACE
+  | SEARCH; COLON; LEFT_BRACKET; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACKET
     { Query.Search($startpos, fields) }
   ;
 
@@ -343,7 +347,7 @@ xra_let_expression:
   ;
 
 xra_render_expression:
-  | RENDER; LEFT_PARAN; xra = list(xra_element_or_fragment); RIGHT_PARAN
+  | RENDER; LEFT_PARAN; xra = list(xra_expression); RIGHT_PARAN
     { xra }
   ;
 

@@ -93,8 +93,9 @@ let parse_xra_element loc opening_id closing_id attributes children =
     raise_syntax_error loc closing_id
   else XRA.Element (loc, opening_id, attributes, children)
 
-let rec parse_component_body loc (obj : (string * obj_field) list)
-    component_type =
+(* TODO: Change all the failwith statements to actual error *)
+(* TODO: check unexpected arguments and multiple definitions *)
+let rec parse_component_body loc obj component_type =
   match component_type with
   | "FIND_MANY" | "FIND_UNIQUE" ->
       let on_error = get_on_error loc obj in
@@ -136,7 +137,7 @@ and get_on_error loc obj =
       match on_error with
       | RenderObjField (_, on_error) -> Some on_error
       | _ -> raise_type_error loc (Scalar String))
-  | None -> None)
+  | None -> failwith "Not found")
   |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
 
 and get_on_loading loc obj =
@@ -146,7 +147,7 @@ and get_on_loading loc obj =
       match on_loading with
       | RenderObjField (_, on_loading) -> Some on_loading
       | _ -> raise_type_error loc (Scalar String))
-  | None -> None)
+  | None -> failwith "Not found")
   |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
 
 and get_on_success loc obj =
@@ -156,7 +157,7 @@ and get_on_success loc obj =
       match on_success with
       | RenderObjField (_, on_success) -> Some on_success
       | _ -> raise_type_error loc (Scalar String))
-  | None -> None)
+  | None -> failwith "Not found")
   |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
 
 and get_form_inputs loc obj =
