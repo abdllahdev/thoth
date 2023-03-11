@@ -416,7 +416,7 @@ let check_component global_env xra_env app_declaration loc id typ args body =
           let auth_config = get_auth_config app_declaration in
           match auth_config with
           | Some { username_field; password_field; _ } ->
-              let id, _ = app_declaration in
+              let _, id, _ = app_declaration in
               (id, AppDeclaration, [ username_field; password_field ])
           | None -> raise_requires_configuration loc typ)
       | _ -> failwith "CompilationError"

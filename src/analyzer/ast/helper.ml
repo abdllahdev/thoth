@@ -35,7 +35,7 @@ let is_custom_type typ =
       | OptionalList scalar_type -> get_custom_scalar_type scalar_type)
 
 let get_auth_config app_declaration =
-  let _, app_configs = app_declaration in
+  let _, _, app_configs = app_declaration in
   List.map app_configs ~f:(fun config ->
       match config with
       | Auth auth_configs ->

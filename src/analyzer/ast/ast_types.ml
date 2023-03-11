@@ -191,7 +191,7 @@ type auth_config = {
   on_fail_redirect_to : string;
 }
 
-type app_declaration = string * app_config list
+type app_declaration = loc * string * app_config list
 
 type filtered_ast = {
   model_declarations : model_declaration list;

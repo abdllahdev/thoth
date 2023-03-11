@@ -515,7 +515,7 @@ declaration:
 
 app_declaration:
   | APP; app_id = ID; LEFT_BRACE; app_configs = separated_list(COMMA, obj_field); RIGHT_BRACE
-    { (app_id, parse_app_configs $startpos app_configs) }
+    { ($startpos, app_id, parse_app_configs $startpos app_configs) }
   ;
 
 ast:
