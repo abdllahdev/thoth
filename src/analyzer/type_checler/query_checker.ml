@@ -223,6 +223,6 @@ let check_query global_env app_declaration query =
                       else flag)
                 in
                 if not relation_exists then
-                  raise_unexpected_argument_error loc "ownsEntry" id)
+                  raise_unexpected_argument_error loc "ownsEntry" ~id)
       | None -> raise_unexpected_permissions_attr loc id)
   | None -> ()

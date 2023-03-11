@@ -232,11 +232,16 @@ let raise_required_form_input_error loc input_id id =
        (Fmt.str "@(%s): Required form input '%s' in '%s" (string_of_loc loc)
           input_id id))
 
-let raise_unexpected_argument_error loc arg_id id =
-  raise
-    (UnexpectedArgumentError
-       (Fmt.str "@(%s): Unexpected argument '%s' in '%s" (string_of_loc loc)
-          arg_id id))
+let raise_unexpected_argument_error ?id loc arg_id =
+  if Option.is_none id then
+    raise
+      (UnexpectedArgumentError
+         (Fmt.str "@(%s): Unexpected argument '%s'" (string_of_loc loc) arg_id))
+  else
+    raise
+      (UnexpectedArgumentError
+         (Fmt.str "@(%s): Unexpected argument '%s' in '%s'" (string_of_loc loc)
+            arg_id (Option.value_exn id)))
 
 let raise_unexpected_permissions_attr loc query_id =
   raise

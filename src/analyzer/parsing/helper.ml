@@ -93,9 +93,35 @@ let parse_xra_element loc opening_id closing_id attributes children =
     raise_syntax_error loc closing_id
   else XRA.Element (loc, opening_id, attributes, children)
 
-(* TODO: Change all the failwith statements to actual error *)
-(* TODO: check unexpected arguments and multiple definitions *)
+let rec dup_exist loc keys =
+  match keys with
+  | [] -> ()
+  | hd :: tl ->
+      if List.exists ~f:(String.equal hd) tl then
+        raise_multi_definitions_error loc hd
+      else dup_exist loc tl
+
+let unexpected_keys_exists loc keys expected_keys =
+  List.iter keys ~f:(fun key ->
+      if not (List.mem expected_keys key ~equal:String.equal) then
+        raise_unexpected_argument_error loc key)
+
 let rec parse_component_body loc obj component_type =
+  let obj_keys = List.map obj ~f:(fun (key, _) -> key) in
+  dup_exist loc obj_keys;
+
+  (match component_type with
+  | "FIND_MANY" | "FIND_UNIQUE" ->
+      let expected_keys = [ "onError"; "onLoading"; "onSuccess" ] in
+      unexpected_keys_exists loc obj_keys expected_keys
+  | "CREATE" | "UPDATE" | "SIGNUP_FORM" | "LOGIN_FORM" ->
+      let expected_keys = [ "style"; "formInputs"; "formButton" ] in
+      unexpected_keys_exists loc obj_keys expected_keys
+  | "DELETE" | "LOGOUT_BUTTON" ->
+      let expected_keys = [ "formButton" ] in
+      unexpected_keys_exists loc obj_keys expected_keys
+  | _ -> failwith "CompilationError: Something wrong happened");
+
   match component_type with
   | "FIND_MANY" | "FIND_UNIQUE" ->
       let on_error = get_on_error loc obj in
@@ -166,6 +192,8 @@ and get_form_inputs loc obj =
   | Some form_inputs -> (
       match form_inputs with
       | AssocObjField (loc, form_inputs) ->
+          let obj_keys = List.map form_inputs ~f:(fun (key, _) -> key) in
+          dup_exist loc obj_keys;
           List.map form_inputs ~f:(fun (id, input_obj) ->
               match input_obj with
               | AssocObjField (loc, form_input) ->
@@ -176,6 +204,10 @@ and get_form_inputs loc obj =
   | None -> failwith (Fmt.str "@(%s): Expected formInputs" (string_of_loc loc))
 
 and get_from_input loc obj =
+  let obj_keys = List.map obj ~f:(fun (key, _) -> key) in
+  dup_exist loc obj_keys;
+  let expected_keys = [ "style"; "label"; "input" ] in
+  unexpected_keys_exists loc obj_keys expected_keys;
   let style = get_style loc obj in
   let label = get_input_label_attrs loc obj in
   let input = get_form_input_attrs loc obj in
@@ -187,6 +219,12 @@ and get_form_input_attrs loc obj =
   | Some input -> (
       match input with
       | AssocObjField (loc, input_attrs) ->
+          let obj_keys = List.map input_attrs ~f:(fun (key, _) -> key) in
+          dup_exist loc obj_keys;
+          let expected_keys =
+            [ "type"; "isVisible"; "defaultValue"; "placeholder"; "style" ]
+          in
+          unexpected_keys_exists loc obj_keys expected_keys;
           let input_type =
             match get_input_type loc input_attrs with
             | Some input_type -> [ input_type ]
@@ -223,6 +261,10 @@ and get_input_label_attrs loc obj =
   | Some label -> (
       match label with
       | AssocObjField (loc, label_attrs) ->
+          let obj_keys = List.map label_attrs ~f:(fun (key, _) -> key) in
+          dup_exist loc obj_keys;
+          let expected_keys = [ "name"; "style" ] in
+          unexpected_keys_exists loc obj_keys expected_keys;
           let style =
             match get_style loc label_attrs with
             | Some style -> [ style ]
@@ -243,6 +285,10 @@ and get_form_button loc obj =
   | Some button -> (
       match button with
       | AssocObjField (loc, button_attrs) ->
+          let obj_keys = List.map button_attrs ~f:(fun (key, _) -> key) in
+          dup_exist loc obj_keys;
+          let expected_keys = [ "name"; "style" ] in
+          unexpected_keys_exists loc obj_keys expected_keys;
           let style =
             match get_style loc button_attrs with
             | Some style -> [ style ]

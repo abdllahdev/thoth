@@ -50,7 +50,7 @@ let rec check_expressions global_env xra_env expressions =
 
             List.iter attribute_ids ~f:(fun attribute_id ->
                 if not (List.mem arg_ids attribute_id ~equal:String.equal) then
-                  raise_unexpected_argument_error loc attribute_id id);
+                  raise_unexpected_argument_error loc attribute_id ~id);
 
             List.iter args ~f:(fun arg ->
                 let _, arg_id, arg_typ = arg in
