@@ -126,14 +126,14 @@ module ComponentFormatter = struct
   let string_of_component_type component_type =
     match component_type with
     | Component.General -> "General"
-    | Component.FindUnique _ -> "FindUnique"
-    | Component.FindMany _ -> "FindMany"
-    | Component.Create _ -> "Create"
-    | Component.Delete _ -> "Delete"
-    | Component.Update _ -> "Update"
-    | Component.SignupForm _ -> "SignupForm"
-    | Component.LoginForm _ -> "LoginForm"
-    | Component.LogoutButton _ -> "LogoutButton"
+    | Component.FindUnique -> "FindUnique"
+    | Component.FindMany -> "FindMany"
+    | Component.Create -> "Create"
+    | Component.Delete -> "Delete"
+    | Component.Update -> "Update"
+    | Component.SignupForm -> "SignupForm"
+    | Component.LoginForm -> "LoginForm"
+    | Component.LogoutButton -> "LogoutButton"
 end
 
 let string_of_declaration_type declaration_type =

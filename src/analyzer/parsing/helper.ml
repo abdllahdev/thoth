@@ -52,13 +52,13 @@ let parse_permissions loc permissions =
   in
   List.map permissions ~f:check_permission
 
-let parse_app_configs loc obj =
-  List.fold obj ~init:[] ~f:(fun seen (key, _) ->
+let parse_app_configs loc body =
+  List.fold body ~init:[] ~f:(fun seen (key, _) ->
       if List.mem seen key ~equal:String.equal then
         raise_multi_definitions_error loc key
       else seen @ [ key ])
   |> ignore;
-  List.map obj ~f:(fun (key, value) ->
+  List.map body ~f:(fun (key, value) ->
       match key with
       | "title" -> (
           match value with
@@ -93,71 +93,110 @@ let parse_xra_element loc opening_id closing_id attributes children =
     raise_syntax_error loc closing_id
   else XRA.Element (loc, opening_id, attributes, children)
 
-let rec dup_exist loc keys =
-  match keys with
-  | [] -> ()
-  | hd :: tl ->
-      if List.exists ~f:(String.equal hd) tl then
-        raise_multi_definitions_error loc hd
-      else dup_exist loc tl
-
 let unexpected_keys_exists loc keys expected_keys =
   List.iter keys ~f:(fun key ->
       if not (List.mem expected_keys key ~equal:String.equal) then
         raise_unexpected_argument_error loc key)
 
-let rec parse_component_body loc obj component_type =
-  let obj_keys = List.map obj ~f:(fun (key, _) -> key) in
-  dup_exist loc obj_keys;
+let rec parse_component loc id typ args body =
+  let obj_keys = List.map body ~f:(fun (key, _) -> key) in
+  check_dup_exists loc obj_keys;
+  let component_body =
+    match typ with
+    | Component.FindMany | Component.FindUnique ->
+        let find_query, variable = get_find_query_and_variable loc body in
+        let on_error = get_on_error loc body in
+        let on_loading = get_on_loading loc body in
+        let on_success = get_on_success loc body in
+        Component.FindBody
+          ((find_query, variable), on_error, on_loading, on_success)
+    | Component.Create ->
+        let query = get_action_query loc body in
+        let style = get_style loc body in
+        let form_inputs = get_form_inputs loc body in
+        let form_button = get_form_button loc body in
+        Component.CreateBody (query, style, form_inputs, form_button)
+    | Component.Update ->
+        let query = get_action_query loc body in
+        let style = get_style loc body in
+        let form_inputs = get_form_inputs loc body in
+        let form_button = get_form_button loc body in
+        Component.UpdateBody (query, style, form_inputs, form_button)
+    | Component.Delete ->
+        let query = get_action_query loc body in
+        let form_button = get_form_button loc body in
+        Component.DeleteBody (query, form_button)
+    | Component.SignupForm ->
+        let style = get_style loc body in
+        let form_inputs = get_form_inputs loc body in
+        let form_button = get_form_button loc body in
+        Component.SignupFormBody (style, form_inputs, form_button)
+    | Component.LoginForm ->
+        let style = get_style loc body in
+        let form_inputs = get_form_inputs loc body in
+        let form_button = get_form_button loc body in
+        Component.LoginFormBody (style, form_inputs, form_button)
+    | Component.LogoutButton ->
+        let form_button = get_form_button loc body in
+        Component.LogoutButtonBody form_button
+    | _ -> failwith "CompilationError: Something wrong happened"
+  in
+  Component (loc, id, typ, args, component_body)
 
-  (match component_type with
-  | "FIND_MANY" | "FIND_UNIQUE" ->
-      let expected_keys = [ "onError"; "onLoading"; "onSuccess" ] in
+and check_dup_exists loc keys =
+  match keys with
+  | [] -> ()
+  | hd :: tl ->
+      if List.exists ~f:(String.equal hd) tl then
+        raise_multi_definitions_error loc hd
+      else check_dup_exists loc tl
+
+and check_component_unexpected_keys loc obj_keys typ =
+  match typ with
+  | Component.FindMany | Component.FindUnique ->
+      let expected_keys =
+        [ "findQuery"; "onError"; "onLoading"; "onSuccess" ]
+      in
       unexpected_keys_exists loc obj_keys expected_keys
-  | "CREATE" | "UPDATE" | "SIGNUP_FORM" | "LOGIN_FORM" ->
+  | Component.Create | Component.Update ->
+      let expected_keys =
+        [ "actionQuery"; "style"; "formInputs"; "formButton" ]
+      in
+      unexpected_keys_exists loc obj_keys expected_keys
+  | Component.SignupForm | Component.LoginForm ->
       let expected_keys = [ "style"; "formInputs"; "formButton" ] in
       unexpected_keys_exists loc obj_keys expected_keys
-  | "DELETE" | "LOGOUT_BUTTON" ->
+  | Component.Delete ->
+      let expected_keys = [ "actionQuery"; "formButton" ] in
+      unexpected_keys_exists loc obj_keys expected_keys
+  | Component.LogoutButton ->
       let expected_keys = [ "formButton" ] in
       unexpected_keys_exists loc obj_keys expected_keys
-  | _ -> failwith "CompilationError: Something wrong happened");
-
-  match component_type with
-  | "FIND_MANY" | "FIND_UNIQUE" ->
-      let on_error = get_on_error loc obj in
-      let on_loading = get_on_loading loc obj in
-      let on_success = get_on_success loc obj in
-      Component.FindBody (on_error, on_loading, on_success)
-  | "CREATE" ->
-      let style = get_style loc obj in
-      let form_inputs = get_form_inputs loc obj in
-      let form_button = get_form_button loc obj in
-      Component.CreateBody (style, form_inputs, form_button)
-  | "UPDATE" ->
-      let style = get_style loc obj in
-      let form_inputs = get_form_inputs loc obj in
-      let form_button = get_form_button loc obj in
-      Component.UpdateBody (style, form_inputs, form_button)
-  | "DELETE" ->
-      let form_button = get_form_button loc obj in
-      Component.DeleteBody form_button
-  | "SIGNUP_FORM" ->
-      let style = get_style loc obj in
-      let form_inputs = get_form_inputs loc obj in
-      let form_button = get_form_button loc obj in
-      Component.SignupFormBody (style, form_inputs, form_button)
-  | "LOGIN_FORM" ->
-      let style = get_style loc obj in
-      let form_inputs = get_form_inputs loc obj in
-      let form_button = get_form_button loc obj in
-      Component.LoginFormBody (style, form_inputs, form_button)
-  | "LOGOUT_BUTTON" ->
-      let form_button = get_form_button loc obj in
-      Component.LogoutButtonBody form_button
   | _ -> failwith "CompilationError: Something wrong happened"
 
-and get_on_error loc obj =
-  let on_error = List.Assoc.find obj "onError" ~equal:String.equal in
+and get_find_query_and_variable loc body =
+  let find_with = List.Assoc.find body "findQuery" ~equal:String.equal in
+  (match find_with with
+  | Some find_with -> (
+      match find_with with
+      | AsObjField (loc, (query_id, variable)) ->
+          Some ((loc, query_id), (loc, variable))
+      | _ -> raise_type_error loc (Scalar String))
+  | None -> failwith "Not found")
+  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+
+and get_action_query loc body =
+  let post_to = List.Assoc.find body "actionQuery" ~equal:String.equal in
+  (match post_to with
+  | Some post_to -> (
+      match post_to with
+      | ReferenceObjField (loc, query_id) -> Some (loc, query_id)
+      | _ -> raise_type_error loc (Scalar String))
+  | None -> failwith "Not found")
+  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+
+and get_on_error loc body =
+  let on_error = List.Assoc.find body "onError" ~equal:String.equal in
   (match on_error with
   | Some on_error -> (
       match on_error with
@@ -166,8 +205,8 @@ and get_on_error loc obj =
   | None -> failwith "Not found")
   |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
 
-and get_on_loading loc obj =
-  let on_loading = List.Assoc.find obj "onLoading" ~equal:String.equal in
+and get_on_loading loc body =
+  let on_loading = List.Assoc.find body "onLoading" ~equal:String.equal in
   (match on_loading with
   | Some on_loading -> (
       match on_loading with
@@ -176,8 +215,8 @@ and get_on_loading loc obj =
   | None -> failwith "Not found")
   |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
 
-and get_on_success loc obj =
-  let on_success = List.Assoc.find obj "onSuccess" ~equal:String.equal in
+and get_on_success loc body =
+  let on_success = List.Assoc.find body "onSuccess" ~equal:String.equal in
   (match on_success with
   | Some on_success -> (
       match on_success with
@@ -186,14 +225,14 @@ and get_on_success loc obj =
   | None -> failwith "Not found")
   |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
 
-and get_form_inputs loc obj =
-  let form_inputs = List.Assoc.find obj "formInputs" ~equal:String.equal in
+and get_form_inputs loc body =
+  let form_inputs = List.Assoc.find body "formInputs" ~equal:String.equal in
   match form_inputs with
   | Some form_inputs -> (
       match form_inputs with
       | AssocObjField (loc, form_inputs) ->
           let obj_keys = List.map form_inputs ~f:(fun (key, _) -> key) in
-          dup_exist loc obj_keys;
+          check_dup_exists loc obj_keys;
           List.map form_inputs ~f:(fun (id, input_obj) ->
               match input_obj with
               | AssocObjField (loc, form_input) ->
@@ -203,24 +242,24 @@ and get_form_inputs loc obj =
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> failwith (Fmt.str "@(%s): Expected formInputs" (string_of_loc loc))
 
-and get_from_input loc obj =
-  let obj_keys = List.map obj ~f:(fun (key, _) -> key) in
-  dup_exist loc obj_keys;
+and get_from_input loc body =
+  let obj_keys = List.map body ~f:(fun (key, _) -> key) in
+  check_dup_exists loc obj_keys;
   let expected_keys = [ "style"; "label"; "input" ] in
   unexpected_keys_exists loc obj_keys expected_keys;
-  let style = get_style loc obj in
-  let label = get_input_label_attrs loc obj in
-  let input = get_form_input_attrs loc obj in
+  let style = get_style loc body in
+  let label = get_input_label_attrs loc body in
+  let input = get_form_input_attrs loc body in
   (style, label, input)
 
-and get_form_input_attrs loc obj =
-  let input = List.Assoc.find obj "input" ~equal:String.equal in
+and get_form_input_attrs loc body =
+  let input = List.Assoc.find body "input" ~equal:String.equal in
   match input with
   | Some input -> (
       match input with
       | AssocObjField (loc, input_attrs) ->
           let obj_keys = List.map input_attrs ~f:(fun (key, _) -> key) in
-          dup_exist loc obj_keys;
+          check_dup_exists loc obj_keys;
           let expected_keys =
             [ "type"; "isVisible"; "defaultValue"; "placeholder"; "style" ]
           in
@@ -255,14 +294,14 @@ and get_form_input_attrs loc obj =
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> failwith "Must have an input attribute"
 
-and get_input_label_attrs loc obj =
-  let input_label = List.Assoc.find obj "label" ~equal:String.equal in
+and get_input_label_attrs loc body =
+  let input_label = List.Assoc.find body "label" ~equal:String.equal in
   match input_label with
   | Some label -> (
       match label with
       | AssocObjField (loc, label_attrs) ->
           let obj_keys = List.map label_attrs ~f:(fun (key, _) -> key) in
-          dup_exist loc obj_keys;
+          check_dup_exists loc obj_keys;
           let expected_keys = [ "name"; "style" ] in
           unexpected_keys_exists loc obj_keys expected_keys;
           let style =
@@ -279,14 +318,14 @@ and get_input_label_attrs loc obj =
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> None
 
-and get_form_button loc obj =
-  let button = List.Assoc.find obj "formButton" ~equal:String.equal in
+and get_form_button loc body =
+  let button = List.Assoc.find body "formButton" ~equal:String.equal in
   match button with
   | Some button -> (
       match button with
       | AssocObjField (loc, button_attrs) ->
           let obj_keys = List.map button_attrs ~f:(fun (key, _) -> key) in
-          dup_exist loc obj_keys;
+          check_dup_exists loc obj_keys;
           let expected_keys = [ "name"; "style" ] in
           unexpected_keys_exists loc obj_keys expected_keys;
           let style =
@@ -303,8 +342,8 @@ and get_form_button loc obj =
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> failwith "Must have a button attribute"
 
-and get_style loc obj =
-  let style = List.Assoc.find obj "style" ~equal:String.equal in
+and get_style loc body =
+  let style = List.Assoc.find body "style" ~equal:String.equal in
   match style with
   | Some style -> (
       match style with
@@ -312,8 +351,8 @@ and get_style loc obj =
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
 
-and get_name loc obj =
-  let name = List.Assoc.find obj "name" ~equal:String.equal in
+and get_name loc body =
+  let name = List.Assoc.find body "name" ~equal:String.equal in
   match name with
   | Some name -> (
       match name with
@@ -321,8 +360,8 @@ and get_name loc obj =
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
 
-and get_input_type loc obj =
-  let input_type = List.Assoc.find obj "type" ~equal:String.equal in
+and get_input_type loc body =
+  let input_type = List.Assoc.find body "type" ~equal:String.equal in
   match input_type with
   | Some input_type -> (
       match input_type with
@@ -339,8 +378,8 @@ and get_input_type loc obj =
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
 
-and get_input_visibility loc obj =
-  let visibility = List.Assoc.find obj "isVisible" ~equal:String.equal in
+and get_input_visibility loc body =
+  let visibility = List.Assoc.find body "isVisible" ~equal:String.equal in
   match visibility with
   | Some visibility -> (
       match visibility with
@@ -349,8 +388,8 @@ and get_input_visibility loc obj =
       | _ -> raise_type_error loc (Scalar Boolean))
   | None -> None
 
-and get_input_default_value _ obj =
-  let default_value = List.Assoc.find obj "defaultValue" ~equal:String.equal in
+and get_input_default_value _ body =
+  let default_value = List.Assoc.find body "defaultValue" ~equal:String.equal in
   match default_value with
   | Some default_value -> (
       match default_value with
@@ -379,8 +418,8 @@ and get_input_default_value _ obj =
       | _ -> failwith "unimplemented")
   | None -> None
 
-and get_input_placeholder loc obj =
-  let placeholder = List.Assoc.find obj "placeholder" ~equal:String.equal in
+and get_input_placeholder loc body =
+  let placeholder = List.Assoc.find body "placeholder" ~equal:String.equal in
   match placeholder with
   | Some placeholder -> (
       match placeholder with

@@ -75,14 +75,14 @@ rule read_token =
   | "render"        { RENDER }
   | "let"           { LET }
   | "Now"           { NOW }
-  | "findMany"      { FIND_MANY }
-  | "findUnique"    { FIND_UNIQUE }
-  | "create"        { CREATE }
-  | "update"        { UPDATE }
-  | "delete"        { DELETE }
-  | "signupForm"    { SIGNUP_FORM }
-  | "loginForm"     { LOGIN_FORM }
-  | "logoutButton"  { LOGOUT_BUTTON }
+  | "FindMany"      { FIND_MANY }
+  | "FindUnique"    { FIND_UNIQUE }
+  | "Create"        { CREATE }
+  | "Update"        { UPDATE }
+  | "Delete"        { DELETE }
+  | "SignupForm"    { SIGNUP_FORM }
+  | "LoginForm"     { LOGIN_FORM }
+  | "LogoutButton"  { LOGOUT_BUTTON }
   | "as"            { AS }
   | "@on"           { ON }
   | "@permission"   { PERMISSION }

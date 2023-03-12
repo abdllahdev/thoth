@@ -90,21 +90,23 @@ type obj_field =
   | IntObjField of loc * int
   | RenderObjField of loc * XRA.expression list
   | ListObjField of loc * obj_field list
+  | AsObjField of loc * (string * string)
 
 module Component = struct
   type arg = loc * id * typ
-  type query_id = id
+  type query_id = loc * id
+  type variable = loc * id
 
   type typ =
     | General
-    | FindMany of loc * query_id * string
-    | FindUnique of loc * query_id * string
-    | Create of loc * query_id
-    | Update of loc * query_id
-    | Delete of loc * query_id
-    | SignupForm of loc
-    | LoginForm of loc
-    | LogoutButton of loc
+    | FindMany
+    | FindUnique
+    | Create
+    | Update
+    | Delete
+    | SignupForm
+    | LoginForm
+    | LogoutButton
 
   type form_field_type =
     | TextInput
@@ -133,10 +135,13 @@ module Component = struct
   type body =
     | GeneralBody of XRA.body
     | FindBody of
-        XRA.expression list * XRA.expression list * XRA.expression list
-    | CreateBody of style option * form_element list * form_button
-    | UpdateBody of style option * form_element list * form_button
-    | DeleteBody of form_button
+        (query_id * variable)
+        * XRA.expression list
+        * XRA.expression list
+        * XRA.expression list
+    | CreateBody of query_id * style option * form_element list * form_button
+    | UpdateBody of query_id * style option * form_element list * form_button
+    | DeleteBody of query_id * form_button
     | SignupFormBody of style option * form_element list * form_button
     | LoginFormBody of style option * form_element list * form_button
     | LogoutButtonBody of form_button

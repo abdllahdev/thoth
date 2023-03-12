@@ -28,7 +28,7 @@ model Message {
 
 @on(Message)
 @permission(IsAuth)
-query<create> createMessage {
+query<Create> createMessage {
 	data: [
 		content,
     user: {
@@ -39,19 +39,18 @@ query<create> createMessage {
 
 @on(Message)
 @permission(IsAuth)
-query<findMany> getMessages {
+query<FindMany> getMessages {
   search: [content]
 }
 
-component<findMany:getMessages as messages> MessagesComponent {
+component<FindMany> MessagesComponent {
+	findQuery: getMessages as messages,
 	onError: render(
 		<div>{ "An error occured" }</div>
 	),
-
 	onLoading: render(
 		<div>{ "Loading..." }</div>
 	),
-
 	onSuccess: render(
 		<>
 			[% for message in messages %]
@@ -64,7 +63,8 @@ component<findMany:getMessages as messages> MessagesComponent {
 	)
 }
 
-component<create:createMessage> CreateMessageForm {
+component<Create> CreateMessageForm  {
+	actionQuery: createMessage,
 	formInputs: {
 		content: {
 			input: {
@@ -91,7 +91,7 @@ component<create:createMessage> CreateMessageForm {
 	}
 }
 
-component<signupForm> SignupForm {
+component<SignupForm> MySignupForm {
 	style: "space-y-2",
 	formInputs: {
 		username: {
@@ -115,7 +115,7 @@ component<signupForm> SignupForm {
 	}
 }
 
-component<loginForm> LoginForm {
+component<LoginForm> MyLoginForm {
 	style: "space-y-2",
 	formInputs: {
 		username: {
@@ -139,7 +139,7 @@ component<loginForm> LoginForm {
 	}
 }
 
-component<logoutButton> LogoutButton {
+component<LogoutButton> MyLogoutButton {
 	formButton: {
 		name: "Logout"
 	}
@@ -153,7 +153,7 @@ page Home {
 			<div className="space-y-2">
 				<MessagesComponent />
 				<CreateMessageForm />
-				<LogoutButton />
+				<MyLogoutButton />
 			</div>
 		</div>
 	)
@@ -165,7 +165,7 @@ page LoginPage {
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Login form"}</span>
-				<LoginForm />
+				<MyLoginForm />
 			</div>
 		</div>
 	)
@@ -177,7 +177,7 @@ page SignupPage {
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Sign up form"}</span>
-				<SignupForm />
+				<MySignupForm />
 			</div>
 		</div>
 	)

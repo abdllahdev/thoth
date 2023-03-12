@@ -290,6 +290,17 @@ let check_general_body global_env xra_env body =
 let check_page = check_general_body
 
 let check_component global_env xra_env app_declaration loc id typ args body =
+  (match typ with
+  | Component.General -> ()
+  | Component.FindMany -> ()
+  | Component.FindUnique -> ()
+  | Component.Create -> ()
+  | Component.Update -> ()
+  | Component.Delete -> ()
+  | Component.SignupForm -> ()
+  | Component.LoginForm -> ()
+  | Component.LogoutButton -> ());
+
   let check_query loc id expected_query_type =
     if not (GlobalEnvironment.contains global_env ~key:id) then
       raise_undefined_error loc "query" id;
@@ -309,14 +320,16 @@ let check_component global_env xra_env app_declaration loc id typ args body =
   let check_args loc args component_type =
     let args = match args with Some args -> args | None -> [] in
     match component_type with
-    | "General" ->
+    | Component.General ->
         List.iter args ~f:(fun arg ->
             let loc, id, typ = arg in
             let scalar_typ = get_scalar_type typ in
             (match scalar_typ with
             | String | Int | Boolean | DateTime -> ()
             | Reference | Nil | Assoc ->
-                raise_argument_type_error loc component_type (Scalar Reference)
+                raise_argument_type_error loc
+                  (ComponentFormatter.string_of_component_type component_type)
+                  (Scalar Reference)
             | CustomType custom_type ->
                 if not (GlobalEnvironment.contains global_env ~key:custom_type)
                 then raise_undefined_error loc "type" custom_type;
@@ -332,7 +345,7 @@ let check_component global_env xra_env app_declaration loc id typ args body =
                   raise_declaration_type_error loc ModelDeclaration custom_type
                     (GlobalEnvironment.infer_type declaration_value));
             XRAEnvironment.allocate xra_env loc ~key:id ~data:typ)
-    | "Delete" | "Update" -> (
+    | Component.Delete | Component.Update -> (
         let args_count = List.length args in
         if args_count > 1 || args_count < 1 then
           raise_argument_number_error loc 1 args_count id
@@ -342,43 +355,19 @@ let check_component global_env xra_env app_declaration loc id typ args body =
           match scalar_type with
           | Int -> ()
           | _ as received_type ->
-              raise_argument_type_error loc component_type
+              raise_argument_type_error loc
+                (ComponentFormatter.string_of_component_type component_type)
                 (Scalar received_type))
     | _ -> ()
   in
-  (match typ with
-  | Component.General -> check_args loc args "General"
-  | Component.FindMany (loc, id, variable) ->
-      check_query loc id Query.FindMany;
-      let query_return_type =
-        (GlobalEnvironment.lookup global_env ~key:id
-        |> GlobalEnvironment.get_query_value)
-          .return_type
-      in
-      XRAEnvironment.allocate xra_env loc ~key:variable ~data:query_return_type
-  | Component.FindUnique (loc, id, variable) ->
-      check_query loc id Query.FindUnique;
-      let query_return_type =
-        (GlobalEnvironment.lookup global_env ~key:id
-        |> GlobalEnvironment.get_query_value)
-          .return_type
-      in
-      XRAEnvironment.allocate xra_env loc ~key:variable ~data:query_return_type
-  | Component.Create (loc, id) -> check_query loc id Query.Create
-  | Component.Update (loc, id) ->
-      check_args loc args "Update";
-      check_query loc id Query.Update
-  | Component.Delete (loc, id) ->
-      check_args loc args "Delete";
-      check_query loc id Query.Delete
-  | _ -> ());
-  let check_form_fields form_fields =
+  let check_form_fields ?query_id form_fields =
     let declaration_id, declaration_type, required_fields =
       match typ with
-      | Component.Create (_, id) | Component.Update (_, id) ->
-          ( id,
+      | Component.Create | Component.Update ->
+          ( Option.value_exn query_id,
             QueryDeclaration,
-            (GlobalEnvironment.lookup global_env ~key:id
+            (GlobalEnvironment.lookup global_env
+               ~key:(Option.value_exn query_id)
             |> GlobalEnvironment.get_query_value)
               .body
             |> List.find_map ~f:(function
@@ -388,7 +377,7 @@ let check_component global_env xra_env app_declaration loc id typ args body =
             |> List.fold ~init:[] ~f:(fun lst field ->
                    let field, _ = field in
                    lst @ [ field ]) )
-      | Component.SignupForm loc -> (
+      | Component.SignupForm -> (
           let auth_config = get_auth_config app_declaration in
           match auth_config with
           | Some { user_model; _ } ->
@@ -412,7 +401,7 @@ let check_component global_env xra_env app_declaration loc id typ args body =
               in
               (user_model, ModelDeclaration, required_fields)
           | None -> raise_requires_configuration loc typ)
-      | Component.LoginForm loc -> (
+      | Component.LoginForm -> (
           let auth_config = get_auth_config app_declaration in
           match auth_config with
           | Some { username_field; password_field; _ } ->
@@ -448,12 +437,40 @@ let check_component global_env xra_env app_declaration loc id typ args body =
   let check_component_body body =
     match body with
     | Component.GeneralBody body -> check_general_body global_env xra_env body
-    | Component.FindBody (on_error, on_loading, on_success) ->
+    | Component.FindBody
+        ( ((query_loc, query_id), (variable_loc, variable)),
+          on_error,
+          on_loading,
+          on_success ) ->
+        let expected_query_type =
+          if
+            String.equal
+              (ComponentFormatter.string_of_component_type typ)
+              (ComponentFormatter.string_of_component_type Component.FindMany)
+          then Query.FindMany
+          else Query.FindUnique
+        in
+        check_query query_loc query_id expected_query_type;
+        let query_return_type =
+          (GlobalEnvironment.lookup global_env ~key:query_id
+          |> GlobalEnvironment.get_query_value)
+            .return_type
+        in
+        XRAEnvironment.allocate xra_env variable_loc ~key:variable
+          ~data:query_return_type;
         check_render_expression global_env xra_env on_error;
         check_render_expression global_env xra_env on_loading;
         check_render_expression global_env xra_env on_success
-    | Component.CreateBody (_, form_fields, _)
-    | Component.UpdateBody (_, form_fields, _)
+    | Component.CreateBody ((query_loc, query_id), _, form_fields, _) ->
+        check_query query_loc query_id Query.Create;
+        check_form_fields form_fields ~query_id
+    | Component.UpdateBody ((query_loc, query_id), _, form_fields, _) ->
+        check_args loc args Component.Update;
+        check_query query_loc query_id Query.Update;
+        check_form_fields form_fields ~query_id
+    | Component.DeleteBody ((query_loc, query_id), _) ->
+        check_args loc args Component.Delete;
+        check_query query_loc query_id Query.Delete
     | Component.SignupFormBody (_, form_fields, _)
     | Component.LoginFormBody (_, form_fields, _) ->
         check_form_fields form_fields

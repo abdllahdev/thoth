@@ -121,6 +121,8 @@ obj_field_value:
     { AssocObjField ($startpos, value) }
   | LEFT_BRACKET; value = separated_list(COMMA, obj_field_value); RIGHT_BRACKET
     { ListObjField ($startpos, value) }
+  | value1 = ID; AS; value2 = ID
+    { AsObjField ($startpos, (value1, value2)) }
   ;
 
 obj_field:
@@ -369,6 +371,25 @@ xra_component_args:
     { args }
   ;
 
+xra_component_type:
+  | LT; FIND_MANY; GT;
+    { Component.FindMany }
+  | LT; FIND_UNIQUE; GT;
+    { Component.FindUnique }
+  | LT; CREATE; GT;
+    { Component.Create }
+  | LT; UPDATE; GT;
+    { Component.Update }
+  | LT; DELETE; GT;
+    { Component.Delete }
+  | LT; SIGNUP_FORM; GT;
+    { Component.SignupForm }
+  | LT; LOGIN_FORM; GT;
+    { Component.LoginForm }
+  | LT; LOGOUT_BUTTON; GT;
+    { Component.LogoutButton }
+  ;
+
 xra_component:
   | COMPONENT;
     component_id = ID;
@@ -381,104 +402,13 @@ xra_component:
         args,
         Component.GeneralBody(xra_general_body)) }
   | COMPONENT;
-    LT; FIND_MANY; COLON; query_id = ID; AS; variable = ID; GT;
-    component_id = ID;
+    typ = xra_component_type;
+    id = ID;
+    args = option(xra_component_args);
     LEFT_BRACE;
     body = separated_list(COMMA, obj_field);
     RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.FindMany($startpos, query_id, variable),
-        None,
-        (parse_component_body $startpos body "FIND_MANY")) }
-  | COMPONENT;
-    LT; FIND_UNIQUE; COLON; query_id = ID; AS; variable = ID; GT;
-    component_id = ID;
-    args = xra_component_args;
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.FindUnique($startpos, query_id, variable),
-        Some args,
-        (parse_component_body $startpos body "FIND_UNIQUE")) }
-  | COMPONENT;
-    LT; CREATE; COLON; query_id = ID; GT;
-    component_id = ID;
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.Create($startpos, query_id),
-        None,
-        (parse_component_body $startpos body "CREATE")) }
-  | COMPONENT;
-    LT; UPDATE; COLON; query_id = ID; GT;
-    component_id = ID;
-    args = xra_component_args;
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.Update($startpos, query_id),
-        Some args,
-        (parse_component_body $startpos body "UPDATE")) }
-  | COMPONENT;
-    LT; DELETE; COLON; query_id = ID; GT;
-    component_id = ID;
-    args = xra_component_args;
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.Delete($startpos, query_id),
-        Some args,
-        (parse_component_body $startpos body "DELETE")) }
-  | COMPONENT;
-    LT; SIGNUP_FORM; GT;
-    component_id = ID;
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.SignupForm($startpos),
-        None,
-        (parse_component_body $startpos body "SIGNUP_FORM")) }
-  | COMPONENT;
-    LT; LOGIN_FORM; GT;
-    component_id = ID;
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.LoginForm($startpos),
-        None,
-        (parse_component_body $startpos body "LOGIN_FORM")) }
-  | COMPONENT;
-    LT; LOGOUT_BUTTON; GT;
-    component_id = ID;
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { Component(
-        $startpos,
-        component_id,
-        Component.LogoutButton($startpos),
-        None,
-        (parse_component_body $startpos body "LOGOUT_BUTTON")) }
+    { parse_component $startpos id typ args body }
   ;
 
 xra_page_route:

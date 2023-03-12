@@ -123,7 +123,7 @@
     },
     "query_declaration": {
       "name": "source.ralang.embedded.source",
-      "match": "\\s*(query)\\s*<\\s*(findMany|findUnique|delete|update|create)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*))?\\s*\\{",
+      "match": "\\s*(query)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*))?\\s*\\{",
       "captures": {
         "1": { "name": "storage.type.query.ralang" },
         "2": { "name": "support.type.query_type.ralang" },
@@ -134,16 +134,13 @@
     },
     "component_declaration": {
       "name": "source.ralang.embedded.source",
-      "begin": "\\s*(component)\\s*(<\\s*(create|findMany|findUnique|delete|update|signupForm|loginForm|logoutButton)\\s*(:\\s*)?([A-Za-z][\\w]*)?\\s*(as\\s+([A-Za-z][\\w]*))?\\s*>)?\\s*([A-Za-z][\\w]*)\\s*(\\((([A-Za-z][\\w]*)\\s*:\\s*([A-Za-z][\\w]*))*\\))?\\s*\\{",
+      "begin": "\\s*(component)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton)\\s*>\\s*([A-Za-z][\\w]*)\\s*(\\(\\s*(([A-Za-z][\\w]*)s*:\\s*([A-Za-z][\\w]*))*\\s*\\))?\\s*\\{",
       "beginCaptures": {
         "1": { "name": "storage.type.component.ralang" },
         "2": { "name": "support.type.component_type.ralang" },
-        "5": { "name": "entity.name.function.ralang" },
-        "6": { "name": "keyword.operator.as.ralang" },
-        "7": { "name": "variable.other.ralang" },
-        "8": { "name": "entity.name.type.ralang" },
-        "11": { "name": "variable.other.ralang" },
-        "12": { "name": "support.type.parameter_type.ralang" }
+        "3": { "name": "entity.name.type.ralang" },
+        "6": { "name": "variable.other.ralang" },
+        "7": { "name": "support.type.parameter_type.ralang" }
       },
       "end": "(\\s*\\})(?=(\\s*\\}\\s*(,|\\n)?)*$)",
       "endCaptures": {
@@ -157,6 +154,18 @@
         },
         {
           "include": "#form_input_type"
+        },
+        {
+          "name": "unnamed",
+          "begin": "\\s*(findQuery|actionQuery)\\s*:\\s*([A-Za-z][\\w]*)(\\s+(as)\\s+([A-Za-z][\\w]*)\\s*)?",
+          "beginCaptures": {
+            "2": { "name": "entity.name.function.ralang" },
+            "4": { "name": "keyword.operator.as.ralang" }
+          },
+          "end": ",",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.tag.ralang" }
+          }
         },
         {
           "name": "source.json.embedded.source",
@@ -379,7 +388,7 @@
     },
     "declaration_type_keywords": {
       "name": "support.type.declaration_type.ralang",
-      "match": "\\b(create|findMany|findUnique|delete|update|signupForm|loginForm|logoutButton)\\b"
+      "match": "\\b(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton)\\b"
     },
     "builtin_types": {
       "name": "support.type.ralang",
