@@ -455,7 +455,7 @@
     },
     "form_input_type": {
       "name": "support.type.form_input_type.ralang",
-      "match": "\\b(TextInput|PasswordInput|EmailInput|RelationInput)\\b"
+      "match": "\\b(TextInput|PasswordInput|EmailInput|DefaultInput)\\b"
     },
     "double_quoted_string": {
       "begin": "\"",

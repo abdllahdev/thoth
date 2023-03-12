@@ -372,8 +372,8 @@ and get_input_type loc body =
           | "PasswordInput" ->
               Some (Component.FormAttrType Component.PasswordInput)
           | "NumberInput" -> Some (Component.FormAttrType Component.NumberInput)
-          | "RelationInput" ->
-              Some (Component.FormAttrType Component.RelationInput)
+          | "DefaultInput" ->
+              Some (Component.FormAttrType Component.DefaultInput)
           | _ -> raise_unexpected_config loc input_type)
       | _ -> raise_type_error loc (Scalar String))
   | None -> None

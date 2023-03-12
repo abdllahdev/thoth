@@ -121,7 +121,7 @@ module ComponentFormatter = struct
     | Component.NumberInput -> "number"
     | Component.EmailInput -> "email"
     | Component.PasswordInput -> "password"
-    | Component.RelationInput -> "object"
+    | Component.DefaultInput -> "object"
 
   let string_of_component_type component_type =
     match component_type with

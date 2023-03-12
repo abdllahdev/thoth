@@ -75,7 +75,7 @@ component<create:createTask> TaskCreateForm {
 		},
 		user: {
 			input: {
-				type: RelationInput,
+				type: DefaultInput,
 				isVisible: false,
 				defaultValue: {
 					connect: {

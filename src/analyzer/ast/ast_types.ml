@@ -113,7 +113,7 @@ module Component = struct
     | EmailInput
     | PasswordInput
     | NumberInput
-    | RelationInput
+    | DefaultInput
 
   type form_attr =
     | FormAttrName of string

@@ -290,17 +290,6 @@ let check_general_body global_env xra_env body =
 let check_page = check_general_body
 
 let check_component global_env xra_env app_declaration loc id typ args body =
-  (match typ with
-  | Component.General -> ()
-  | Component.FindMany -> ()
-  | Component.FindUnique -> ()
-  | Component.Create -> ()
-  | Component.Update -> ()
-  | Component.Delete -> ()
-  | Component.SignupForm -> ()
-  | Component.LoginForm -> ()
-  | Component.LogoutButton -> ());
-
   let check_query loc id expected_query_type =
     if not (GlobalEnvironment.contains global_env ~key:id) then
       raise_undefined_error loc "query" id;
@@ -432,8 +421,6 @@ let check_component global_env xra_env app_declaration loc id typ args body =
         with Not_found_s _ | Caml.Not_found ->
           raise_undefined_error loc "field" id ~declaration_type ~declaration_id)
   in
-  (* TODO: type check signup, login, logout bodies
-     HERE YOU CAN IMPLEMENT THE LOGIC WITHIN THE check_form_fields function *)
   let check_component_body body =
     match body with
     | Component.GeneralBody body -> check_general_body global_env xra_env body
