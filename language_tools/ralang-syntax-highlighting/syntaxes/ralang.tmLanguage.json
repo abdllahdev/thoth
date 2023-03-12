@@ -41,6 +41,19 @@
     },
     {
       "include": "#declaration_type_keywords"
+    },
+    {
+      "name": "unnamed",
+      "begin": "\\s*(userModel)\\s*:\\s*([A-Za-z][\\w]*)",
+      "beginCaptures": {
+        "2": { "name": "support.type.ralang" }
+      },
+      "end": ",",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      }
     }
   ],
   "repository": {
