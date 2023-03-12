@@ -1,4 +1,5 @@
 open Core
+open Error_handler.Handler
 open Ast.Ast_types
 open Ast.Formatter
 open Ast.Helper
@@ -59,7 +60,7 @@ let convert_type typ =
     | Boolean -> [ "boolean" ]
     | DateTime -> [ "date" ]
     | CustomType typ -> [ typ ]
-    | _ -> failwith "CompilationError: Something went wrong"
+    | _ -> raise_compiler_error ()
   in
 
   let convert_composite_type composite_type =

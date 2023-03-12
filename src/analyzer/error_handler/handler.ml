@@ -220,11 +220,18 @@ let raise_query_return_type_error loc query_type expected_type received_type =
           (string_of_type expected_type)
           (string_of_type received_type)))
 
-let raise_required_argument_error loc arg_id arg_typ id =
-  raise
-    (RequiredArgumentError
-       (Fmt.str "@(%s): Required argument '%s' of type '%s' in '%s"
-          (string_of_loc loc) arg_id (string_of_type arg_typ) id))
+let raise_required_argument_error ?arg_type loc arg_id id =
+  match arg_type with
+  | Some arg_type ->
+      raise
+        (RequiredArgumentError
+           (Fmt.str "@(%s): Required argument '%s' of type '%s' in '%s"
+              (string_of_loc loc) arg_id (string_of_type arg_type) id))
+  | None ->
+      raise
+        (RequiredArgumentError
+           (Fmt.str "@(%s): Required argument '%s' in '%s" (string_of_loc loc)
+              arg_id id))
 
 let raise_required_form_input_error loc input_id id =
   raise
@@ -262,3 +269,7 @@ let raise_requires_configuration loc component_type =
     (RequiredConfigError
        (Fmt.str "@(%s): %s requires auth configuration" (string_of_loc loc)
           (ComponentFormatter.string_of_component_type component_type)))
+
+let raise_compiler_error () =
+  raise
+    (CompilationError (Fmt.str "CompilationError: Something wrong happened"))

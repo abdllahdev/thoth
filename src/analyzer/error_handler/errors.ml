@@ -21,3 +21,4 @@ exception UnexpectedAttributeError of string
 exception UnexpectedConfigError of string
 exception RequiredFormInputError of string
 exception RequiredConfigError of string
+exception CompilationError of string

@@ -1,6 +1,7 @@
 open Jingoo
 open Core
 open Core_unix
+open Error_handler.Handler
 open Specs.Server_specs
 open File_generator
 open Ast.Ast_types
@@ -236,10 +237,7 @@ let generate_validator name validators =
                                                       ] );
                                                 ] );
                                           ]
-                                    | _ ->
-                                        failwith
-                                          "CompilationError: Something went \
-                                           wrong"))
+                                    | _ -> raise_compiler_error ()))
                          | None -> Jg_types.Tnull );
                      ])) );
         ]

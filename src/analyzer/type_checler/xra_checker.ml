@@ -53,9 +53,9 @@ let rec check_expressions global_env xra_env expressions =
                   raise_unexpected_argument_error loc attribute_id ~id);
 
             List.iter args ~f:(fun arg ->
-                let _, arg_id, arg_typ = arg in
+                let _, arg_id, arg_type = arg in
                 if not (Hashtbl.mem attributes_ht arg_id) then
-                  raise_required_argument_error loc arg_id arg_typ id;
+                  raise_required_argument_error loc arg_id ~arg_type id;
 
                 let attribute_value = Hashtbl.find_exn attributes_ht arg_id in
                 match attribute_value with
@@ -68,9 +68,9 @@ let rec check_expressions global_env xra_env expressions =
                     if
                       not
                         (String.equal (string_of_type id_type)
-                           (string_of_type arg_typ))
+                           (string_of_type arg_type))
                     then
-                      raise_type_error ~id loc arg_typ ~received_value:id
+                      raise_type_error ~id loc arg_type ~received_value:id
                         ~received_type:id_type
                 | XRA.DotExpression (loc, id, expanded_id) -> (
                     if not (XRAEnvironment.contains xra_env id) then
@@ -112,9 +112,9 @@ let rec check_expressions global_env xra_env expressions =
                             not
                               (String.equal
                                  (string_of_type expanded_id_type)
-                                 (string_of_type arg_typ))
+                                 (string_of_type arg_type))
                           then
-                            raise_type_error loc arg_typ
+                            raise_type_error loc arg_type
                               ~received_value:(Fmt.str "%s.%s" id expanded_id)
                               ~received_type:expanded_id_type
                     | None ->
@@ -126,9 +126,9 @@ let rec check_expressions global_env xra_env expressions =
                           not
                             (String.equal
                                (string_of_type (Scalar Boolean))
-                               (string_of_type arg_typ))
+                               (string_of_type arg_type))
                         then
-                          raise_type_error ~id loc arg_typ
+                          raise_type_error ~id loc arg_type
                             ~received_value:(string_of_bool value)
                             ~received_type:(Scalar Boolean)
                     | StringLiteral (loc, value) ->
@@ -136,18 +136,18 @@ let rec check_expressions global_env xra_env expressions =
                           not
                             (String.equal
                                (string_of_type (Scalar String))
-                               (string_of_type arg_typ))
+                               (string_of_type arg_type))
                         then
-                          raise_type_error ~id loc arg_typ ~received_value:value
-                            ~received_type:(Scalar String)
+                          raise_type_error ~id loc arg_type
+                            ~received_value:value ~received_type:(Scalar String)
                     | IntLiteral (loc, value) ->
                         if
                           not
                             (String.equal
                                (string_of_type (Scalar Int))
-                               (string_of_type arg_typ))
+                               (string_of_type arg_type))
                         then
-                          raise_type_error ~id loc arg_typ
+                          raise_type_error ~id loc arg_type
                             ~received_value:(string_of_int value)
                             ~received_type:(Scalar Int))
                 | _ -> ())
@@ -397,7 +397,7 @@ let check_component global_env xra_env app_declaration loc id typ args body =
               let _, id, _ = app_declaration in
               (id, AppDeclaration, [ username_field; password_field ])
           | None -> raise_requires_configuration loc typ)
-      | _ -> failwith "CompilationError"
+      | _ -> raise_compiler_error ()
     in
     let check_required_fields required_fields =
       let implemented_form_field =
@@ -463,4 +463,5 @@ let check_component global_env xra_env app_declaration loc id typ args body =
         check_form_fields form_fields
     | _ -> ()
   in
+  (* let check_form_field_types ?query_id form_fields = () in *)
   check_component_body body

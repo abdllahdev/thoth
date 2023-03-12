@@ -1,5 +1,4 @@
 open Core
-open Ast.Formatter
 open Ast.Ast_types
 open Error_handler.Handler
 
@@ -104,42 +103,42 @@ let rec parse_component loc id typ args body =
   let component_body =
     match typ with
     | Component.FindMany | Component.FindUnique ->
-        let find_query, variable = get_find_query_and_variable loc body in
-        let on_error = get_on_error loc body in
-        let on_loading = get_on_loading loc body in
-        let on_success = get_on_success loc body in
+        let find_query, variable = get_find_query_and_variable loc id body in
+        let on_error = get_on_error loc id body in
+        let on_loading = get_on_loading loc id body in
+        let on_success = get_on_success loc id body in
         Component.FindBody
           ((find_query, variable), on_error, on_loading, on_success)
     | Component.Create ->
-        let query = get_action_query loc body in
+        let query = get_action_query loc id body in
         let style = get_style loc body in
-        let form_inputs = get_form_inputs loc body in
-        let form_button = get_form_button loc body in
+        let form_inputs = get_form_inputs loc id body in
+        let form_button = get_form_button loc id body in
         Component.CreateBody (query, style, form_inputs, form_button)
     | Component.Update ->
-        let query = get_action_query loc body in
+        let query = get_action_query loc id body in
         let style = get_style loc body in
-        let form_inputs = get_form_inputs loc body in
-        let form_button = get_form_button loc body in
+        let form_inputs = get_form_inputs loc id body in
+        let form_button = get_form_button loc id body in
         Component.UpdateBody (query, style, form_inputs, form_button)
     | Component.Delete ->
-        let query = get_action_query loc body in
-        let form_button = get_form_button loc body in
+        let query = get_action_query loc id body in
+        let form_button = get_form_button loc id body in
         Component.DeleteBody (query, form_button)
     | Component.SignupForm ->
         let style = get_style loc body in
-        let form_inputs = get_form_inputs loc body in
-        let form_button = get_form_button loc body in
+        let form_inputs = get_form_inputs loc id body in
+        let form_button = get_form_button loc id body in
         Component.SignupFormBody (style, form_inputs, form_button)
     | Component.LoginForm ->
         let style = get_style loc body in
-        let form_inputs = get_form_inputs loc body in
-        let form_button = get_form_button loc body in
+        let form_inputs = get_form_inputs loc id body in
+        let form_button = get_form_button loc id body in
         Component.LoginFormBody (style, form_inputs, form_button)
     | Component.LogoutButton ->
-        let form_button = get_form_button loc body in
+        let form_button = get_form_button loc id body in
         Component.LogoutButtonBody form_button
-    | _ -> failwith "CompilationError: Something wrong happened"
+    | _ -> raise_compiler_error ()
   in
   Component (loc, id, typ, args, component_body)
 
@@ -172,60 +171,60 @@ and check_component_unexpected_keys loc obj_keys typ =
   | Component.LogoutButton ->
       let expected_keys = [ "formButton" ] in
       unexpected_keys_exists loc obj_keys expected_keys
-  | _ -> failwith "CompilationError: Something wrong happened"
+  | _ -> raise_compiler_error ()
 
-and get_find_query_and_variable loc body =
-  let find_with = List.Assoc.find body "findQuery" ~equal:String.equal in
-  (match find_with with
-  | Some find_with -> (
-      match find_with with
+and get_find_query_and_variable loc id body =
+  let find_query = List.Assoc.find body "findQuery" ~equal:String.equal in
+  (match find_query with
+  | Some find_query -> (
+      match find_query with
       | AsObjField (loc, (query_id, variable)) ->
           Some ((loc, query_id), (loc, variable))
       | _ -> raise_type_error loc (Scalar String))
-  | None -> failwith "Not found")
-  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+  | None -> raise_required_argument_error loc "findQuery" id)
+  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
 
-and get_action_query loc body =
-  let post_to = List.Assoc.find body "actionQuery" ~equal:String.equal in
-  (match post_to with
-  | Some post_to -> (
-      match post_to with
+and get_action_query loc id body =
+  let action_query = List.Assoc.find body "actionQuery" ~equal:String.equal in
+  (match action_query with
+  | Some action_query -> (
+      match action_query with
       | ReferenceObjField (loc, query_id) -> Some (loc, query_id)
       | _ -> raise_type_error loc (Scalar String))
-  | None -> failwith "Not found")
-  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+  | None -> raise_required_argument_error loc "actionQuery" id)
+  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
 
-and get_on_error loc body =
+and get_on_error loc id body =
   let on_error = List.Assoc.find body "onError" ~equal:String.equal in
   (match on_error with
   | Some on_error -> (
       match on_error with
       | RenderObjField (_, on_error) -> Some on_error
       | _ -> raise_type_error loc (Scalar String))
-  | None -> failwith "Not found")
-  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+  | None -> raise_required_argument_error loc "onError" id)
+  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
 
-and get_on_loading loc body =
+and get_on_loading loc id body =
   let on_loading = List.Assoc.find body "onLoading" ~equal:String.equal in
   (match on_loading with
   | Some on_loading -> (
       match on_loading with
       | RenderObjField (_, on_loading) -> Some on_loading
       | _ -> raise_type_error loc (Scalar String))
-  | None -> failwith "Not found")
-  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+  | None -> raise_required_argument_error loc "onLoading" id)
+  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
 
-and get_on_success loc body =
+and get_on_success loc id body =
   let on_success = List.Assoc.find body "onSuccess" ~equal:String.equal in
   (match on_success with
   | Some on_success -> (
       match on_success with
       | RenderObjField (_, on_success) -> Some on_success
       | _ -> raise_type_error loc (Scalar String))
-  | None -> failwith "Not found")
-  |> Option.value_or_thunk ~default:(fun () -> failwith "Something went wrong")
+  | None -> raise_required_argument_error loc "onSuccess" id)
+  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
 
-and get_form_inputs loc body =
+and get_form_inputs loc id body =
   let form_inputs = List.Assoc.find body "formInputs" ~equal:String.equal in
   match form_inputs with
   | Some form_inputs -> (
@@ -236,23 +235,23 @@ and get_form_inputs loc body =
           List.map form_inputs ~f:(fun (id, input_obj) ->
               match input_obj with
               | AssocObjField (loc, form_input) ->
-                  let style, label, input = get_from_input loc form_input in
+                  let style, label, input = get_from_input loc id form_input in
                   (loc, id, style, label, input)
               | _ -> raise_type_error loc (Scalar Assoc))
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> failwith (Fmt.str "@(%s): Expected formInputs" (string_of_loc loc))
+  | None -> raise_required_argument_error loc "formInputs" id
 
-and get_from_input loc body =
+and get_from_input loc id body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
   let expected_keys = [ "style"; "label"; "input" ] in
   unexpected_keys_exists loc obj_keys expected_keys;
   let style = get_style loc body in
-  let label = get_input_label_attrs loc body in
-  let input = get_form_input_attrs loc body in
+  let label = get_input_label_attrs loc id body in
+  let input = get_form_input_attrs loc id body in
   (style, label, input)
 
-and get_form_input_attrs loc body =
+and get_form_input_attrs loc id body =
   let input = List.Assoc.find body "input" ~equal:String.equal in
   match input with
   | Some input -> (
@@ -267,15 +266,15 @@ and get_form_input_attrs loc body =
           let input_type =
             match get_input_type loc input_attrs with
             | Some input_type -> [ input_type ]
-            | None -> failwith "Expected input_type attribute"
+            | None -> raise_required_argument_error loc "type" id
           in
           let input_visibility =
             match get_input_visibility loc input_attrs with
             | Some input_visibility -> [ input_visibility ]
-            | None -> failwith "Expected visibility attribute"
+            | None -> raise_required_argument_error loc "isVisible" id
           in
           let input_default_value =
-            match get_input_default_value loc input_attrs with
+            match get_input_default_value input_attrs with
             | Some input_default_value -> [ input_default_value ]
             | None -> []
           in
@@ -292,9 +291,9 @@ and get_form_input_attrs loc body =
           input_type @ input_visibility @ input_default_value
           @ input_placeholder @ style
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> failwith "Must have an input attribute"
+  | None -> raise_required_argument_error loc "input" id
 
-and get_input_label_attrs loc body =
+and get_input_label_attrs loc id body =
   let input_label = List.Assoc.find body "label" ~equal:String.equal in
   match input_label with
   | Some label -> (
@@ -312,13 +311,13 @@ and get_input_label_attrs loc body =
           let name =
             match get_name loc label_attrs with
             | Some name -> [ name ]
-            | None -> failwith "Expected name attribute"
+            | None -> raise_required_argument_error loc "name" id
           in
           Some (name @ style)
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> None
 
-and get_form_button loc body =
+and get_form_button loc id body =
   let button = List.Assoc.find body "formButton" ~equal:String.equal in
   match button with
   | Some button -> (
@@ -336,11 +335,11 @@ and get_form_button loc body =
           let name =
             match get_name loc button_attrs with
             | Some name -> [ name ]
-            | None -> failwith "Expected name attribute"
+            | None -> raise_required_argument_error loc "name" id
           in
           name @ style
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> failwith "Must have a button attribute"
+  | None -> raise_required_argument_error loc "formButton" id
 
 and get_style loc body =
   let style = List.Assoc.find body "style" ~equal:String.equal in
@@ -388,7 +387,7 @@ and get_input_visibility loc body =
       | _ -> raise_type_error loc (Scalar Boolean))
   | None -> None
 
-and get_input_default_value _ body =
+and get_input_default_value body =
   let default_value = List.Assoc.find body "defaultValue" ~equal:String.equal in
   match default_value with
   | Some default_value -> (
@@ -415,7 +414,7 @@ and get_input_default_value _ body =
       | AssocObjField (loc, default_value) ->
           Some
             (Component.FormAttrDefaultValue (AssocObjField (loc, default_value)))
-      | _ -> failwith "unimplemented")
+      | _ -> raise_compiler_error ())
   | None -> None
 
 and get_input_placeholder loc body =

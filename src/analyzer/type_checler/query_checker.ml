@@ -69,7 +69,7 @@ let check_data_arg global_env loc query_id query_type model fields =
          || LocalEnvironment.contains attributes_table ~key:"@updatedAt")
      then
        if not (List.mem flatten_fields key ~equal:String.equal) then
-         raise_required_argument_error loc key data.typ query_id
+         raise_required_argument_error loc key ~arg_type:data.typ query_id
    in
    Hashtbl.iteri model_table ~f:check_required_fields);
   (* Check if data fields exists in the model *)
