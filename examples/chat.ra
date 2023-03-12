@@ -69,8 +69,7 @@ component<Create> CreateMessageForm  {
 		content: {
 			input: {
 				type: TextInput,
-				placeholder: "Enter message",
-				isVisible: true
+				placeholder: "Enter message"
 			}
 		},
 		user: {
@@ -97,14 +96,12 @@ component<SignupForm> MySignupForm {
 		username: {
 			input: {
 				type: TextInput,
-				isVisible: true,
 				placeholder: "Enter username"
 			}
 		},
 		password: {
 			input: {
 				type: PasswordInput,
-				isVisible: true,
 				placeholder: "Enter password"
 			}
 		}
@@ -121,14 +118,12 @@ component<LoginForm> MyLoginForm {
 		username: {
 			input: {
 				type: TextInput,
-				isVisible: true,
 				placeholder: "Enter username"
 			}
 		},
 		password: {
 			input: {
 				type: PasswordInput,
-				isVisible: true,
 				placeholder: "Enter password"
 			}
 		}

@@ -6,9 +6,9 @@ type FormInputLabel = {
 };
 
 type FormInput = {
-  type: "text" | "email" | "password" | "number" | "object";
+  type: "text" | "email" | "password" | "number" | "default";
   name: string;
-  visibility: boolean;
+  isVisible?: boolean;
   style?: string;
   defaultValue?: string | number | { [x: string]: any };
   placeholder?: string;
@@ -88,7 +88,7 @@ const Form = ({
         const formInput = formElement.formInput;
         const formLabel = formElement?.formInputLabel;
         const formElementStyle = formElement?.style;
-        if (formInput.visibility == true && formInput.type !== "object")
+        if (formInput.isVisible == true)
           return (
             <div key={idx} className={formElementStyle}>
               {formLabel && (

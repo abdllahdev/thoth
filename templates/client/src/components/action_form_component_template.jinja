@@ -22,7 +22,7 @@ type {{ id }}Props = {
 }
 {% endif %}
 
-const {{ id }} = ({ {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props) => {
+const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %}) => {
   const url = `${baseUrl}/{{ post_to }}/{% if type == "update" %}${id}{% endif %}`;
 
   {% if requires_auth %}

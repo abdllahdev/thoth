@@ -378,8 +378,7 @@ let generate_find_component_specs global_env id body types_specs =
 let get_from_attr field_attr =
   match field_attr with
   | Component.FormAttrName name -> ("name", name)
-  | Component.FormAttrVisibility boolean ->
-      ("visibility", string_of_bool boolean)
+  | Component.FormAttrVisibility boolean -> ("isVisible", string_of_bool boolean)
   | Component.FormAttrDefaultValue value ->
       ("defaultValue", string_of_obj_field value)
   | Component.FormAttrStyle style -> ("style", style)

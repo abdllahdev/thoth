@@ -24,7 +24,7 @@ type {{ id }}Props = {
 }
 {% endif %}
 
-const {{ id }} = ({ {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props) => {
+const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %}) => {
     {% if type == "delete" %}
     const url = `${baseUrl}/{{ post_to }}/${ {{args[0].id}} }`;
     {% if requires_auth %}

@@ -271,7 +271,7 @@ and get_form_input_attrs loc id body =
           let input_visibility =
             match get_input_visibility loc input_attrs with
             | Some input_visibility -> [ input_visibility ]
-            | None -> raise_required_argument_error loc "isVisible" id
+            | None -> [ Component.FormAttrVisibility true ]
           in
           let input_default_value =
             match get_input_default_value input_attrs with
