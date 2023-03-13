@@ -58,6 +58,8 @@ rule read_token =
   | "not"           { NOT }
   | "and"           { AND }
   | "or"            { OR }
+  | "connect"       { CONNECT }
+  | "with"          { WITH }
   | "if"            { IF }
   | "else"          { ELSE }
   | "endif"         { ENDIF }
@@ -66,9 +68,6 @@ rule read_token =
   | "in"            { IN }
   | "model"         { MODEL }
   | "query"         { QUERY }
-  | "where"         { WHERE }
-  | "data"          { DATA }
-  | "search"        { SEARCH }
   | "component"     { COMPONENT }
   | "page"          { PAGE }
   | "app"           { APP }

@@ -53,14 +53,14 @@ let check_data_arg global_env loc query_id query_type model fields =
      (QueryFormatter.string_of_query_type query_type)
      (QueryFormatter.string_of_query_type Query.Create)
   then
+   let flatten_fields =
+     List.fold fields ~init:[] ~f:(fun lst field ->
+         let field, relation_fields = field in
+         match relation_fields with
+         | Some (model_field, _) -> lst @ [ field ] @ [ model_field ]
+         | None -> lst @ [ field ])
+   in
    let check_required_fields ~key ~(data : GlobalEnvironment.field_value) =
-     let flatten_fields =
-       List.fold fields ~init:[] ~f:(fun lst field ->
-           let field, relation_fields = field in
-           match relation_fields with
-           | Some (_, model_field) -> lst @ [ field ] @ [ model_field ]
-           | None -> lst @ [ field ])
-     in
      let attributes_table = data.field_attrs_table in
      if
        not
@@ -80,7 +80,7 @@ let check_data_arg global_env loc query_id query_type model fields =
         ~declaration_type:ModelDeclaration;
     (* Check model relation fields *)
     match relation_fields with
-    | Some (reference_field, model_field) -> (
+    | Some (model_field, reference_field) -> (
         if not (LocalEnvironment.contains model_table ~key:model_field) then
           raise_undefined_error loc "field" model_field ~declaration_id:model_id
             ~declaration_type:ModelDeclaration;

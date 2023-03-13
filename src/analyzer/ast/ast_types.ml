@@ -8,6 +8,9 @@ type scalar_type =
   | Boolean
   | DateTime
   | Reference
+  | List
+  | ConnectWith
+  | As
   | Nil
   | Assoc
   | CustomType of string
@@ -91,6 +94,8 @@ type obj_field =
   | RenderObjField of loc * XRA.expression list
   | ListObjField of loc * obj_field list
   | AsObjField of loc * (string * string)
+  | TsObjField of loc * string
+  | ConnectWithObjField of loc * (string * string)
 
 module Component = struct
   type arg = loc * id * typ

@@ -37,12 +37,6 @@
       "include": "#page_declaration"
     },
     {
-      "include": "#declaration_keywords"
-    },
-    {
-      "include": "#declaration_type_keywords"
-    },
-    {
       "name": "unnamed",
       "begin": "\\s*(userModel)\\s*:\\s*([A-Za-z][\\w]*)",
       "beginCaptures": {
@@ -136,7 +130,7 @@
     },
     "query_declaration": {
       "name": "source.ralang.embedded.source",
-      "match": "\\s*(query)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*))?\\s*\\{",
+      "match": "\\s*(query)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*)(\\[\\])?)?\\s*\\{",
       "captures": {
         "1": { "name": "storage.type.query.ralang" },
         "2": { "name": "support.type.query_type.ralang" },

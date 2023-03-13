@@ -97,6 +97,106 @@ let unexpected_keys_exists loc keys expected_keys =
       if not (List.mem expected_keys key ~equal:String.equal) then
         raise_unexpected_argument_error loc key)
 
+let rec parse_query loc id typ models permissions return_type body =
+  let query_body =
+    match typ with
+    | Query.FindMany ->
+        let search = get_search loc id body in
+        [ search ]
+    | Query.FindUnique | Query.Delete ->
+        let where = get_where loc id body in
+        [ where ]
+    | Query.Create ->
+        let data = get_data loc id body in
+        [ data ]
+    | Query.Update ->
+        let where = get_where loc id body in
+        let data = get_data loc id body in
+        [ where; data ]
+  in
+  Query (loc, id, typ, return_type, query_body, models, permissions)
+
+and get_where loc id body =
+  let where = List.Assoc.find body "where" ~equal:String.equal in
+  (match where with
+  | Some where -> (
+      match where with
+      | ListObjField (loc, where) ->
+          Some
+            (Query.Where
+               ( loc,
+                 List.map where ~f:(fun element ->
+                     match element with
+                     | ReferenceObjField (_, ref) -> ref
+                     | _ -> raise_type_error loc (Scalar Reference)) ))
+      | _ -> raise_type_error loc (Scalar List))
+  | None -> raise_required_argument_error loc "where" id)
+  |> Option.value_or_thunk ~default:raise_compiler_error
+
+and get_search loc id body =
+  let search = List.Assoc.find body "search" ~equal:String.equal in
+  (match search with
+  | Some search -> (
+      match search with
+      | ListObjField (loc, search) ->
+          Some
+            (Query.Search
+               ( loc,
+                 List.map search ~f:(fun element ->
+                     match element with
+                     | ReferenceObjField (_, ref) -> ref
+                     | _ -> raise_type_error loc (Scalar Reference)) ))
+      | _ -> raise_type_error loc (Scalar List))
+  | None -> raise_required_argument_error loc "search" id)
+  |> Option.value_or_thunk ~default:raise_compiler_error
+
+and get_data loc id body =
+  let data = List.Assoc.find body "data" ~equal:String.equal in
+  (match data with
+  | Some data -> (
+      match data with
+      | AssocObjField (_, value) -> (
+          let fields = get_data_fields loc id value in
+          let relation_fields = get_data_relation_fields loc value in
+          match relation_fields with
+          | Some relation_fields ->
+              Some (Query.Data (loc, fields @ [ relation_fields ]))
+          | None -> Some (Query.Data (loc, fields)))
+      | _ -> raise_type_error loc (Scalar Assoc))
+  | None -> raise_required_argument_error loc "search" id)
+  |> Option.value_or_thunk ~default:raise_compiler_error
+
+and get_data_fields loc id body =
+  let fields = List.Assoc.find body "fields" ~equal:String.equal in
+  (match fields with
+  | Some fields -> (
+      match fields with
+      | ListObjField (loc, fields) ->
+          Some
+            (List.map fields ~f:(fun element ->
+                 match element with
+                 | ReferenceObjField (_, ref) -> (ref, None)
+                 | _ -> raise_type_error loc (Scalar Reference)))
+      | _ -> raise_type_error loc (Scalar List))
+  | None -> raise_required_argument_error loc "fields" id)
+  |> Option.value_or_thunk ~default:raise_compiler_error
+
+and get_data_relation_fields loc body =
+  let relation_fields =
+    List.Assoc.find body "relationFields" ~equal:String.equal
+  in
+  match relation_fields with
+  | Some relation_fields -> (
+      match relation_fields with
+      | AssocObjField (loc, relation_fields) -> (
+          let id, value = List.hd_exn relation_fields in
+          match value with
+          | ConnectWithObjField (_, (value1, value2)) ->
+              Some (id, Some (value1, value2))
+          | _ -> raise_type_error loc (Scalar ConnectWith))
+      | _ -> raise_type_error loc (Scalar Assoc))
+  | None -> None
+
 let rec parse_component loc id typ args body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
@@ -180,9 +280,9 @@ and get_find_query_and_variable loc id body =
       match find_query with
       | AsObjField (loc, (query_id, variable)) ->
           Some ((loc, query_id), (loc, variable))
-      | _ -> raise_type_error loc (Scalar String))
+      | _ -> raise_type_error loc (Scalar As))
   | None -> raise_required_argument_error loc "findQuery" id)
-  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
+  |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_action_query loc id body =
   let action_query = List.Assoc.find body "actionQuery" ~equal:String.equal in
@@ -192,7 +292,7 @@ and get_action_query loc id body =
       | ReferenceObjField (loc, query_id) -> Some (loc, query_id)
       | _ -> raise_type_error loc (Scalar String))
   | None -> raise_required_argument_error loc "actionQuery" id)
-  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
+  |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_on_error loc id body =
   let on_error = List.Assoc.find body "onError" ~equal:String.equal in
@@ -202,7 +302,7 @@ and get_on_error loc id body =
       | RenderObjField (_, on_error) -> Some on_error
       | _ -> raise_type_error loc (Scalar String))
   | None -> raise_required_argument_error loc "onError" id)
-  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
+  |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_on_loading loc id body =
   let on_loading = List.Assoc.find body "onLoading" ~equal:String.equal in
@@ -212,7 +312,7 @@ and get_on_loading loc id body =
       | RenderObjField (_, on_loading) -> Some on_loading
       | _ -> raise_type_error loc (Scalar String))
   | None -> raise_required_argument_error loc "onLoading" id)
-  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
+  |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_on_success loc id body =
   let on_success = List.Assoc.find body "onSuccess" ~equal:String.equal in
@@ -222,7 +322,7 @@ and get_on_success loc id body =
       | RenderObjField (_, on_success) -> Some on_success
       | _ -> raise_type_error loc (Scalar String))
   | None -> raise_required_argument_error loc "onSuccess" id)
-  |> Option.value_or_thunk ~default:(fun () -> raise_compiler_error ())
+  |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_form_inputs loc id body =
   let form_inputs = List.Assoc.find body "formInputs" ~equal:String.equal in
@@ -414,6 +514,17 @@ and get_input_default_value body =
       | AssocObjField (loc, default_value) ->
           Some
             (Component.FormAttrDefaultValue (AssocObjField (loc, default_value)))
+      | ConnectWithObjField (loc, (value1, value2)) ->
+          Some
+            (Component.FormAttrDefaultValue
+               (AssocObjField
+                  ( loc,
+                    [
+                      ( "connect",
+                        AssocObjField
+                          (loc, [ (value1, ReferenceObjField (loc, value2)) ])
+                      );
+                    ] )))
       | _ -> raise_compiler_error ())
   | None -> None
 

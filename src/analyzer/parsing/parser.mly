@@ -6,6 +6,7 @@
 %token <int>    INT
 %token <string> ID
 %token <string> STRING
+%token <string> TYPESCRIPT
 %token <string> ATTRIBUTE
 %token          TRUE
 %token          FALSE
@@ -42,9 +43,8 @@
 %token          NOW
 %token          MODEL
 %token          QUERY
-%token          WHERE
-%token          DATA
-%token          SEARCH
+%token          CONNECT
+%token          WITH
 %token          COMPONENT
 %token          PAGE
 %token          APP
@@ -123,6 +123,12 @@ obj_field_value:
     { ListObjField ($startpos, value) }
   | value1 = ID; AS; value2 = ID
     { AsObjField ($startpos, (value1, value2)) }
+  | CONNECT; value1 = ID; WITH; value2 = ID
+    { ConnectWithObjField ($startpos, (value1, value2)) }
+  | CONNECT; value1 = ID; WITH; left = ID; DOT; right = ID
+    { ConnectWithObjField ($startpos, (value1, left ^ right)) }
+  | value = TYPESCRIPT
+    { TsObjField ($startpos, value) }
   ;
 
 obj_field:
@@ -189,25 +195,9 @@ query_type:
     { Query.Delete }
   ;
 
-query_data_field:
-  | field = ID;
-    { (field, None) }
-  | relation_field = ID; COLON; LEFT_BRACE; reference_field = ID; COLON; model_field = ID; RIGHT_BRACE
-    { (relation_field, Some(reference_field, model_field)) }
-  ;
-
-query_body_arg:
-  | WHERE; COLON; LEFT_BRACKET; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACKET
-    { Query.Where($startpos, fields) }
-  | DATA; COLON; LEFT_BRACKET; query_data_fields = separated_nonempty_list(COMMA, query_data_field); RIGHT_BRACKET
-    { Query.Data($startpos, query_data_fields) }
-  | SEARCH; COLON; LEFT_BRACKET; fields = separated_nonempty_list(COMMA, ID); RIGHT_BRACKET
-    { Query.Search($startpos, fields) }
-  ;
-
 query_body:
-  | LEFT_BRACE; args = separated_nonempty_list(COMMA, query_body_arg); RIGHT_BRACE
-    { args }
+  | LEFT_BRACE; body = separated_nonempty_list(COMMA, obj_field); RIGHT_BRACE
+    { body }
   ;
 
 query_models:
@@ -430,7 +420,7 @@ declaration:
     QUERY; typ = query_type; query_id = ID; option(COLON);
     return_type = option(typ); body = query_body; option(SEMICOLON)
     { let (permissions, models) = query_attributes in
-      Query($startpos, (parse_id $startpos query_id), typ, return_type, body, models, permissions) }
+      parse_query $startpos (parse_id $startpos query_id) typ models permissions return_type body }
   | xra_component = xra_component
     { xra_component }
   | xra_page_attributes = xra_page_attributes; PAGE; page_id = ID; xra_general_body = xra_general_body

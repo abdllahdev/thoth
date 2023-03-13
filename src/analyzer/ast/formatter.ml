@@ -14,6 +14,9 @@ let string_of_scalar_type scalar_type =
   | Reference -> "Reference"
   | Nil -> "Nil"
   | Assoc -> "Assoc"
+  | List -> "List"
+  | ConnectWith -> "Connect"
+  | As -> "As"
   | CustomType custom_type -> custom_type
 
 let string_of_composite_type composite_type =

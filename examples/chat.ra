@@ -29,18 +29,37 @@ model Message {
 @on(Message)
 @permission(IsAuth)
 query<Create> createMessage {
-	data: [
-		content,
-    user: {
-      id: userId
-    }
-	]
+	data: {
+		fields: [content],
+		relationFields: {
+    	user: connect userId with id
+		}
+	}
 }
 
 @on(Message)
 @permission(IsAuth)
 query<FindMany> getMessages {
-  search: [content]
+  search: [content],
+	fn: "
+		(req: Request, res: Response, next: NextFunction) => {
+			try {
+				cosnt user = req.user
+				const content = req.query.get(content)
+				const messages = await dbClient.messages.findMany({
+					where: {
+						content,
+						user: {
+							id: user.id
+						}
+					}
+				})
+				res.statu(200).json(messages)
+			} catch (err) {
+				next(err)
+			}
+		}
+	"
 }
 
 component<FindMany> MessagesComponent {
@@ -76,11 +95,7 @@ component<Create> CreateMessageForm  {
 			input: {
 				type: DefaultInput,
 				isVisible: false,
-				defaultValue: {
-					connect: {
-						id: LoggedInUser.id
-					}
-				}
+				defaultValue: connect id with LoggedInUser.id
 			}
 		}
 	},

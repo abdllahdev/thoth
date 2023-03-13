@@ -315,10 +315,10 @@ let check_component global_env xra_env app_declaration loc id typ args body =
             let scalar_typ = get_scalar_type typ in
             (match scalar_typ with
             | String | Int | Boolean | DateTime -> ()
-            | Reference | Nil | Assoc ->
+            | Reference | Nil | Assoc | List | As | ConnectWith ->
                 raise_argument_type_error loc
                   (ComponentFormatter.string_of_component_type component_type)
-                  (Scalar Reference)
+                  (Scalar scalar_typ)
             | CustomType custom_type ->
                 if not (GlobalEnvironment.contains global_env ~key:custom_type)
                 then raise_undefined_error loc "type" custom_type;
