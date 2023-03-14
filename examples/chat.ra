@@ -100,6 +100,12 @@ component<SignupForm> MySignupForm {
 				type: PasswordInput,
 				placeholder: "Enter password"
 			}
+		},
+		test: {
+			input: {
+				type: TextInput,
+				placeholder: "Enter test"
+			}
 		}
 	},
 	formButton: {

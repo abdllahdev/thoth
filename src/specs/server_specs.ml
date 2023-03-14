@@ -75,13 +75,11 @@ let convert_type typ =
   | Composite composite_type -> convert_composite_type composite_type
   | Scalar scalar_type -> convert_scalar_type scalar_type
 
-let get_query_args global_env model query_type query_args =
-  let _, model_id = model in
+let get_query_args global_env model_id query_type query_args =
   let model_fields =
     GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
-
   let where =
     List.map query_args ~f:(function
       | Query.Where (_, fields) ->
@@ -95,7 +93,6 @@ let get_query_args global_env model query_type query_args =
     |> List.find ~f:(function Some _ -> true | None -> false)
     |> Option.value_or_thunk ~default:(fun () -> None)
   in
-
   let search =
     List.map query_args ~f:(function
       | Query.Search (_, fields) ->
@@ -109,7 +106,6 @@ let get_query_args global_env model query_type query_args =
     |> List.find ~f:(function Some _ -> true | None -> false)
     |> Option.value_or_thunk ~default:(fun () -> None)
   in
-
   let data =
     List.map query_args ~f:(function
       | Query.Data (_, fields) ->
@@ -170,7 +166,7 @@ let get_query_specs global_env (query : query_declaration) =
     |> GlobalEnvironment.get_query_value)
       .return_type
   in
-  let query_args = get_query_args global_env model query_type body in
+  let query_args = get_query_args global_env model_id query_type body in
   {
     query_id;
     query_type;
@@ -251,7 +247,47 @@ let generate_validators_specs queries =
   in
   List.fold_left ~init:[] ~f:get_validator queries
 
+let generate_auth_validator_specs global_env auth_configs =
+  let { user_model; username_field; password_field; _ } = auth_configs in
+  let model_fields =
+    GlobalEnvironment.lookup global_env ~key:user_model
+    |> GlobalEnvironment.get_model_value
+  in
+  let model_field_ids = Hashtbl.keys model_fields in
+  let fields =
+    List.fold model_field_ids ~init:[] ~f:(fun lst field_id ->
+        let field = LocalEnvironment.lookup model_fields ~key:field_id in
+        let attributes_table = field.field_attrs_table in
+        if
+          not
+            (LocalEnvironment.contains attributes_table ~key:"@default"
+            || LocalEnvironment.contains attributes_table ~key:"@id"
+            || LocalEnvironment.contains attributes_table ~key:"@updatedAt"
+            || is_custom_type field.typ)
+        then lst @ [ (field_id, None) ]
+        else lst)
+  in
+  let dummy_loc : Lexing.position =
+    { pos_fname = "dummy_loc"; pos_lnum = 0; pos_bol = 0; pos_cnum = 0 }
+  in
+  let signup_query_args =
+    get_query_args global_env user_model Query.Create
+      [ Query.Data (dummy_loc, fields) ]
+  in
+  let login_query_args =
+    get_query_args global_env user_model Query.Create
+      [
+        Query.Data
+          (dummy_loc, [ (username_field, None); (password_field, None) ]);
+      ]
+  in
+  [
+    { validator_id = "signup"; fields = signup_query_args };
+    { validator_id = "login"; fields = login_query_args };
+  ]
+
 let generate_server_specs global_env app_declaration query_declarations =
+  let auth_specs = get_auth_config app_declaration in
   let queries_specs =
     List.map query_declarations ~f:(fun query_declaration ->
         get_query_specs global_env query_declaration)
@@ -264,7 +300,15 @@ let generate_server_specs global_env app_declaration query_declarations =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_routes_specs data)
   in
   let validators_specs =
-    Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_validators_specs data)
+    let validators_hashtbl =
+      Hashtbl.mapi groups ~f:(fun ~key:_ ~data ->
+          generate_validators_specs data)
+    in
+    (match auth_specs with
+    | Some auth_specs ->
+        Hashtbl.add_exn validators_hashtbl ~key:"auth"
+          ~data:(generate_auth_validator_specs global_env auth_specs)
+    | None -> ());
+    validators_hashtbl
   in
-  let auth_specs = get_auth_config app_declaration in
   { controllers_specs; routes_specs; validators_specs; auth_specs }

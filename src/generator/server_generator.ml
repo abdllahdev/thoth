@@ -283,25 +283,31 @@ let generate_auth auth_specs =
           List.iter
             [ "auth"; String.uncapitalize user_model ]
             ~f:(fun file ->
-              let template =
-                Fmt.str "%s/templates/server/src/%s/%s.jinja" (getcwd ())
-                  component file
-              in
-              let code =
-                Jg_template.from_file template
-                  ~models:
-                    [
-                      ( "user_model",
-                        Jg_types.Tstr (String.uncapitalize user_model) );
-                      ("id_field", Jg_types.Tstr id_field);
-                      ("username_field", Jg_types.Tstr username_field);
-                      ("password_field", Jg_types.Tstr password_field);
-                    ]
-              in
-              let output_file =
-                Fmt.str "%s/.out/server/src/%s/%s.ts" (getcwd ()) component file
-              in
-              write_file output_file code))
+              if
+                not
+                  (String.equal component "validators"
+                  && String.equal file "auth")
+              then
+                let template =
+                  Fmt.str "%s/templates/server/src/%s/%s.jinja" (getcwd ())
+                    component file
+                in
+                let code =
+                  Jg_template.from_file template
+                    ~models:
+                      [
+                        ( "user_model",
+                          Jg_types.Tstr (String.uncapitalize user_model) );
+                        ("id_field", Jg_types.Tstr id_field);
+                        ("username_field", Jg_types.Tstr username_field);
+                        ("password_field", Jg_types.Tstr password_field);
+                      ]
+                in
+                let output_file =
+                  Fmt.str "%s/.out/server/src/%s/%s.ts" (getcwd ()) component
+                    file
+                in
+                write_file output_file code))
   | None -> ()
 
 let setup_server_folder =
