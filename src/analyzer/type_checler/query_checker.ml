@@ -57,7 +57,7 @@ let check_data_arg global_env loc query_id query_type model fields =
      List.fold fields ~init:[] ~f:(fun lst field ->
          let field, relation_fields = field in
          match relation_fields with
-         | Some (model_field, _) -> lst @ [ field ] @ [ model_field ]
+         | Some (_, model_field) -> lst @ [ field ] @ [ model_field ]
          | None -> lst @ [ field ])
    in
    let check_required_fields ~key ~(data : GlobalEnvironment.field_value) =
@@ -80,7 +80,7 @@ let check_data_arg global_env loc query_id query_type model fields =
         ~declaration_type:ModelDeclaration;
     (* Check model relation fields *)
     match relation_fields with
-    | Some (model_field, reference_field) -> (
+    | Some (reference_field, model_field) -> (
         if not (LocalEnvironment.contains model_table ~key:model_field) then
           raise_undefined_error loc "field" model_field ~declaration_id:model_id
             ~declaration_type:ModelDeclaration;
@@ -113,7 +113,8 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.SearchArgument ]
             Query.DataArgument
       | Query.Search (loc, fields) ->
-          check_filter_arg global_env loc model fields)
+          check_filter_arg global_env loc model fields
+      | _ -> ())
   | Query.FindUnique -> (
       let arg = List.hd_exn args in
       match arg with
@@ -124,7 +125,8 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.WhereArgument ]
             Query.DataArgument
       | Query.Where (loc, fields) ->
-          check_where_arg global_env loc id model fields)
+          check_where_arg global_env loc id model fields
+      | _ -> ())
   | Query.Create -> (
       let arg = List.hd_exn args in
       match arg with
@@ -135,7 +137,8 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.DataArgument ]
             Query.WhereArgument
       | Query.Data (loc, fields) ->
-          check_data_arg global_env loc id typ model fields)
+          check_data_arg global_env loc id typ model fields
+      | _ -> ())
   | Query.Update ->
       let args_length = List.length args in
       if not (equal_int args_length 2) then
@@ -149,7 +152,8 @@ let check_args global_env loc typ id model args : unit =
           | Query.Where (loc, field) ->
               check_where_arg global_env loc id model field
           | Query.Data (loc, fields) ->
-              check_data_arg global_env loc id typ model fields)
+              check_data_arg global_env loc id typ model fields
+          | _ -> ())
   | Query.Delete -> (
       let arg = List.hd_exn args in
       match arg with
@@ -160,10 +164,11 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.WhereArgument ]
             Query.DataArgument
       | Query.Where (loc, field) ->
-          check_where_arg global_env loc id model field)
+          check_where_arg global_env loc id model field
+      | _ -> ())
 
 let check_query global_env app_declaration query =
-  let loc, id, typ, return_type, args, models, permissions = query in
+  let loc, id, typ, return_type, body, models, permissions = query in
   (* Check query models *)
   let check_model model =
     match model with
@@ -181,7 +186,7 @@ let check_query global_env app_declaration query =
   in
   List.iter models ~f:check_model;
   (* Check query arguments *)
-  check_args global_env loc typ id (List.hd_exn models) args;
+  check_args global_env loc typ id (List.hd_exn models) body;
   let expected_return_type =
     (GlobalEnvironment.lookup global_env ~key:id
     |> GlobalEnvironment.get_query_value)

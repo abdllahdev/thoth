@@ -389,14 +389,14 @@ let check_component global_env xra_env app_declaration loc id typ args body =
                 |> Hashtbl.keys
               in
               (user_model, ModelDeclaration, required_fields)
-          | None -> raise_requires_configuration loc typ)
+          | None -> raise_required_auth_configuration loc typ)
       | Component.LoginForm -> (
           let auth_config = get_auth_config app_declaration in
           match auth_config with
           | Some { username_field; password_field; _ } ->
               let _, id, _ = app_declaration in
               (id, AppDeclaration, [ username_field; password_field ])
-          | None -> raise_requires_configuration loc typ)
+          | None -> raise_required_auth_configuration loc typ)
       | _ -> raise_compiler_error ()
     in
     let check_required_fields required_fields =

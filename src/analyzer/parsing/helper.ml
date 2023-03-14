@@ -51,7 +51,7 @@ let parse_permissions loc permissions =
   in
   List.map permissions ~f:check_permission
 
-let parse_app_configs loc body =
+let parse_app_configs loc id body =
   List.fold body ~init:[] ~f:(fun seen (key, _) ->
       if List.mem seen key ~equal:String.equal then
         raise_multi_definitions_error loc key
@@ -83,21 +83,32 @@ let parse_app_configs loc body =
                          match value with
                          | StringObjField (_, value) -> (key, value)
                          | _ -> raise_type_error loc (Scalar String))
-                     | config -> raise_unexpected_config loc config))
+                     | entry -> raise_unexpected_entry_error loc id entry))
           | _ -> raise_type_error loc (Scalar Assoc))
-      | config -> raise_unexpected_config loc config)
+      | entry -> raise_unexpected_entry_error loc id entry)
 
 let parse_xra_element loc opening_id closing_id attributes children =
   if not (String.equal opening_id closing_id) then
     raise_syntax_error loc closing_id
   else XRA.Element (loc, opening_id, attributes, children)
 
-let unexpected_keys_exists loc keys expected_keys =
+let unexpected_keys_exists loc id keys expected_keys =
   List.iter keys ~f:(fun key ->
       if not (List.mem expected_keys key ~equal:String.equal) then
-        raise_unexpected_argument_error loc key)
+        raise_unexpected_entry_error loc id key)
+
+let rec check_dup_exists loc keys =
+  match keys with
+  | [] -> ()
+  | hd :: tl ->
+      if List.exists ~f:(String.equal hd) tl then
+        raise_multi_definitions_error loc hd
+      else check_dup_exists loc tl
 
 let rec parse_query loc id typ models permissions return_type body =
+  let obj_keys = List.map body ~f:(fun (key, _) -> key) in
+  check_dup_exists loc obj_keys;
+  check_query_unexpected_keys loc id obj_keys typ;
   let query_body =
     match typ with
     | Query.FindMany ->
@@ -116,6 +127,30 @@ let rec parse_query loc id typ models permissions return_type body =
   in
   Query (loc, id, typ, return_type, query_body, models, permissions)
 
+and check_query_unexpected_keys loc id obj_keys typ =
+  match typ with
+  | Query.FindMany ->
+      let expected_keys = [ "search"; "fn" ] in
+      unexpected_keys_exists loc id obj_keys expected_keys
+  | Query.FindUnique | Query.Delete ->
+      let expected_keys = [ "where"; "fn" ] in
+      unexpected_keys_exists loc id obj_keys expected_keys
+  | Query.Create ->
+      let expected_keys = [ "data"; "fn" ] in
+      unexpected_keys_exists loc id obj_keys expected_keys
+  | Query.Update ->
+      let expected_keys = [ "data"; "where"; "fn" ] in
+      unexpected_keys_exists loc id obj_keys expected_keys
+
+and get_custom_fn loc body =
+  let fn = List.Assoc.find body "fn" ~equal:String.equal in
+  match fn with
+  | Some fn -> (
+      match fn with
+      | StringObjField (_, fn) -> Some fn
+      | _ -> raise_type_error loc (Scalar String))
+  | None -> None
+
 and get_where loc id body =
   let where = List.Assoc.find body "where" ~equal:String.equal in
   (match where with
@@ -130,7 +165,7 @@ and get_where loc id body =
                      | ReferenceObjField (_, ref) -> ref
                      | _ -> raise_type_error loc (Scalar Reference)) ))
       | _ -> raise_type_error loc (Scalar List))
-  | None -> raise_required_argument_error loc "where" id)
+  | None -> raise_required_entry_error loc id "where")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_search loc id body =
@@ -147,7 +182,7 @@ and get_search loc id body =
                      | ReferenceObjField (_, ref) -> ref
                      | _ -> raise_type_error loc (Scalar Reference)) ))
       | _ -> raise_type_error loc (Scalar List))
-  | None -> raise_required_argument_error loc "search" id)
+  | None -> raise_required_entry_error loc id "search")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_data loc id body =
@@ -163,7 +198,7 @@ and get_data loc id body =
               Some (Query.Data (loc, fields @ [ relation_fields ]))
           | None -> Some (Query.Data (loc, fields)))
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> raise_required_argument_error loc "search" id)
+  | None -> raise_required_entry_error loc id "data")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_data_fields loc id body =
@@ -178,7 +213,7 @@ and get_data_fields loc id body =
                  | ReferenceObjField (_, ref) -> (ref, None)
                  | _ -> raise_type_error loc (Scalar Reference)))
       | _ -> raise_type_error loc (Scalar List))
-  | None -> raise_required_argument_error loc "fields" id)
+  | None -> raise_required_entry_error loc id "fields")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_data_relation_fields loc body =
@@ -200,6 +235,7 @@ and get_data_relation_fields loc body =
 let rec parse_component loc id typ args body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
+  check_component_unexpected_keys loc id obj_keys typ;
   let component_body =
     match typ with
     | Component.FindMany | Component.FindUnique ->
@@ -242,35 +278,27 @@ let rec parse_component loc id typ args body =
   in
   Component (loc, id, typ, args, component_body)
 
-and check_dup_exists loc keys =
-  match keys with
-  | [] -> ()
-  | hd :: tl ->
-      if List.exists ~f:(String.equal hd) tl then
-        raise_multi_definitions_error loc hd
-      else check_dup_exists loc tl
-
-and check_component_unexpected_keys loc obj_keys typ =
+and check_component_unexpected_keys loc id obj_keys typ =
   match typ with
   | Component.FindMany | Component.FindUnique ->
       let expected_keys =
         [ "findQuery"; "onError"; "onLoading"; "onSuccess" ]
       in
-      unexpected_keys_exists loc obj_keys expected_keys
+      unexpected_keys_exists loc id obj_keys expected_keys
   | Component.Create | Component.Update ->
       let expected_keys =
         [ "actionQuery"; "style"; "formInputs"; "formButton" ]
       in
-      unexpected_keys_exists loc obj_keys expected_keys
+      unexpected_keys_exists loc id obj_keys expected_keys
   | Component.SignupForm | Component.LoginForm ->
       let expected_keys = [ "style"; "formInputs"; "formButton" ] in
-      unexpected_keys_exists loc obj_keys expected_keys
+      unexpected_keys_exists loc id obj_keys expected_keys
   | Component.Delete ->
       let expected_keys = [ "actionQuery"; "formButton" ] in
-      unexpected_keys_exists loc obj_keys expected_keys
+      unexpected_keys_exists loc id obj_keys expected_keys
   | Component.LogoutButton ->
       let expected_keys = [ "formButton" ] in
-      unexpected_keys_exists loc obj_keys expected_keys
+      unexpected_keys_exists loc id obj_keys expected_keys
   | _ -> raise_compiler_error ()
 
 and get_find_query_and_variable loc id body =
@@ -281,7 +309,7 @@ and get_find_query_and_variable loc id body =
       | AsObjField (loc, (query_id, variable)) ->
           Some ((loc, query_id), (loc, variable))
       | _ -> raise_type_error loc (Scalar As))
-  | None -> raise_required_argument_error loc "findQuery" id)
+  | None -> raise_required_entry_error loc id "findQuery")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_action_query loc id body =
@@ -291,7 +319,7 @@ and get_action_query loc id body =
       match action_query with
       | ReferenceObjField (loc, query_id) -> Some (loc, query_id)
       | _ -> raise_type_error loc (Scalar String))
-  | None -> raise_required_argument_error loc "actionQuery" id)
+  | None -> raise_required_entry_error loc id "actionQuery")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_on_error loc id body =
@@ -301,7 +329,7 @@ and get_on_error loc id body =
       match on_error with
       | RenderObjField (_, on_error) -> Some on_error
       | _ -> raise_type_error loc (Scalar String))
-  | None -> raise_required_argument_error loc "onError" id)
+  | None -> raise_required_entry_error loc id "onError")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_on_loading loc id body =
@@ -311,7 +339,7 @@ and get_on_loading loc id body =
       match on_loading with
       | RenderObjField (_, on_loading) -> Some on_loading
       | _ -> raise_type_error loc (Scalar String))
-  | None -> raise_required_argument_error loc "onLoading" id)
+  | None -> raise_required_entry_error loc id "onLoading")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_on_success loc id body =
@@ -321,7 +349,7 @@ and get_on_success loc id body =
       match on_success with
       | RenderObjField (_, on_success) -> Some on_success
       | _ -> raise_type_error loc (Scalar String))
-  | None -> raise_required_argument_error loc "onSuccess" id)
+  | None -> raise_required_entry_error loc id "onSuccess")
   |> Option.value_or_thunk ~default:raise_compiler_error
 
 and get_form_inputs loc id body =
@@ -339,13 +367,13 @@ and get_form_inputs loc id body =
                   (loc, id, style, label, input)
               | _ -> raise_type_error loc (Scalar Assoc))
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> raise_required_argument_error loc "formInputs" id
+  | None -> raise_required_entry_error loc id "formInputs"
 
 and get_from_input loc id body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
   let expected_keys = [ "style"; "label"; "input" ] in
-  unexpected_keys_exists loc obj_keys expected_keys;
+  unexpected_keys_exists loc id obj_keys expected_keys;
   let style = get_style loc body in
   let label = get_input_label_attrs loc id body in
   let input = get_form_input_attrs loc id body in
@@ -362,11 +390,11 @@ and get_form_input_attrs loc id body =
           let expected_keys =
             [ "type"; "isVisible"; "defaultValue"; "placeholder"; "style" ]
           in
-          unexpected_keys_exists loc obj_keys expected_keys;
+          unexpected_keys_exists loc id obj_keys expected_keys;
           let input_type =
-            match get_input_type loc input_attrs with
+            match get_input_type loc id input_attrs with
             | Some input_type -> [ input_type ]
-            | None -> raise_required_argument_error loc "type" id
+            | None -> raise_required_entry_error loc id "type"
           in
           let input_visibility =
             match get_input_visibility loc input_attrs with
@@ -391,7 +419,7 @@ and get_form_input_attrs loc id body =
           input_type @ input_visibility @ input_default_value
           @ input_placeholder @ style
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> raise_required_argument_error loc "input" id
+  | None -> raise_required_entry_error loc id "input"
 
 and get_input_label_attrs loc id body =
   let input_label = List.Assoc.find body "label" ~equal:String.equal in
@@ -402,7 +430,7 @@ and get_input_label_attrs loc id body =
           let obj_keys = List.map label_attrs ~f:(fun (key, _) -> key) in
           check_dup_exists loc obj_keys;
           let expected_keys = [ "name"; "style" ] in
-          unexpected_keys_exists loc obj_keys expected_keys;
+          unexpected_keys_exists loc id obj_keys expected_keys;
           let style =
             match get_style loc label_attrs with
             | Some style -> [ style ]
@@ -411,7 +439,7 @@ and get_input_label_attrs loc id body =
           let name =
             match get_name loc label_attrs with
             | Some name -> [ name ]
-            | None -> raise_required_argument_error loc "name" id
+            | None -> raise_required_entry_error loc id "name"
           in
           Some (name @ style)
       | _ -> raise_type_error loc (Scalar Assoc))
@@ -426,7 +454,7 @@ and get_form_button loc id body =
           let obj_keys = List.map button_attrs ~f:(fun (key, _) -> key) in
           check_dup_exists loc obj_keys;
           let expected_keys = [ "name"; "style" ] in
-          unexpected_keys_exists loc obj_keys expected_keys;
+          unexpected_keys_exists loc id obj_keys expected_keys;
           let style =
             match get_style loc button_attrs with
             | Some style -> [ style ]
@@ -435,11 +463,11 @@ and get_form_button loc id body =
           let name =
             match get_name loc button_attrs with
             | Some name -> [ name ]
-            | None -> raise_required_argument_error loc "name" id
+            | None -> raise_required_entry_error loc id "name"
           in
           name @ style
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> raise_required_argument_error loc "formButton" id
+  | None -> raise_required_entry_error loc id "formButton"
 
 and get_style loc body =
   let style = List.Assoc.find body "style" ~equal:String.equal in
@@ -459,7 +487,7 @@ and get_name loc body =
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
 
-and get_input_type loc body =
+and get_input_type loc id body =
   let input_type = List.Assoc.find body "type" ~equal:String.equal in
   match input_type with
   | Some input_type -> (
@@ -473,7 +501,7 @@ and get_input_type loc body =
           | "NumberInput" -> Some (Component.FormAttrType Component.NumberInput)
           | "DefaultInput" ->
               Some (Component.FormAttrType Component.DefaultInput)
-          | _ -> raise_unexpected_config loc input_type)
+          | _ -> raise_unexpected_entry_error loc id input_type)
       | _ -> raise_type_error loc (Scalar String))
   | None -> None
 

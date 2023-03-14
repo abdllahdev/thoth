@@ -32,7 +32,7 @@ query<Create> createMessage {
 	data: {
 		fields: [content],
 		relationFields: {
-    	user: connect userId with id
+    	user: connect id with userId
 		}
 	}
 }
@@ -40,7 +40,7 @@ query<Create> createMessage {
 @on(Message)
 @permission(IsAuth)
 query<FindMany> getMessages {
-  search: [content],
+	search: [ content ],
 	fn: "
 		(req: Request, res: Response, next: NextFunction) => {
 			try {

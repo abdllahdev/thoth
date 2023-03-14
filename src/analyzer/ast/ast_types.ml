@@ -43,7 +43,7 @@ module Model = struct
 end
 
 module Query = struct
-  type typ = FindUnique | FindMany | Create | Update | Delete
+  type typ = FindUnique | FindMany | Create | Update | Delete | Custom
   type argument_type = WhereArgument | DataArgument | SearchArgument
   type data_args = (string * (string * string) option) list
 
@@ -51,9 +51,12 @@ module Query = struct
     | Where of loc * id list
     | Search of loc * id list
     | Data of loc * data_args
+    | Fn of loc * string
+    | Imports of loc * string list
 
   type model = loc * id
   type body = body_arg list
+  type custom_fn = string option
 end
 
 module XRA = struct

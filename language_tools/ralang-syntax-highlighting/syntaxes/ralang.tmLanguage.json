@@ -48,9 +48,24 @@
           "name": "punctuation.definition.tag.ralang"
         }
       }
+    },
+    {
+      "include": "#connect_with"
     }
   ],
   "repository": {
+    "connect_with": {
+      "patterns": [
+        {
+          "name": "keyword.control.connect.ralang",
+          "match": "\\b(connect)\\b"
+        },
+        {
+          "name": "keyword.control.with.ralang",
+          "match": "\\b(with)\\b"
+        }
+      ]
+    },
     "app_declaration": {
       "name": "source.ralang.embedded.source",
       "match": "\\s*(app)\\s+([A-Za-z][\\w]*)\\s*\\{",
@@ -188,6 +203,9 @@
             {
               "match": "\\}",
               "name": "invalid.illegal.json"
+            },
+            {
+              "include": "#connect_with"
             }
           ],
           "endCaptures": {

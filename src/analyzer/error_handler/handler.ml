@@ -250,6 +250,18 @@ let raise_unexpected_argument_error ?id loc arg_id =
          (Fmt.str "@(%s): Unexpected argument '%s' in '%s'" (string_of_loc loc)
             arg_id (Option.value_exn id)))
 
+let raise_unexpected_entry_error loc id entry_id =
+  raise
+    (UnexpectedEntryError
+       (Fmt.str "@(%s): Unexpected entry '%s' in '%s'" (string_of_loc loc)
+          entry_id id))
+
+let raise_required_entry_error loc id entry_id =
+  raise
+    (RequiredEntryError
+       (Fmt.str "@(%s): Required entry '%s' in '%s" (string_of_loc loc) entry_id
+          id))
+
 let raise_unexpected_permissions_attr loc query_id =
   raise
     (UnexpectedAttributeError
@@ -258,15 +270,9 @@ let raise_unexpected_permissions_attr loc query_id =
            implement auth to have permissions"
           (string_of_loc loc) query_id))
 
-let raise_unexpected_config loc config_id =
+let raise_required_auth_configuration loc component_type =
   raise
-    (UnexpectedConfigError
-       (Fmt.str "@(%s): Unexpected configuration %s." (string_of_loc loc)
-          config_id))
-
-let raise_requires_configuration loc component_type =
-  raise
-    (RequiredConfigError
+    (RequiredAuthConfigError
        (Fmt.str "@(%s): %s requires auth configuration" (string_of_loc loc)
           (ComponentFormatter.string_of_component_type component_type)))
 

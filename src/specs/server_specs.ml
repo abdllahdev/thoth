@@ -154,7 +154,7 @@ let get_query_args global_env models query_type query_args =
   { where; search; data }
 
 let get_query_specs global_env (query : query_declaration) =
-  let _, query_id, query_type, _, args, models, permissions = query in
+  let _, query_id, query_type, _, body, models, permissions = query in
   let model_id =
     List.map models ~f:(fun model ->
         let _, id = model in
@@ -174,7 +174,7 @@ let get_query_specs global_env (query : query_declaration) =
     |> GlobalEnvironment.get_query_value)
       .return_type
   in
-  let query_args = get_query_args global_env model_id query_type args in
+  let query_args = get_query_args global_env model_id query_type body in
   {
     query_id;
     query_type;

@@ -20,5 +20,7 @@ exception DeclarationTypeError of string
 exception UnexpectedAttributeError of string
 exception UnexpectedConfigError of string
 exception RequiredFormInputError of string
-exception RequiredConfigError of string
+exception RequiredAuthConfigError of string
 exception CompilationError of string
+exception UnexpectedEntryError of string
+exception RequiredEntryError of string
