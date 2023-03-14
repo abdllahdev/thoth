@@ -50,6 +50,7 @@
 %token          APP
 %token          LET
 %token          RENDER
+%token          CUSTOM
 %token          FIND_MANY
 %token          FIND_UNIQUE
 %token          CREATE
@@ -176,10 +177,10 @@ model_body:
 
 (* Query rules *)
 query_attributes:
-  | permissions = option(permissions); models = query_models
-    { (permissions, models) }
-  | models = query_models; permissions = option(permissions)
-    { (permissions, models) }
+  | permissions = option(permissions); model = query_model
+    { (permissions, model) }
+  | model = query_model; permissions = option(permissions)
+    { (permissions, model) }
   ;
 
 query_type:
@@ -193,6 +194,8 @@ query_type:
     { Query.Update }
   | LT; DELETE; GT
     { Query.Delete }
+  | LT; CUSTOM; GT
+    { Query.Custom }
   ;
 
 query_body:
@@ -200,9 +203,9 @@ query_body:
     { body }
   ;
 
-query_models:
-  | ON; LEFT_PARAN; models = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
-    { List.map (fun model -> ($startpos, model)) models }
+query_model:
+  | ON; LEFT_PARAN; model = ID; RIGHT_PARAN
+    { ($startpos, model) }
   ;
 
 permissions:
@@ -378,6 +381,8 @@ xra_component_type:
     { Component.LoginForm }
   | LT; LOGOUT_BUTTON; GT;
     { Component.LogoutButton }
+  | LT; CUSTOM; GT
+    { Component.Custom }
   ;
 
 xra_component:
@@ -419,8 +424,8 @@ declaration:
   | query_attributes = query_attributes;
     QUERY; typ = query_type; query_id = ID; option(COLON);
     return_type = option(typ); body = query_body; option(SEMICOLON)
-    { let (permissions, models) = query_attributes in
-      parse_query $startpos (parse_id $startpos query_id) typ models permissions return_type body }
+    { let (permissions, model) = query_attributes in
+      parse_query $startpos (parse_id $startpos query_id) typ model permissions return_type body }
   | xra_component = xra_component
     { xra_component }
   | xra_page_attributes = xra_page_attributes; PAGE; page_id = ID; xra_general_body = xra_general_body

@@ -40,26 +40,7 @@ query<Create> createMessage {
 @on(Message)
 @permission(IsAuth)
 query<FindMany> getMessages {
-	search: [ content ],
-	fn: "
-		(req: Request, res: Response, next: NextFunction) => {
-			try {
-				cosnt user = req.user
-				const content = req.query.get(content)
-				const messages = await dbClient.messages.findMany({
-					where: {
-						content,
-						user: {
-							id: user.id
-						}
-					}
-				})
-				res.statu(200).json(messages)
-			} catch (err) {
-				next(err)
-			}
-		}
-	"
+	search: [content]
 }
 
 component<FindMany> MessagesComponent {

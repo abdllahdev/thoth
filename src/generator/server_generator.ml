@@ -32,7 +32,7 @@ let generate_controller name controller_functions =
                    let ownsEntry =
                      match
                        List.filter middlewares ~f:(fun middleware ->
-                           if String.equal middleware "ownsEntry" then true
+                           if String.equal middleware "OwnsEntry" then true
                            else false)
                        |> List.hd
                      with

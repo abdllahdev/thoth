@@ -166,27 +166,25 @@ let check_args global_env loc typ id model args : unit =
       | Query.Where (loc, field) ->
           check_where_arg global_env loc id model field
       | _ -> ())
+  | _ -> ()
 
-let check_query global_env app_declaration query =
-  let loc, id, typ, return_type, body, models, permissions = query in
+let check_query global_env app_declaration (query : query_declaration) =
+  let loc, id, typ, return_type, body, model, permissions = query in
   (* Check query models *)
-  let check_model model =
-    match model with
-    | loc, model_id ->
-        if not (GlobalEnvironment.contains global_env ~key:model_id) then
-          raise_undefined_error loc "model" model_id;
-        let declaration_value =
-          GlobalEnvironment.lookup global_env ~key:model_id
-        in
-        if not (GlobalEnvironment.check_type declaration_value ModelDeclaration)
-        then
-          raise_declaration_type_error loc ModelDeclaration model_id
-            (GlobalEnvironment.infer_type declaration_value)
-            ~id
-  in
-  List.iter models ~f:check_model;
+  (match model with
+  | loc, model_id ->
+      if not (GlobalEnvironment.contains global_env ~key:model_id) then
+        raise_undefined_error loc "model" model_id;
+      let declaration_value =
+        GlobalEnvironment.lookup global_env ~key:model_id
+      in
+      if not (GlobalEnvironment.check_type declaration_value ModelDeclaration)
+      then
+        raise_declaration_type_error loc ModelDeclaration model_id
+          (GlobalEnvironment.infer_type declaration_value)
+          ~id);
   (* Check query arguments *)
-  check_args global_env loc typ id (List.hd_exn models) body;
+  check_args global_env loc typ id model body;
   let expected_return_type =
     (GlobalEnvironment.lookup global_env ~key:id
     |> GlobalEnvironment.get_query_value)

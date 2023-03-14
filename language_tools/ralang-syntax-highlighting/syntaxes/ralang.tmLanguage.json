@@ -25,6 +25,9 @@
       "include": "#app_declaration"
     },
     {
+      "include": "#type_declaration"
+    },
+    {
       "include": "#model_declaration"
     },
     {
@@ -73,6 +76,66 @@
         "1": { "name": "storage.type.app.ralang" },
         "2": { "name": "entity.name.type.app.ralang" }
       }
+    },
+    "type_declaration": {
+      "name": "source.ralang.embedded.source",
+      "begin": "^\\s*(type)\\s+([A-Za-z][\\w]*)\\s*({)",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.type.ralang"
+        },
+        "2": {
+          "name": "entity.name.type.type.ralang"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      },
+      "end": "\\s*\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.tag.ralang"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#triple_comment"
+        },
+        {
+          "include": "#double_comment"
+        },
+        {
+          "name": "scalar.type",
+          "patterns": [
+            {
+              "match": "^\\s*(\\w+)(\\s*:)?\\s+((?!(?:Int|String|DateTime|Boolean)\\b)\\b\\w+)?(Int|String|DateTime|Boolean)?(\\[\\])?(\\?)?(\\!)?",
+              "captures": {
+                "1": {
+                  "name": "variable.other.assignment.ralang"
+                },
+                "2": {
+                  "name": "invalid.illegal.colon.ralang"
+                },
+                "3": {
+                  "name": "variable.language.relations.ralang"
+                },
+                "4": {
+                  "name": "support.type.ralang"
+                },
+                "5": {
+                  "name": "keyword.operator.list_type.ralang"
+                },
+                "6": {
+                  "name": "keyword.operator.optional_type.ralang"
+                },
+                "7": {
+                  "name": "invalid.illegal.required_type.ralang"
+                }
+              }
+            }
+          ]
+        }
+      ]
     },
     "model_declaration": {
       "name": "source.ralang.embedded.source",
@@ -145,7 +208,7 @@
     },
     "query_declaration": {
       "name": "source.ralang.embedded.source",
-      "match": "\\s*(query)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*)(\\[\\])?)?\\s*\\{",
+      "match": "\\s*(query)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update|Custom)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*)(\\[\\])?)?\\s*\\{",
       "captures": {
         "1": { "name": "storage.type.query.ralang" },
         "2": { "name": "support.type.query_type.ralang" },
@@ -156,7 +219,7 @@
     },
     "component_declaration": {
       "name": "source.ralang.embedded.source",
-      "begin": "\\s*(component)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton)\\s*>\\s*([A-Za-z][\\w]*)\\s*(\\(\\s*(([A-Za-z][\\w]*)s*:\\s*([A-Za-z][\\w]*))*\\s*\\))?\\s*\\{",
+      "begin": "\\s*(component)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton|Custom)\\s*>\\s*([A-Za-z][\\w]*)\\s*(\\(\\s*(([A-Za-z][\\w]*)s*:\\s*([A-Za-z][\\w]*))*\\s*\\))?\\s*\\{",
       "beginCaptures": {
         "1": { "name": "storage.type.component.ralang" },
         "2": { "name": "support.type.component_type.ralang" },

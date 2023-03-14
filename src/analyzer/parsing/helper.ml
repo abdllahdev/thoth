@@ -46,7 +46,7 @@ let parse_permissions loc permissions =
   let check_permission permission =
     match permission with
     | "IsAuth" -> (loc, "isAuth")
-    | "OwnsEntry" -> (loc, "ownsEntry")
+    | "OwnsEntry" -> (loc, "OwnsEntry")
     | _ -> raise_undefined_error loc "permission" permission
   in
   List.map permissions ~f:check_permission
@@ -105,6 +105,32 @@ let rec check_dup_exists loc keys =
         raise_multi_definitions_error loc hd
       else check_dup_exists loc tl
 
+let get_fn loc id body =
+  let fn = List.Assoc.find body "fn" ~equal:String.equal in
+  (match fn with
+  | Some fn -> (
+      match fn with
+      | TsObjField (_, fn) -> Some (loc, fn)
+      | _ -> raise_type_error loc (Scalar String))
+  | None -> raise_required_entry_error loc id "fn")
+  |> Option.value_or_thunk ~default:raise_compiler_error
+
+let get_imports loc body =
+  let imports = List.Assoc.find body "imports" ~equal:String.equal in
+  match imports with
+  | Some imports -> (
+      match imports with
+      | ListObjField (loc, imports) ->
+          let imports =
+            List.fold imports ~init:[] ~f:(fun lst import ->
+                match import with
+                | StringObjField (_, import) -> lst @ [ import ]
+                | _ -> raise_type_error loc (Scalar String))
+          in
+          Some (loc, imports)
+      | _ -> raise_type_error loc (Scalar List))
+  | None -> None
+
 let rec parse_query loc id typ models permissions return_type body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
@@ -124,32 +150,37 @@ let rec parse_query loc id typ models permissions return_type body =
         let where = get_where loc id body in
         let data = get_data loc id body in
         [ where; data ]
+    | Query.Custom ->
+        let imports =
+          match get_imports loc body with
+          | Some (loc, imports) -> [ Query.Imports (loc, imports) ]
+          | None -> []
+        in
+        let fn =
+          let loc, fn = get_fn loc id body in
+          Query.Fn (loc, fn)
+        in
+        [ fn ] @ imports
   in
   Query (loc, id, typ, return_type, query_body, models, permissions)
 
 and check_query_unexpected_keys loc id obj_keys typ =
   match typ with
   | Query.FindMany ->
-      let expected_keys = [ "search"; "fn" ] in
+      let expected_keys = [ "search" ] in
       unexpected_keys_exists loc id obj_keys expected_keys
   | Query.FindUnique | Query.Delete ->
-      let expected_keys = [ "where"; "fn" ] in
+      let expected_keys = [ "where" ] in
       unexpected_keys_exists loc id obj_keys expected_keys
   | Query.Create ->
-      let expected_keys = [ "data"; "fn" ] in
+      let expected_keys = [ "data" ] in
       unexpected_keys_exists loc id obj_keys expected_keys
   | Query.Update ->
-      let expected_keys = [ "data"; "where"; "fn" ] in
+      let expected_keys = [ "data"; "where" ] in
       unexpected_keys_exists loc id obj_keys expected_keys
-
-and get_custom_fn loc body =
-  let fn = List.Assoc.find body "fn" ~equal:String.equal in
-  match fn with
-  | Some fn -> (
-      match fn with
-      | StringObjField (_, fn) -> Some fn
-      | _ -> raise_type_error loc (Scalar String))
-  | None -> None
+  | Query.Custom ->
+      let expected_keys = [ "imports"; "fn" ] in
+      unexpected_keys_exists loc id obj_keys expected_keys
 
 and get_where loc id body =
   let where = List.Assoc.find body "where" ~equal:String.equal in
@@ -190,13 +221,10 @@ and get_data loc id body =
   (match data with
   | Some data -> (
       match data with
-      | AssocObjField (_, value) -> (
+      | AssocObjField (_, value) ->
           let fields = get_data_fields loc id value in
           let relation_fields = get_data_relation_fields loc value in
-          match relation_fields with
-          | Some relation_fields ->
-              Some (Query.Data (loc, fields @ [ relation_fields ]))
-          | None -> Some (Query.Data (loc, fields)))
+          Some (Query.Data (loc, fields @ relation_fields))
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> raise_required_entry_error loc id "data")
   |> Option.value_or_thunk ~default:raise_compiler_error
@@ -223,14 +251,15 @@ and get_data_relation_fields loc body =
   match relation_fields with
   | Some relation_fields -> (
       match relation_fields with
-      | AssocObjField (loc, relation_fields) -> (
-          let id, value = List.hd_exn relation_fields in
-          match value with
-          | ConnectWithObjField (_, (value1, value2)) ->
-              Some (id, Some (value1, value2))
-          | _ -> raise_type_error loc (Scalar ConnectWith))
+      | AssocObjField (loc, relation_fields) ->
+          List.map relation_fields ~f:(fun relation_field ->
+              let id, value = relation_field in
+              match value with
+              | ConnectWithObjField (_, (value1, value2)) ->
+                  (id, Some (value1, value2))
+              | _ -> raise_type_error loc (Scalar ConnectWith))
       | _ -> raise_type_error loc (Scalar Assoc))
-  | None -> None
+  | None -> []
 
 let rec parse_component loc id typ args body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
@@ -274,6 +303,14 @@ let rec parse_component loc id typ args body =
     | Component.LogoutButton ->
         let form_button = get_form_button loc id body in
         Component.LogoutButtonBody form_button
+    | Component.Custom ->
+        let imports =
+          match get_imports loc body with
+          | Some (_, imports) -> Some imports
+          | None -> None
+        in
+        let _, fn = get_fn loc id body in
+        Component.CustomBody (fn, imports)
     | _ -> raise_compiler_error ()
   in
   Component (loc, id, typ, args, component_body)

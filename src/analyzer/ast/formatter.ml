@@ -115,6 +115,7 @@ module QueryFormatter = struct
     | Query.Delete -> "delete"
     | Query.FindUnique -> "findFirst"
     | Query.FindMany -> "findMany"
+    | Query.Custom -> "custom"
 end
 
 module ComponentFormatter = struct
@@ -137,6 +138,7 @@ module ComponentFormatter = struct
     | Component.SignupForm -> "SignupForm"
     | Component.LoginForm -> "LoginForm"
     | Component.LogoutButton -> "LogoutButton"
+    | Component.Custom -> "Custom"
 end
 
 let string_of_declaration_type declaration_type =

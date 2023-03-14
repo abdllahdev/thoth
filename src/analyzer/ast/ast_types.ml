@@ -106,6 +106,7 @@ module Component = struct
   type variable = loc * id
 
   type typ =
+    | Custom
     | General
     | FindMany
     | FindUnique
@@ -141,6 +142,7 @@ module Component = struct
   type form_button = form_attr list
 
   type body =
+    | CustomBody of string * string list option
     | GeneralBody of XRA.body
     | FindBody of
         (query_id * variable)
@@ -167,7 +169,7 @@ type query_declaration =
   * Query.typ
   * typ option
   * Query.body
-  * Query.model list
+  * Query.model
   * permission list option
 
 type component_declaration =

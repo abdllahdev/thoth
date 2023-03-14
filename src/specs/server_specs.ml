@@ -19,7 +19,7 @@ type query_specs = {
   query_type : Query.typ;
   return_type : typ;
   query_args : query_args_specs;
-  query_models : string list;
+  query_model : string;
   query_permissions : string list option;
 }
 
@@ -75,8 +75,8 @@ let convert_type typ =
   | Composite composite_type -> convert_composite_type composite_type
   | Scalar scalar_type -> convert_scalar_type scalar_type
 
-let get_query_args global_env models query_type query_args =
-  let model_id = List.hd_exn models in
+let get_query_args global_env model query_type query_args =
+  let _, model_id = model in
   let model_fields =
     GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
@@ -154,12 +154,8 @@ let get_query_args global_env models query_type query_args =
   { where; search; data }
 
 let get_query_specs global_env (query : query_declaration) =
-  let _, query_id, query_type, _, body, models, permissions = query in
-  let model_id =
-    List.map models ~f:(fun model ->
-        let _, id = model in
-        id)
-  in
+  let _, query_id, query_type, _, body, model, permissions = query in
+  let _, model_id = model in
   let permissions =
     match permissions with
     | Some permissions ->
@@ -174,13 +170,13 @@ let get_query_specs global_env (query : query_declaration) =
     |> GlobalEnvironment.get_query_value)
       .return_type
   in
-  let query_args = get_query_args global_env model_id query_type body in
+  let query_args = get_query_args global_env model query_type body in
   {
     query_id;
     query_type;
     return_type;
     query_args;
-    query_models = model_id;
+    query_model = model_id;
     query_permissions = permissions;
   }
 

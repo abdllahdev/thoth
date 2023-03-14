@@ -28,13 +28,13 @@ model Task {
 }
 
 @on(Task)
-@permission(IsAuth, ownsEntry)
+@permission(IsAuth, OwnsEntry)
 query<findMany> getTasks : Task[] {
 	search: { title, isDone }
 }
 
 @on(Task)
-@permission(IsAuth, ownsEntry)
+@permission(IsAuth, OwnsEntry)
 query<findUnique> getTaskById {
 	where: { id }
 }
@@ -51,14 +51,14 @@ query<create> createTask {
 }
 
 @on(Task)
-@permission(IsAuth, ownsEntry)
+@permission(IsAuth, OwnsEntry)
 query<update> updateTaskById {
 	where: { id },
 	data: { title, isDone }
 }
 
 @on(Task)
-@permission(IsAuth, ownsEntry)
+@permission(IsAuth, OwnsEntry)
 query<delete> deleteTaskById {
 	where: { id }
 }

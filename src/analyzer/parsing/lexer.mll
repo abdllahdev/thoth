@@ -44,6 +44,7 @@ rule read_token =
   | ';'             { SEMICOLON }
   | ','             { COMMA }
   | '.'             { DOT }
+  | "[|"            { read_typescript (Buffer.create 17) lexbuf }
   | '"'             { read_string (Buffer.create 17) lexbuf }
   | "[]"            { LIST_MODIFIER }
   | "</"            { CLOSING_TAG }
@@ -74,6 +75,7 @@ rule read_token =
   | "render"        { RENDER }
   | "let"           { LET }
   | "Now"           { NOW }
+  | "Custom"        { CUSTOM }
   | "FindMany"      { FIND_MANY }
   | "FindUnique"    { FIND_UNIQUE }
   | "Create"        { CREATE }
@@ -117,3 +119,8 @@ and read_multi_line_comment = parse
   | newline { next_line lexbuf; read_multi_line_comment lexbuf }
   | eof     { raise_syntax_error lexbuf.lex_curr_p (Lexing.lexeme lexbuf) }
   | _       { read_multi_line_comment lexbuf }
+
+and read_typescript buf = parse
+  | "|]"    { TYPESCRIPT (Buffer.contents buf) }
+  | _       { Buffer.add_string buf (Lexing.lexeme lexbuf); read_typescript buf lexbuf }
+  | eof     { EOF }
