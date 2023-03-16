@@ -80,11 +80,11 @@ let raise_declaration_type_error ?id loc expected_type received_value
             (string_of_declaration_type received_type)
             (Option.value_exn id)))
 
-let raise_dot_operator_error loc expanded_value id id_type =
+let raise_dot_operator_error loc member id id_type =
   raise
     (TypeError
-       (Fmt.str "@(%s): Cannot get '%s' from '%s' of type '%s'"
-          (string_of_loc loc) expanded_value id (string_of_type id_type)))
+       (Fmt.str "@(%s): Cannot access '%s' from '%s' of type '%s'"
+          (string_of_loc loc) member id (string_of_type id_type)))
 
 let raise_unique_field_error ?id loc expected_type received_value received_type
     =

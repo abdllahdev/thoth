@@ -198,7 +198,8 @@ let rec generate_xra_specs xra_expression =
       | StringLiteral (_, str) -> Fmt.str "'%s'" str
       | _ -> Fmt.str "%s" (string_of_literal literal))
   | XRA.VariableExpression (_, id) -> Fmt.str "%s" id
-  | XRA.DotExpression (_, id, expanded_id) -> Fmt.str "%s.%s" id expanded_id
+  | XRA.DotExpression (_, hd, tl) ->
+      Fmt.str "%s.%s" (generate_xra_specs hd) (generate_xra_specs tl)
   | LiteralConditionalExpression (_, expression) ->
       generate_xra_specs expression
   | NotConditionalExpression (_, expression) ->

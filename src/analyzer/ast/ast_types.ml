@@ -65,7 +65,7 @@ module XRA = struct
   type expression =
     | Literal of literal
     | VariableExpression of loc * id
-    | DotExpression of loc * id * id
+    | DotExpression of loc * expression * expression
     | LetExpression of loc * id * expression
     | LiteralConditionalExpression of loc * expression
     | NotConditionalExpression of loc * expression

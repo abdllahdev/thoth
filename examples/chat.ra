@@ -11,8 +11,8 @@ app ChatRoom {
 }
 
 model User {
-	id        Int     @id
-	username  String  @unique
+	id        Int       @id
+	username  String    @unique
 	password  String
 	message   Message[]
 }
@@ -55,7 +55,7 @@ component<FindMany> MessagesComponent {
 		<>
 			[% for message in messages %]
 				<div className="flex space-x-3 text-white">
-					<div>{ message.userId }</div>
+					<div>{ message.user }</div>
 					<div>{ message.content }</div>
 				</div>
 			[% endfor %]
@@ -94,8 +94,7 @@ component<SignupForm> MySignupForm {
 		username: {
 			input: {
 				type: TextInput,
-				placeholder: "Enter username",
-				defaultValue: 123
+				placeholder: "Enter username"
 			}
 		},
 		password: {

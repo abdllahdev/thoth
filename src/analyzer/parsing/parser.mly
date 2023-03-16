@@ -216,8 +216,8 @@ permissions:
 xra_variable_expression:
   | id = ID
     { XRA.VariableExpression($startpos, id) }
-  | id = ID; DOT; expanded_id = ID
-    { XRA.DotExpression($startpos, id, expanded_id) }
+  | id = ID; DOT; xra_variable_expression = xra_variable_expression
+    { XRA.DotExpression($startpos, XRA.VariableExpression($startpos, id), xra_variable_expression) }
   ;
 
 xra_literal_expression:
