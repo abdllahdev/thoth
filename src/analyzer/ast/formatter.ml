@@ -49,6 +49,7 @@ let rec string_of_obj_field obj_field =
         (List.fold assoc ~init:"" ~f:(fun accum e ->
              let id, obj_field = e in
              accum ^ Fmt.str "%s: %s," id (string_of_obj_field obj_field)))
+  | ConnectWithObjField (_, (value1, value2)) -> Fmt.str "%s.%s" value1 value2
   | _ -> ""
 
 module ModelFormatter = struct
@@ -121,11 +122,11 @@ end
 module ComponentFormatter = struct
   let string_of_form_input_type field_type =
     match field_type with
-    | Component.TextInput -> "text"
-    | Component.NumberInput -> "number"
-    | Component.EmailInput -> "email"
-    | Component.PasswordInput -> "password"
-    | Component.DefaultInput -> "object"
+    | Component.TextInput -> "TextInput"
+    | Component.NumberInput -> "NumberInput"
+    | Component.EmailInput -> "EmailInput"
+    | Component.PasswordInput -> "PasswordInput"
+    | Component.RelationInput -> "RelationInput"
 
   let string_of_component_type component_type =
     match component_type with

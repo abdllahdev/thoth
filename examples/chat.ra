@@ -64,6 +64,12 @@ component<FindMany> MessagesComponent {
 }
 
 component<Create> CreateMessageForm  {
+	globalStyle: {
+		form: "",
+		input: "",
+		inputLabel: "",
+		inputError: ""
+	},
 	actionQuery: createMessage,
 	formInputs: {
 		content: {
@@ -74,7 +80,7 @@ component<Create> CreateMessageForm  {
 		},
 		user: {
 			input: {
-				type: DefaultInput,
+				type: RelationInput,
 				isVisible: false,
 				defaultValue: connect id with LoggedInUser.id
 			}
@@ -87,7 +93,9 @@ component<Create> CreateMessageForm  {
 }
 
 component<SignupForm> MySignupForm {
-	style: "space-y-2",
+	globalStyle: {
+		form: "space-y-2"
+	},
 	formInputs: {
 		username: {
 			input: {
@@ -100,12 +108,6 @@ component<SignupForm> MySignupForm {
 				type: PasswordInput,
 				placeholder: "Enter password"
 			}
-		},
-		test: {
-			input: {
-				type: TextInput,
-				placeholder: "Enter test"
-			}
 		}
 	},
 	formButton: {
@@ -115,7 +117,9 @@ component<SignupForm> MySignupForm {
 }
 
 component<LoginForm> MyLoginForm {
-	style: "space-y-2",
+	globalStyle: {
+		form: "space-y-2"
+	},
 	formInputs: {
 		username: {
 			input: {

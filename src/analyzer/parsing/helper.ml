@@ -276,30 +276,30 @@ let rec parse_component loc id typ args body =
           ((find_query, variable), on_error, on_loading, on_success)
     | Component.Create ->
         let query = get_action_query loc id body in
-        let style = get_style loc body in
+        let global_style = get_global_style loc body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
-        Component.CreateBody (query, style, form_inputs, form_button)
+        Component.CreateBody (query, global_style, form_inputs, form_button)
     | Component.Update ->
         let query = get_action_query loc id body in
-        let style = get_style loc body in
+        let global_style = get_global_style loc body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
-        Component.UpdateBody (query, style, form_inputs, form_button)
+        Component.UpdateBody (query, global_style, form_inputs, form_button)
     | Component.Delete ->
         let query = get_action_query loc id body in
         let form_button = get_form_button loc id body in
         Component.DeleteBody (query, form_button)
     | Component.SignupForm ->
-        let style = get_style loc body in
+        let global_style = get_global_style loc body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
-        Component.SignupFormBody (style, form_inputs, form_button)
+        Component.SignupFormBody (global_style, form_inputs, form_button)
     | Component.LoginForm ->
-        let style = get_style loc body in
+        let global_style = get_global_style loc body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
-        Component.LoginFormBody (style, form_inputs, form_button)
+        Component.LoginFormBody (global_style, form_inputs, form_button)
     | Component.LogoutButton ->
         let form_button = get_form_button loc id body in
         Component.LogoutButtonBody form_button
@@ -324,11 +324,11 @@ and check_component_unexpected_keys loc id obj_keys typ =
       unexpected_keys_exists loc id obj_keys expected_keys
   | Component.Create | Component.Update ->
       let expected_keys =
-        [ "actionQuery"; "style"; "formInputs"; "formButton" ]
+        [ "actionQuery"; "globalStyle"; "formInputs"; "formButton" ]
       in
       unexpected_keys_exists loc id obj_keys expected_keys
   | Component.SignupForm | Component.LoginForm ->
-      let expected_keys = [ "style"; "formInputs"; "formButton" ] in
+      let expected_keys = [ "globalStyle"; "formInputs"; "formButton" ] in
       unexpected_keys_exists loc id obj_keys expected_keys
   | Component.Delete ->
       let expected_keys = [ "actionQuery"; "formButton" ] in
@@ -506,6 +506,22 @@ and get_form_button loc id body =
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> raise_required_entry_error loc id "formButton"
 
+and get_global_style loc body =
+  let global_style = List.Assoc.find body "globalStyle" ~equal:String.equal in
+  match global_style with
+  | Some global_style -> (
+      match global_style with
+      | AssocObjField (_, global_style) ->
+          Some
+            (List.map global_style ~f:(fun style ->
+                 let id, style = style in
+                 match style with
+                 | StringObjField (loc, style) ->
+                     (loc, id, Component.FormAttrStyle style)
+                 | _ -> raise_type_error loc (Scalar String)))
+      | _ -> raise_type_error loc (Scalar Assoc))
+  | None -> None
+
 and get_style loc body =
   let style = List.Assoc.find body "style" ~equal:String.equal in
   match style with
@@ -536,8 +552,8 @@ and get_input_type loc id body =
           | "PasswordInput" ->
               Some (Component.FormAttrType Component.PasswordInput)
           | "NumberInput" -> Some (Component.FormAttrType Component.NumberInput)
-          | "DefaultInput" ->
-              Some (Component.FormAttrType Component.DefaultInput)
+          | "RelationInput" ->
+              Some (Component.FormAttrType Component.RelationInput)
           | _ -> raise_unexpected_entry_error loc id input_type)
       | _ -> raise_type_error loc (Scalar String))
   | None -> None

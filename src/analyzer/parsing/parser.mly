@@ -127,7 +127,7 @@ obj_field_value:
   | CONNECT; value1 = ID; WITH; value2 = ID
     { ConnectWithObjField ($startpos, (value1, value2)) }
   | CONNECT; value1 = ID; WITH; left = ID; DOT; right = ID
-    { ConnectWithObjField ($startpos, (value1, left ^ right)) }
+    { ConnectWithObjField ($startpos, (value1, left ^ "." ^ right)) }
   | value = TYPESCRIPT
     { TsObjField ($startpos, value) }
   ;

@@ -20,6 +20,8 @@ const {{ id }} = () => {
       navigate("{{ on_fail_redirect_to }}");
     }
   }, [LoggedInUser]);
+
+  if (LoggedInUser)
   {% endif %}
 
   return (

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 {% if type == "login" or type == "signup" %}
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
@@ -10,7 +11,7 @@ import { User } from "@/types";
 {% for imported_type in imported_types %}
 import { {{ imported_type }} } from "@/types"
 {% endfor %}
-import Form from "@/ui/Form";
+import Form, { FormInputType } from "@/ui/Form";
 
 const baseUrl = "http://localhost:4000";
 
@@ -21,6 +22,14 @@ type {{ id }}Props = {
   {% endfor %}
 }
 {% endif %}
+
+const {{ id }}ValidationScheme = z.object({
+{% for rule in form_validation_scheme %}
+  {% if rule and rule.rule %}
+    {{ rule.id }}: {{ rule.rule }},
+  {% endif %}
+{% endfor %}
+});
 
 const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %}) => {
   const url = `${baseUrl}/{{ post_to }}/{% if type == "update" %}${id}{% endif %}`;
@@ -57,7 +66,10 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
       <Form
         method={% if type == "create" or type == "signup" or type == "login" %}"POST"{% else %}"PUT"{% endif %}
         url={url}
-        {% if style %}style="{{ style }}"{% endif %}
+        formValidationSchema={ {{ id }}ValidationScheme}
+        {% for style in global_style %}
+          {{ style.id }}Style="{{ style.value }}"
+        {% endfor %}
         {% if type == "login" or type == "signup" %}handleResponse={handleResponse}{% endif %}
         {% if requires_auth %}accessToken={LoggedInUser?.accessToken}{% endif %}
         formElements={[
@@ -77,8 +89,12 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
 
               formInput: {
                 {% for attr in input.input_attrs %}
-                  {% if attr.name == "defaultValue" or attr.name == "visibility" %}
+                  {% if attr.name == "defaultValue" %}
                   {{ attr.name }}: {{ attr.value }},
+                  {% elif attr.name == "isVisible" %}
+                  {{ attr.name }}: {% if attr.value == "true" %}true{% else %}false{% endif %},
+                  {% elif attr.name == "type" %}
+                  type: FormInputType.{{ attr.value }},
                   {% else %}
                   {{ attr.name }}: "{{ attr.value }}",
                   {% endif %}

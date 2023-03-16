@@ -11,6 +11,7 @@ export const errorHandler = (
   let apiError = err;
 
   if (!(apiError instanceof ApiError)) {
+    console.log(apiError);
     apiError = new ApiError({
       status: httpStatus.INTERNAL_SERVER_ERROR,
       code: 'internal_server_error',

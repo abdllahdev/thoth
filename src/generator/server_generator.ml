@@ -258,10 +258,7 @@ let generate_validators validators_specs auth_specs =
     in
     match auth_specs with
     | Some { user_model; _ } ->
-        names
-        @ [
-            Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
-          ]
+        names @ [ Jg_types.Tstr (String.uncapitalize user_model) ]
     | None -> names
   in
   let validators_index_template =

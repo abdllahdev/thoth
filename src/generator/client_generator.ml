@@ -94,8 +94,17 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_form_component_template.jinja"
   in
-  let { id; args; typ; post_to; style; form_inputs; form_button; requires_auth }
-      =
+  let {
+    id;
+    args;
+    typ;
+    post_to;
+    global_style;
+    form_validation_scheme;
+    form_inputs;
+    form_button;
+    requires_auth;
+  } =
     action_form_component_specs
   in
   let action_form_component_code =
@@ -113,13 +122,28 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
                        ("type", Jg_types.Tstr arg_type);
                      ])) );
           ("type", Jg_types.Tstr typ);
-          ( "style",
-            Jg_types.Tstr
-              (match style with
-              | Some style ->
-                  let _, style = style in
-                  style
-              | None -> "") );
+          ( "form_validation_scheme",
+            Jg_types.Tlist
+              (List.map form_validation_scheme ~f:(fun rule ->
+                   match rule with
+                   | Some (id, rule) ->
+                       Jg_types.Tobj
+                         [
+                           ("id", Jg_types.Tstr id); ("rule", Jg_types.Tstr rule);
+                         ]
+                   | None -> Jg_types.Tnull)) );
+          ( "global_style",
+            Jg_types.Tlist
+              (match global_style with
+              | Some global_style ->
+                  List.map global_style ~f:(fun style ->
+                      let id, style = style in
+                      Jg_types.Tobj
+                        [
+                          ("id", Jg_types.Tstr id);
+                          ("value", Jg_types.Tstr style);
+                        ])
+              | None -> []) );
           ("post_to", Jg_types.Tstr post_to);
           ("requires_auth", Jg_types.Tbool requires_auth);
           ( "form_inputs",

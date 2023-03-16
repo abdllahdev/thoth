@@ -38,9 +38,10 @@ type action_form_component_specs = {
   typ : string;
   post_to : string;
   requires_auth : bool;
+  form_validation_scheme : (string * string) option list;
   form_inputs : form_input list;
   form_button : (string * string) list;
-  style : (string * string) option;
+  global_style : (string * string) list option;
 }
 
 type action_button_component_specs = {
@@ -422,16 +423,63 @@ let get_form_specs form_inputs form_button =
   in
   (form_inputs, get_button_specs form_button)
 
+let get_form_validation_scheme form_inputs =
+  let is_visible input_attrs =
+    List.fold input_attrs ~init:false ~f:(fun flag attr ->
+        match attr with
+        | Component.FormAttrVisibility boolean -> boolean
+        | _ -> flag)
+  in
+  let get_input_validation input_attrs =
+    let input_type =
+      List.find_map input_attrs ~f:(fun attr ->
+          match attr with
+          | Component.FormAttrType form_input -> Some form_input
+          | _ -> None)
+      |> Option.value_exn
+    in
+    match input_type with
+    | TextInput -> "z.string()"
+    | PasswordInput -> "z.string()"
+    | EmailInput -> "z.string().email()"
+    | NumberInput ->
+        "z.string().regex(/^\\d+$/).transform((id: string) => parseInt(id, \
+         10)),"
+    | _ -> ""
+  in
+  List.map form_inputs ~f:(fun input ->
+      let _, id, _, _, input_attrs = input in
+      if is_visible input_attrs then
+        let input_validation = get_input_validation input_attrs in
+        Some (id, input_validation)
+      else None)
+
 let generate_action_form_components_specs ?global_env id args body =
-  let get_style style =
-    match style with Some style -> Some (get_from_attr style) | None -> None
+  let get_global_style global_style =
+    match global_style with
+    | Some global_style ->
+        Some
+          (List.map global_style ~f:(fun style ->
+               let _, id, style = style in
+               let _, value = get_from_attr style in
+               (id, value)))
+    | None -> None
   in
   let args = get_component_args args in
-  let post_to, requires_auth, typ, style, form_inputs, form_button =
+  let ( post_to,
+        requires_auth,
+        typ,
+        global_style,
+        form_validation_scheme,
+        form_inputs,
+        form_button ) =
     (match body with
-    | Component.CreateBody ((_, query_id), style, form_inputs, form_button)
-    | Component.UpdateBody ((_, query_id), style, form_inputs, form_button) ->
-        let style = get_style style in
+    | Component.CreateBody
+        ((_, query_id), global_style, form_inputs, form_button)
+    | Component.UpdateBody
+        ((_, query_id), global_style, form_inputs, form_button) ->
+        let form_validation_scheme = get_form_validation_scheme form_inputs in
+        let global_style = get_global_style global_style in
         let global_env = Option.value_exn global_env in
         let query =
           GlobalEnvironment.lookup global_env ~key:query_id
@@ -445,25 +493,53 @@ let generate_action_form_components_specs ?global_env id args body =
           match permissions with Some _ -> true | None -> false
         in
         let form_inputs, form_button = get_form_specs form_inputs form_button in
+
         Some
           ( Fmt.str "%s" (result_scalar_type |> String.lowercase),
             requires_auth,
             QueryFormatter.string_of_query_type query.typ,
-            style,
+            global_style,
+            form_validation_scheme,
             form_inputs,
             form_button )
-    | Component.SignupFormBody (style, form_inputs, form_button) ->
-        let style = get_style style in
+    | Component.SignupFormBody (global_style, form_inputs, form_button) ->
+        let form_validation_scheme = get_form_validation_scheme form_inputs in
+        let global_style = get_global_style global_style in
         let form_inputs, form_button = get_form_specs form_inputs form_button in
-        Some ("auth/signup", false, "signup", style, form_inputs, form_button)
-    | Component.LoginFormBody (style, form_inputs, form_button) ->
-        let style = get_style style in
+        Some
+          ( "auth/signup",
+            false,
+            "signup",
+            global_style,
+            form_validation_scheme,
+            form_inputs,
+            form_button )
+    | Component.LoginFormBody (global_style, form_inputs, form_button) ->
+        let form_validation_scheme = get_form_validation_scheme form_inputs in
+        let global_style = get_global_style global_style in
         let form_inputs, form_button = get_form_specs form_inputs form_button in
-        Some ("auth/login", false, "login", style, form_inputs, form_button)
+        Some
+          ( "auth/login",
+            false,
+            "login",
+            global_style,
+            form_validation_scheme,
+            form_inputs,
+            form_button )
     | _ -> None)
     |> Option.value_exn
   in
-  { id; args; typ; post_to; requires_auth; style; form_inputs; form_button }
+  {
+    id;
+    args;
+    typ;
+    post_to;
+    form_validation_scheme;
+    requires_auth;
+    global_style;
+    form_inputs;
+    form_button;
+  }
 
 let generate_action_button_components_specs ?global_env id args body =
   let args = get_component_args args in

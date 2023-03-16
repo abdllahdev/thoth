@@ -122,7 +122,7 @@ module Component = struct
     | EmailInput
     | PasswordInput
     | NumberInput
-    | DefaultInput
+    | RelationInput
 
   type form_attr =
     | FormAttrName of string
@@ -133,6 +133,7 @@ module Component = struct
     | FormAttrPlaceholder of string
 
   type style = form_attr
+  type global_style = loc * id * form_attr
   type form_input = form_attr list
   type form_input_label = form_attr list
 
@@ -149,11 +150,15 @@ module Component = struct
         * XRA.expression list
         * XRA.expression list
         * XRA.expression list
-    | CreateBody of query_id * style option * form_element list * form_button
-    | UpdateBody of query_id * style option * form_element list * form_button
+    | CreateBody of
+        query_id * global_style list option * form_element list * form_button
+    | UpdateBody of
+        query_id * global_style list option * form_element list * form_button
     | DeleteBody of query_id * form_button
-    | SignupFormBody of style option * form_element list * form_button
-    | LoginFormBody of style option * form_element list * form_button
+    | SignupFormBody of
+        global_style list option * form_element list * form_button
+    | LoginFormBody of
+        global_style list option * form_element list * form_button
     | LogoutButtonBody of form_button
 end
 
