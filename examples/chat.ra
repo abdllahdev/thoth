@@ -32,7 +32,7 @@ query<Create> createMessage {
 	data: {
 		fields: [content],
 		relationFields: {
-    	user: connect id with userId
+			user: connect id with userId
 		}
 	}
 }
@@ -64,12 +64,6 @@ component<FindMany> MessagesComponent {
 }
 
 component<Create> CreateMessageForm  {
-	globalStyle: {
-		form: "",
-		input: "",
-		inputLabel: "",
-		inputError: ""
-	},
 	actionQuery: createMessage,
 	formInputs: {
 		content: {
@@ -100,7 +94,8 @@ component<SignupForm> MySignupForm {
 		username: {
 			input: {
 				type: TextInput,
-				placeholder: "Enter username"
+				placeholder: "Enter username",
+				defaultValue: 123
 			}
 		},
 		password: {

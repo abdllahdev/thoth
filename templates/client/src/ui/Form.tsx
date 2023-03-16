@@ -12,7 +12,10 @@ export enum FormInputType {
   EmailInput = 'email',
   PasswordInput = 'password',
   NumberInput = 'number',
-  RelationInput = 'default',
+  RelationInput = 'relation',
+  DateTimeInput = "datetime-local",
+  DateInput = 'date',
+  CheckboxInput = "checkbox"
 }
 
 type FormInput = {
@@ -21,7 +24,7 @@ type FormInput = {
   isVisible: boolean;
   style?: string;
   errorStyle?: string;
-  defaultValue?: string | number | { [x: string]: any };
+  defaultValue?: string | number | boolean | { [x: string]: any };
   placeholder?: string;
 };
 
@@ -110,7 +113,7 @@ const Form = ({
       {formElements.map((formElement, idx) => {
         const formInput = formElement.formInput;
         const formLabel = formElement?.formInputLabel;
-        if (formInput.type !== 'default')
+        if (formInput.type !== FormInputType.RelationInput)
           return (
             <div
               hidden={!formInput.isVisible}

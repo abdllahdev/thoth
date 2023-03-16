@@ -24,3 +24,4 @@ exception RequiredAuthConfigError of string
 exception CompilationError of string
 exception UnexpectedEntryError of string
 exception RequiredEntryError of string
+exception FormInputTypeError of string

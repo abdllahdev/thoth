@@ -5,17 +5,7 @@ open Ast.Formatter
 let raise_type_error ?id ?received_value ?received_type loc expected_type =
   if Option.is_some received_type then
     if Option.is_some received_value then
-      if Option.is_none id then
-        raise
-          (TypeError
-             (Fmt.str
-                "@(%s): Excepted a value of type '%s' but received '%s' of \
-                 type '%s'"
-                (string_of_loc loc)
-                (string_of_type expected_type)
-                (Option.value_exn received_value)
-                (string_of_type (Option.value_exn received_type))))
-      else
+      if Option.is_some id then
         raise
           (TypeError
              (Fmt.str
@@ -26,20 +16,45 @@ let raise_type_error ?id ?received_value ?received_type loc expected_type =
                 (Option.value_exn received_value)
                 (string_of_type (Option.value_exn received_type))
                 (Option.value_exn id)))
+      else
+        raise
+          (TypeError
+             (Fmt.str
+                "@(%s): Excepted a value of type '%s' but received '%s' of \
+                 type '%s'"
+                (string_of_loc loc)
+                (string_of_type expected_type)
+                (Option.value_exn received_value)
+                (string_of_type (Option.value_exn received_type))))
     else
       raise
         (TypeError
            (Fmt.str
-              "@(%s): Excepted a value of type %s but received a value of type \
-               %s"
+              "@(%s): Excepted a value of type '%s' but received a value of \
+               type '%s'"
               (string_of_loc loc)
               (string_of_type expected_type)
               (string_of_type (Option.value_exn received_type))))
   else
     raise
       (TypeError
-         (Fmt.str "@(%s): Excepted a value of type %s" (string_of_loc loc)
+         (Fmt.str "@(%s): Excepted a value of type '%s'" (string_of_loc loc)
             (string_of_type expected_type)))
+
+let raise_input_type_error loc id field_id expected_input_type
+    implemented_input_type =
+  raise
+    (FormInputTypeError
+       (Fmt.str
+          "@(%s): Expected an input of type '%s' for field '%s' but an input \
+           of type '%s' was implemented instead in '%s'"
+          (string_of_loc loc)
+          (String.concat ~sep:","
+             (List.map expected_input_type ~f:(fun typ ->
+                  ComponentFormatter.string_of_form_input_type typ)))
+          field_id
+          (ComponentFormatter.string_of_form_input_type implemented_input_type)
+          id))
 
 let raise_declaration_type_error ?id loc expected_type received_value
     received_type =

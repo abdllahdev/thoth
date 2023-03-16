@@ -16,7 +16,7 @@ export const {{ validator.id }}Validator = z.object({
         ,
         {% endif %}
       {% endfor %}
-    }),
+    }).strict(),
   {% endif %}
 
   {% if validator.search %}
@@ -39,7 +39,7 @@ export const {{ validator.id }}Validator = z.object({
       {{ field.id }}: z.{{ field.type[0]  }}().optional(),
       {% endif %}
     {% endfor %}
-  }),
+  }).strict(),
   {% endif %}
 
   {% if validator.data %}
@@ -73,7 +73,7 @@ export const {{ validator.id }}Validator = z.object({
         }),
       {% endif %}
     {% endfor %}
-  }),
+  }).strict(),
   {% endif %}
 });
 {% endfor %}

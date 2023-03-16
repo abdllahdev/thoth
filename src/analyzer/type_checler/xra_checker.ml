@@ -353,23 +353,43 @@ let check_component global_env xra_env app_declaration loc id typ args body =
     let declaration_id, declaration_type, required_fields =
       match typ with
       | Component.Create | Component.Update ->
-          ( Option.value_exn query_id,
-            QueryDeclaration,
-            (GlobalEnvironment.lookup global_env
-               ~key:(Option.value_exn query_id)
-            |> GlobalEnvironment.get_query_value)
-              .body
+          let query =
+            GlobalEnvironment.lookup global_env ~key:(Option.value_exn query_id)
+            |> GlobalEnvironment.get_query_value
+          in
+          let model_table =
+            let _, model_id = query.model in
+            GlobalEnvironment.lookup global_env ~key:model_id
+            |> GlobalEnvironment.get_model_value
+          in
+          let required_fields =
+            query.body
             |> List.find_map ~f:(function
                  | Query.Data (_, fields) -> Some fields
                  | _ -> None)
             |> Option.value_exn
             |> List.fold ~init:[] ~f:(fun lst field ->
                    let field, _ = field in
-                   lst @ [ field ]) )
+                   let field_info =
+                     LocalEnvironment.lookup model_table ~key:field
+                   in
+                   let field_type =
+                     if is_custom_type field_info.typ then "relation"
+                     else
+                       match get_scalar_type field_info.typ with
+                       | String -> "text"
+                       | Int -> "number"
+                       | DateTime -> "datetime"
+                       | Boolean -> "checkbox"
+                       | _ -> raise_compiler_error ()
+                   in
+                   lst @ [ (field, field_type) ])
+          in
+          (Option.value_exn query_id, QueryDeclaration, required_fields)
       | Component.SignupForm -> (
           let auth_config = get_auth_config app_declaration in
           match auth_config with
-          | Some { user_model; _ } ->
+          | Some { user_model; username_field; password_field; _ } ->
               let required_fields =
                 GlobalEnvironment.lookup global_env ~key:user_model
                 |> GlobalEnvironment.get_model_value
@@ -386,7 +406,26 @@ let check_component global_env xra_env app_declaration loc id typ args body =
                            || is_custom_type data.typ)
                        then true
                        else false)
-                |> Hashtbl.keys
+                |> Hashtbl.fold ~init:[]
+                     ~f:(fun
+                          ~key
+                          ~(data : GlobalEnvironment.field_value)
+                          required_fields
+                        ->
+                       if String.equal key username_field then
+                         required_fields @ [ (key, "username") ]
+                       else if String.equal key password_field then
+                         required_fields @ [ (key, "password") ]
+                       else
+                         let input_type =
+                           match get_scalar_type data.typ with
+                           | String -> "text"
+                           | Int -> "number"
+                           | DateTime -> "datetime"
+                           | Boolean -> "checkbox"
+                           | _ -> raise_compiler_error ()
+                         in
+                         required_fields @ [ (key, input_type) ])
               in
               (user_model, ModelDeclaration, required_fields)
           | None -> raise_required_auth_configuration loc typ)
@@ -395,7 +434,10 @@ let check_component global_env xra_env app_declaration loc id typ args body =
           match auth_config with
           | Some { username_field; password_field; _ } ->
               let _, id, _ = app_declaration in
-              (id, AppDeclaration, [ username_field; password_field ])
+              ( id,
+                AppDeclaration,
+                [ (username_field, "username"); (password_field, "password") ]
+              )
           | None -> raise_required_auth_configuration loc typ)
       | _ -> raise_compiler_error ()
     in
@@ -405,21 +447,137 @@ let check_component global_env xra_env app_declaration loc id typ args body =
             let _, id, _, _, _ = field in
             id)
       in
-      List.iter required_fields ~f:(fun required_field ->
-          if
-            not
-              (List.mem implemented_form_field required_field
-                 ~equal:String.equal)
-          then raise_required_form_input_error loc required_field id)
+      List.iter required_fields ~f:(fun (field, _) ->
+          if not (List.mem implemented_form_field field ~equal:String.equal)
+          then raise_required_form_input_error loc field id)
+    in
+    let check_unexpected_fields required_fields =
+      List.iter form_fields ~f:(fun field ->
+          let loc, id, _, _, _ = field in
+          try
+            List.find_exn required_fields ~f:(fun (field, _) ->
+                String.equal id field)
+            |> ignore
+          with Not_found_s _ | Caml.Not_found ->
+            raise_undefined_error loc "field" id ~declaration_type
+              ~declaration_id)
+    in
+    let check_form_fields_type required_fields =
+      List.iter form_fields ~f:(fun field ->
+          let loc, input_id, _, _, input_attrs = field in
+          let input_type =
+            List.find_map input_attrs ~f:(fun attr ->
+                match attr with
+                | Component.FormAttrType form_input -> Some form_input
+                | _ -> None)
+            |> Option.value_exn
+          in
+          let input_default_value =
+            List.find_map input_attrs ~f:(fun attr ->
+                match attr with
+                | Component.FormAttrDefaultValue form_input -> Some form_input
+                | _ -> None)
+          in
+          let expected_input_type =
+            List.Assoc.find_exn required_fields input_id ~equal:String.equal
+          in
+          match expected_input_type with
+          | "text" -> (
+              match input_type with
+              | Component.TextInput -> (
+                  match input_default_value with
+                  | Some default_value -> (
+                      match default_value with
+                      | StringObjField _ -> ()
+                      | _ -> raise_type_error loc (Scalar String))
+                  | None -> ())
+              | _ ->
+                  raise_input_type_error loc id input_id [ Component.TextInput ]
+                    input_type)
+          | "username" -> (
+              match input_type with
+              | Component.TextInput | Component.EmailInput -> (
+                  match input_default_value with
+                  | Some default_value -> (
+                      match default_value with
+                      | StringObjField _ -> ()
+                      | _ -> raise_type_error loc (Scalar String))
+                  | None -> ())
+              | _ ->
+                  raise_input_type_error loc id input_id
+                    [ Component.TextInput; Component.EmailInput ]
+                    input_type)
+          | "password" -> (
+              match input_type with
+              | Component.PasswordInput -> (
+                  match input_default_value with
+                  | Some default_value -> (
+                      match default_value with
+                      | StringObjField _ -> ()
+                      | _ -> raise_type_error loc (Scalar String))
+                  | None -> ())
+              | _ ->
+                  raise_input_type_error loc id input_id
+                    [ Component.PasswordInput ]
+                    input_type)
+          | "relation" -> (
+              match input_type with
+              | Component.RelationInput -> (
+                  match input_default_value with
+                  | Some default_value -> (
+                      print_string (string_of_obj_field default_value);
+                      match default_value with
+                      | AssocObjField _ -> ()
+                      | _ -> raise_type_error loc (Scalar ConnectWith))
+                  | None ->
+                      raise_required_entry_error loc input_id "defaultValue")
+              | _ ->
+                  raise_input_type_error loc id input_id
+                    [ Component.RelationInput ]
+                    input_type)
+          | "number" -> (
+              match input_type with
+              | Component.NumberInput -> (
+                  match input_default_value with
+                  | Some default_value -> (
+                      match default_value with
+                      | IntObjField _ -> ()
+                      | _ -> raise_type_error loc (Scalar Int))
+                  | None -> ())
+              | _ ->
+                  raise_input_type_error loc id input_id
+                    [ Component.NumberInput ] input_type)
+          | "checkbox" -> (
+              match input_type with
+              | Component.CheckboxInput -> (
+                  match input_default_value with
+                  | Some default_value -> (
+                      match default_value with
+                      | BooleanObjField _ -> ()
+                      | _ -> raise_type_error loc (Scalar Boolean))
+                  | None -> ())
+              | _ ->
+                  raise_input_type_error loc id input_id
+                    [ Component.CheckboxInput ]
+                    input_type)
+          | "datetime" -> (
+              match input_type with
+              | Component.DateInput | Component.DateTimeInput -> (
+                  match input_default_value with
+                  | Some default_value -> (
+                      match default_value with
+                      | StringObjField _ -> ()
+                      | _ -> raise_type_error loc (Scalar String))
+                  | None -> ())
+              | _ ->
+                  raise_input_type_error loc id input_id
+                    [ Component.DateInput; Component.DateTimeInput ]
+                    input_type)
+          | _ -> ())
     in
     check_required_fields required_fields;
-    List.iter form_fields ~f:(fun field ->
-        let loc, id, _, _, _ = field in
-        try
-          List.find_exn required_fields ~f:(fun field -> String.equal id field)
-          |> ignore
-        with Not_found_s _ | Caml.Not_found ->
-          raise_undefined_error loc "field" id ~declaration_type ~declaration_id)
+    check_unexpected_fields required_fields;
+    check_form_fields_type required_fields
   in
   let check_component_body body =
     match body with
@@ -463,5 +621,4 @@ let check_component global_env xra_env app_declaration loc id typ args body =
         check_form_fields form_fields
     | _ -> ()
   in
-  (* let check_form_field_types ?query_id form_fields = () in *)
   check_component_body body

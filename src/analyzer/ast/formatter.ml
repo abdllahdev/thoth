@@ -15,7 +15,7 @@ let string_of_scalar_type scalar_type =
   | Nil -> "Nil"
   | Assoc -> "Assoc"
   | List -> "List"
-  | ConnectWith -> "Connect"
+  | ConnectWith -> "ConnectWith"
   | As -> "As"
   | CustomType custom_type -> custom_type
 
@@ -49,7 +49,8 @@ let rec string_of_obj_field obj_field =
         (List.fold assoc ~init:"" ~f:(fun accum e ->
              let id, obj_field = e in
              accum ^ Fmt.str "%s: %s," id (string_of_obj_field obj_field)))
-  | ConnectWithObjField (_, (value1, value2)) -> Fmt.str "%s.%s" value1 value2
+  | ConnectWithObjField (_, (value1, value2)) ->
+      Fmt.str "connect %s with %s" value1 value2
   | _ -> ""
 
 module ModelFormatter = struct
@@ -127,6 +128,9 @@ module ComponentFormatter = struct
     | Component.EmailInput -> "EmailInput"
     | Component.PasswordInput -> "PasswordInput"
     | Component.RelationInput -> "RelationInput"
+    | Component.CheckboxInput -> "CheckboxInput"
+    | Component.DateTimeInput -> "DateTimeInput"
+    | Component.DateInput -> "DateInput"
 
   let string_of_component_type component_type =
     match component_type with

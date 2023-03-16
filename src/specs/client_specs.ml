@@ -442,9 +442,13 @@ let get_form_validation_scheme form_inputs =
     | TextInput -> "z.string()"
     | PasswordInput -> "z.string()"
     | EmailInput -> "z.string().email()"
+    | DateInput | DateTimeInput ->
+        "z.preprocess((arg) => { if (typeof arg == 'string' || arg instanceof \
+         Date) return new Date(arg);}, z.date()),"
     | NumberInput ->
         "z.string().regex(/^\\d+$/).transform((id: string) => parseInt(id, \
          10)),"
+    | CheckboxInput -> "z.boolean()"
     | _ -> ""
   in
   List.map form_inputs ~f:(fun input ->

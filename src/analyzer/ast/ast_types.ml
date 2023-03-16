@@ -123,6 +123,9 @@ module Component = struct
     | PasswordInput
     | NumberInput
     | RelationInput
+    | DateTimeInput
+    | DateInput
+    | CheckboxInput
 
   type form_attr =
     | FormAttrName of string
