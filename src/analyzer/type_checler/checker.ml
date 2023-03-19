@@ -6,6 +6,7 @@ open Error_handler.Handler
 open Environment
 open Model_checker
 open Query_checker
+open Type_decl_checker
 open Xra_checker
 
 let check_app_declaration global_env app_declaration =
@@ -91,6 +92,7 @@ let check_declarations global_env app_declaration declarations =
     | Page (_, _, _, _, body) ->
         let xra_env = XRAEnvironment.create_env () in
         check_page global_env xra_env body
+    | Type (_, id, fields) -> check_type_decl global_env id fields
   in
   List.iter ~f:(fun declaration -> check_declaration declaration) declarations
 

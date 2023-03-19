@@ -26,6 +26,11 @@ model Message {
 	updatedAt DateTime @updatedAt
 }
 
+type TestType {
+	messsages Message[]
+	user			User
+}
+
 @on(Message)
 @permission(IsAuth)
 query<Create> createMessage {
@@ -55,7 +60,7 @@ component<FindMany> MessagesComponent {
 		<>
 			[% for message in messages %]
 				<div className="flex space-x-3 text-white">
-					<div>{ message.user }</div>
+					<div>{ message.userId }</div>
 					<div>{ message.content }</div>
 				</div>
 			[% endfor %]

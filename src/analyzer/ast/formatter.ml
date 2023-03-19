@@ -152,6 +152,7 @@ let string_of_declaration_type declaration_type =
   | QueryDeclaration -> "Query"
   | ComponentDeclaration -> "Component"
   | PageDeclaration -> "Page"
+  | TypeDeclaration -> "Type"
   | AppDeclaration -> "AppConfig"
 
 let string_of_declaration declaration =
@@ -161,6 +162,7 @@ let string_of_declaration declaration =
         (ModelFormatter.string_of_fields body)
   | Query _ -> ""
   | Component _ -> ""
+  | Type _ -> ""
   | Page _ -> ""
 
 let rec string_of_declarations declarations =

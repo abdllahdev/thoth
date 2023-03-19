@@ -84,6 +84,7 @@ rule read_token =
   | "SignupForm"    { SIGNUP_FORM }
   | "LoginForm"     { LOGIN_FORM }
   | "LogoutButton"  { LOGOUT_BUTTON }
+  | "type"          { TYPE }
   | "as"            { AS }
   | "@on"           { ON }
   | "@permission"   { PERMISSION }

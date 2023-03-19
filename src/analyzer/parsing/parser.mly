@@ -8,6 +8,7 @@
 %token <string> STRING
 %token <string> TYPESCRIPT
 %token <string> ATTRIBUTE
+%token          TYPE
 %token          TRUE
 %token          FALSE
 %token          NOT
@@ -135,6 +136,8 @@ obj_field_value:
 obj_field:
   | key = ID; COLON; value = obj_field_value
     { (key, value) }
+  | TYPE; COLON; value = obj_field_value;
+    { ("type", value) }
   ;
 
 (* Model rules *)
@@ -173,6 +176,16 @@ model_field:
 model_body:
   | LEFT_BRACE; model_fields = list(model_field); RIGHT_BRACE
     { model_fields }
+  ;
+
+type_field:
+  | id = ID; typ = typ; option(SEMICOLON)
+    { ($startpos, id, typ) }
+  ;
+
+type_body:
+  | LEFT_BRACE; type_fields = list(type_field); RIGHT_BRACE
+    { type_fields }
   ;
 
 (* Query rules *)
@@ -421,6 +434,8 @@ xra_page_attributes:
 declaration:
   | MODEL; model_id = ID; model_body = model_body
     { Model($startpos, (parse_declaration_id $startpos model_id ModelDeclaration), model_body) }
+  | TYPE; type_id = ID; type_body = type_body
+    { Type($startpos, (parse_declaration_id $startpos type_id TypeDeclaration), type_body) }
   | query_attributes = query_attributes;
     QUERY; typ = query_type; query_id = ID; option(COLON);
     return_type = option(typ); body = query_body; option(SEMICOLON)

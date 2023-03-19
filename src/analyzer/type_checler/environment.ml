@@ -22,6 +22,7 @@ module GlobalEnvironment = struct
   }
 
   type model_value = field_value LocalEnvironment.t
+  type type_value = typ LocalEnvironment.t
 
   type query_value = {
     typ : Query.typ;
@@ -38,6 +39,7 @@ module GlobalEnvironment = struct
 
   type declaration_value =
     | ModelValue of model_value
+    | TypeValue of type_value
     | QueryValue of query_value
     | ComponentValue of component_value
     | PageValue
@@ -57,6 +59,7 @@ module GlobalEnvironment = struct
     | ModelValue _ -> ModelDeclaration
     | QueryValue _ -> QueryDeclaration
     | ComponentValue _ -> ComponentDeclaration
+    | TypeValue _ -> TypeDeclaration
     | PageValue -> PageDeclaration
 
   let check_type declaration_value declaration_type =
@@ -84,6 +87,28 @@ module GlobalEnvironment = struct
     | ComponentValue component_value -> Some component_value
     | _ -> None)
     |> Option.value_exn
+end
+
+module TypeEnvironment = struct
+  let rec allocate_fields local_env body =
+    match body with
+    | [] -> ()
+    | field :: fields ->
+        (match field with
+        | loc, id, typ ->
+            if LocalEnvironment.contains local_env ~key:id then
+              raise_multi_definitions_error loc id;
+            LocalEnvironment.allocate local_env ~key:id ~data:typ);
+        allocate_fields local_env fields
+
+  let allocate (global_env : GlobalEnvironment.t) type_decl =
+    let loc, id, fields = type_decl in
+    if GlobalEnvironment.contains global_env ~key:id then
+      raise_multi_definitions_error loc id;
+    let table = LocalEnvironment.create () in
+    allocate_fields table fields;
+    let declaration_value = GlobalEnvironment.TypeValue table in
+    GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 end
 
 module ModelEnvironment = struct
@@ -195,6 +220,7 @@ module EnvironmentManager = struct
       | Component (loc, id, component_type, args, _) ->
           allocate global_env loc id (ComponentValue { component_type; args })
       | Page (loc, id, _, _, _) -> allocate global_env loc id PageValue
+      | Type typ -> TypeEnvironment.allocate global_env typ
     in
     List.iter
       ~f:(fun declaration -> populate_declaration global_env declaration)

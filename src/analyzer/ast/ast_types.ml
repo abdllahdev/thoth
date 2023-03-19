@@ -186,6 +186,8 @@ type component_declaration =
 type page_declaration =
   loc * id * Page.route * permission list option * XRA.body
 
+type type_declaration = loc * id * (loc * id * typ) list
+
 (* The different types of declarations in the language *)
 type declaration_type =
   | ModelDeclaration
@@ -193,12 +195,14 @@ type declaration_type =
   | ComponentDeclaration
   | PageDeclaration
   | AppDeclaration
+  | TypeDeclaration
 
 type declaration =
   | Model of model_declaration
   | Query of query_declaration
   | Component of component_declaration
   | Page of page_declaration
+  | Type of type_declaration
 
 type app_config =
   | Title of string
