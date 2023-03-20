@@ -4,12 +4,20 @@ import prismaClient from '../utils/prismaClient';
 import sse from '../utils/sse';
 import ApiError from '../utils/apiError';
 
-{% for func in functions %}
+{%- autoescape false -%}
+{% for import_ in imports %}
+  {{ import_ }}
+{% endfor %}
 
-export const {{ func.id }} = async (
+{% for func in functions %}
+export const {{ func.id }} =
+{% if func.type == "custom" %}
+  {{ func.custom_fn }}
+{% else %}
+async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   try {
     const payload = {
@@ -95,5 +103,6 @@ export const {{ func.id }} = async (
     next(err);
   }
 };
-
+{% endif %}
 {% endfor %}
+{% endautoescape -%}

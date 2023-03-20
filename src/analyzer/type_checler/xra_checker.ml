@@ -8,8 +8,11 @@ open Environment
 let rec check_expressions global_env xra_env expressions =
   let rec check_dot_expression ?local_symbol_table ?xra_env dot_expression =
     let is_relation_field (field : GlobalEnvironment.field_value) =
-      if LocalEnvironment.contains field.field_attrs_table ~key:"@relation" then
-        true
+      if
+        LocalEnvironment.contains
+          (Option.value_exn field.field_attrs_table)
+          ~key:"@relation"
+      then true
       else false
     in
     match dot_expression with
@@ -256,7 +259,8 @@ let rec check_expressions global_env xra_env expressions =
                         then
                           raise_type_error ~id loc arg_type
                             ~received_value:(string_of_int value)
-                            ~received_type:(Scalar Int))
+                            ~received_type:(Scalar Int)
+                    | ReferenceLiteral _ -> ())
                 | _ -> ())
         | None -> ()
     in
@@ -435,10 +439,17 @@ let check_component global_env xra_env app_declaration loc id typ args body =
             GlobalEnvironment.lookup global_env ~key:(Option.value_exn query_id)
             |> GlobalEnvironment.get_query_value
           in
-          let model_table =
-            let _, model_id = query.model in
-            GlobalEnvironment.lookup global_env ~key:model_id
-            |> GlobalEnvironment.get_model_value
+          let type_table =
+            match query.typ with
+            | Query.Custom ->
+                GlobalEnvironment.lookup global_env
+                  ~key:
+                    (string_of_scalar_type (get_scalar_type query.return_type))
+                |> GlobalEnvironment.get_type_value
+            | _ ->
+                let _, model_id = Option.value_exn query.model in
+                GlobalEnvironment.lookup global_env ~key:model_id
+                |> GlobalEnvironment.get_model_value
           in
           let required_fields =
             query.body
@@ -449,7 +460,7 @@ let check_component global_env xra_env app_declaration loc id typ args body =
             |> List.fold ~init:[] ~f:(fun lst field ->
                    let field, _ = field in
                    let field_info =
-                     LocalEnvironment.lookup model_table ~key:field
+                     LocalEnvironment.lookup type_table ~key:field
                    in
                    let field_type =
                      if is_custom_type field_info.typ then "relation"
@@ -475,11 +486,14 @@ let check_component global_env xra_env app_declaration loc id typ args body =
                      ~f:(fun (data : GlobalEnvironment.field_value) ->
                        if
                          not
-                           (LocalEnvironment.contains data.field_attrs_table
+                           (LocalEnvironment.contains
+                              (Option.value_exn data.field_attrs_table)
                               ~key:"@default"
-                           || LocalEnvironment.contains data.field_attrs_table
+                           || LocalEnvironment.contains
+                                (Option.value_exn data.field_attrs_table)
                                 ~key:"@id"
-                           || LocalEnvironment.contains data.field_attrs_table
+                           || LocalEnvironment.contains
+                                (Option.value_exn data.field_attrs_table)
                                 ~key:"@updatedAt"
                            || is_custom_type data.typ)
                        then true

@@ -253,6 +253,7 @@ let rec generate_xra_specs xra_expression =
 
 let generate_page_specs global_env page_declaration auth_specs =
   let _, id, route, permissions, body = page_declaration in
+  let _, route = route in
   let requires_auth =
     match permissions with
     | Some _ ->

@@ -26,13 +26,8 @@ model Message {
 	updatedAt DateTime @updatedAt
 }
 
-type TestType {
-	messsages Message[]
-	user			User
-}
-
-@on(Message)
-@permission(IsAuth)
+@model(Message)
+@permissions(IsAuth)
 query<Create> createMessage {
 	data: {
 		fields: [content],
@@ -42,10 +37,28 @@ query<Create> createMessage {
 	}
 }
 
-@on(Message)
-@permission(IsAuth)
+@model(Message)
+@permissions(IsAuth)
 query<FindMany> getMessages {
 	search: [content]
+}
+
+type Test {
+	testMessage String
+}
+
+@route("get", "/test")
+@permissions(IsAuth)
+query<Custom> testFn : Test {
+	imports: [|
+		import something from "someFunc"
+	|],
+	fn: [|
+		 async (req: Request, res: Response, next: NextFunction) => {
+			const test = "I'm a test function"
+			res.status(200).json({ testMessage: test })
+		 }
+	|]
 }
 
 component<FindMany> MessagesComponent {
@@ -145,8 +158,8 @@ component<LogoutButton> MyLogoutButton {
 	}
 }
 
-@at("/")
-@permission(IsAuth)
+@route("/")
+@permissions(IsAuth)
 page Home {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
@@ -159,7 +172,7 @@ page Home {
 	)
 }
 
-@at("/login")
+@route("/login")
 page LoginPage {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
@@ -171,7 +184,7 @@ page LoginPage {
 	)
 }
 
-@at("/signup")
+@route("/signup")
 page SignupPage {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">

@@ -36,6 +36,7 @@ let string_of_literal literal =
   | StringLiteral (_, str) -> Fmt.str "'%s'" str
   | BooleanLiteral (_, boolean) -> Fmt.str "%b" boolean
   | IntLiteral (_, num) -> Fmt.str "%d" num
+  | ReferenceLiteral (_, ref) -> ref
 
 let rec string_of_obj_field obj_field =
   match obj_field with

@@ -63,9 +63,6 @@
 %token          AS
 %token          FRAGMENT_OPENING
 %token          FRAGMENT_CLOSING
-%token          ON
-%token          AT
-%token          PERMISSION
 %token          COLON
 %token          SEMICOLON
 %token          EOF
@@ -188,14 +185,19 @@ type_body:
     { type_fields }
   ;
 
-(* Query rules *)
-query_attributes:
-  | permissions = option(permissions); model = query_model
-    { (permissions, model) }
-  | model = query_model; permissions = option(permissions)
-    { (permissions, model) }
+attribute_arg:
+  | id = ID;
+    { ReferenceLiteral ($startpos, id) }
+  | str = STRING
+    { StringLiteral ($startpos, str) }
   ;
 
+attribute:
+  | attribute_id = ATTRIBUTE; LEFT_PARAN; args = separated_nonempty_list(COMMA, attribute_arg); RIGHT_PARAN
+    { (attribute_id, ($startpos, args)) }
+  ;
+
+(* Query rules *)
 query_type:
   | LT; FIND_MANY; GT
     { Query.FindMany }
@@ -215,15 +217,6 @@ query_body:
   | LEFT_BRACE; body = separated_nonempty_list(COMMA, obj_field); RIGHT_BRACE
     { body }
   ;
-
-query_model:
-  | ON; LEFT_PARAN; model = ID; RIGHT_PARAN
-    { ($startpos, model) }
-  ;
-
-permissions:
-  | PERMISSION; LEFT_PARAN; permissions = separated_nonempty_list(COMMA, ID); RIGHT_PARAN
-    { parse_permissions $startpos permissions }
 
 (* xra rules *)
 xra_variable_expression:
@@ -419,32 +412,19 @@ xra_component:
     { parse_component $startpos id typ args body }
   ;
 
-xra_page_route:
-  | AT; LEFT_PARAN; route = STRING; RIGHT_PARAN
-    { route }
-  ;
-
-xra_page_attributes:
-  | route = xra_page_route; permissions = option(permissions)
-    { (permissions, route) }
-  | permissions = option(permissions); route = xra_page_route
-    { (permissions, route) }
-  ;
-
 declaration:
   | MODEL; model_id = ID; model_body = model_body
     { Model($startpos, (parse_declaration_id $startpos model_id ModelDeclaration), model_body) }
   | TYPE; type_id = ID; type_body = type_body
     { Type($startpos, (parse_declaration_id $startpos type_id TypeDeclaration), type_body) }
-  | query_attributes = query_attributes;
+  | attributes = option(list(attribute));
     QUERY; typ = query_type; query_id = ID; option(COLON);
     return_type = option(typ); body = query_body; option(SEMICOLON)
-    { let (permissions, model) = query_attributes in
-      parse_query $startpos (parse_id $startpos query_id) typ model permissions return_type body }
+    { parse_query $startpos (parse_id $startpos query_id) typ attributes return_type body }
   | xra_component = xra_component
     { xra_component }
-  | xra_page_attributes = xra_page_attributes; PAGE; page_id = ID; xra_general_body = xra_general_body
-    { let (permissions, route) = xra_page_attributes in
+  | attributes = option(list(attribute)); PAGE; page_id = ID; xra_general_body = xra_general_body
+    { let (route, permissions) = parse_page_attributes $startpos page_id attributes in
       Page(
         $startpos,
         (parse_declaration_id $startpos page_id PageDeclaration),

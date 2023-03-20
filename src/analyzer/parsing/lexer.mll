@@ -86,9 +86,6 @@ rule read_token =
   | "LogoutButton"  { LOGOUT_BUTTON }
   | "type"          { TYPE }
   | "as"            { AS }
-  | "@on"           { ON }
-  | "@permission"   { PERMISSION }
-  | "@at"           { AT }
   | attribute       { ATTRIBUTE (Lexing.lexeme lexbuf) }
   | int             { INT (int_of_string (Lexing.lexeme lexbuf))}
   | id              { ID (Lexing.lexeme lexbuf) }

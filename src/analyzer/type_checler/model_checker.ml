@@ -53,7 +53,8 @@ let check_attribute_argument id literal expected_type =
       | BooleanLiteral (loc, boolean) ->
           raise_type_error loc (Scalar expected_type)
             ~received_value:(string_of_bool boolean)
-            ~received_type:(Scalar Boolean) ~id)
+            ~received_type:(Scalar Boolean) ~id
+      | ReferenceLiteral _ -> ())
   | _ -> ()
 
 let check_field_attr global_env model_env model_id field_id
@@ -135,7 +136,9 @@ let check_field_attr global_env model_env model_id field_id
             LocalEnvironment.lookup other_model_env ~key:relation_ref_id
           in
 
-          let relation_ref_attrs = relation_ref_field.field_attrs_table in
+          let relation_ref_attrs =
+            Option.value_exn relation_ref_field.field_attrs_table
+          in
 
           let relation_ref_type = relation_ref_field.typ in
 

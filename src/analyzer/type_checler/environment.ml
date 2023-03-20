@@ -18,17 +18,18 @@ end
 module GlobalEnvironment = struct
   type field_value = {
     typ : typ;
-    field_attrs_table : Model.attr_arg list LocalEnvironment.t;
+    field_attrs_table : Model.attr_arg list LocalEnvironment.t option;
   }
 
   type model_value = field_value LocalEnvironment.t
-  type type_value = typ LocalEnvironment.t
+  type type_value = field_value LocalEnvironment.t
 
   type query_value = {
     typ : Query.typ;
     body : Query.body;
-    model : Query.model;
+    model : Query.model option;
     permissions : permission list option;
+    route : (loc * string * string) option;
     return_type : typ;
   }
 
@@ -76,6 +77,12 @@ module GlobalEnvironment = struct
     | _ -> None)
     |> Option.value_exn
 
+  let get_type_value declaration_value =
+    (match declaration_value with
+    | TypeValue type_value -> Some type_value
+    | _ -> None)
+    |> Option.value_exn
+
   let get_query_value declaration_value =
     (match declaration_value with
     | QueryValue query_value -> Some query_value
@@ -98,7 +105,10 @@ module TypeEnvironment = struct
         | loc, id, typ ->
             if LocalEnvironment.contains local_env ~key:id then
               raise_multi_definitions_error loc id;
-            LocalEnvironment.allocate local_env ~key:id ~data:typ);
+            let value : GlobalEnvironment.field_value =
+              { typ; field_attrs_table = None }
+            in
+            LocalEnvironment.allocate local_env ~key:id ~data:value);
         allocate_fields local_env fields
 
   let allocate (global_env : GlobalEnvironment.t) type_decl =
@@ -134,7 +144,7 @@ module ModelEnvironment = struct
             let field_attrs_table = LocalEnvironment.create () in
             allocate_field_attrs field_attrs_table id field_attrs;
             let field : GlobalEnvironment.field_value =
-              { typ; field_attrs_table }
+              { typ; field_attrs_table = Some field_attrs_table }
             in
             LocalEnvironment.allocate local_env ~key:id ~data:field);
         allocate_fields local_env fields
@@ -151,26 +161,53 @@ end
 
 module QueryEnvironment = struct
   let allocate (global_env : GlobalEnvironment.t) query =
-    let loc, id, typ, return_type, body, model, permissions = query in
-
+    let loc, id, typ, return_type, body, model, permissions, route = query in
+    (* check if model is passed for default queries *)
+    (match model with
+    | Some _ -> (
+        match typ with
+        | Query.Custom ->
+            failwith
+              (Fmt.str
+                 "QueryAttributeError: @(%s): Custom query cannot have @model \
+                  attribute"
+                 (string_of_loc loc))
+        | _ -> ())
+    | None -> (
+        match typ with
+        | Query.Custom -> ()
+        | _ ->
+            failwith
+              (Fmt.str
+                 "QueryModelError: @(%s): Query of type %s must have @model \
+                  attribute"
+                 (string_of_loc loc)
+                 (QueryFormatter.string_of_query_type typ))));
     let return_type =
       match return_type with
       | Some _ | None -> (
-          let _, model_id = model in
           match typ with
-          | Query.FindMany -> Composite (List (CustomType model_id))
-          | Query.FindUnique -> Scalar (CustomType model_id)
-          | Query.Create -> Scalar (CustomType model_id)
-          | Query.Update -> Scalar (CustomType model_id)
-          | Query.Delete -> Scalar (CustomType model_id)
-          | Query.Custom -> failwith "unimplemented")
+          | Query.FindMany ->
+              let _, model_id = Option.value_exn model in
+              Composite (List (CustomType model_id))
+          | Query.FindUnique | Query.Create | Query.Update | Query.Delete ->
+              let _, model_id = Option.value_exn model in
+              Scalar (CustomType model_id)
+          | Query.Custom -> (
+              match return_type with
+              | Some typ -> typ
+              | None ->
+                  failwith
+                    (Fmt.str
+                       "QueryReturnTypeError: @(%s): Custom query must have \
+                        return type"
+                       (string_of_loc loc))))
     in
-
     if GlobalEnvironment.contains global_env ~key:id then
       raise_multi_definitions_error loc id;
     let declaration_value =
       GlobalEnvironment.QueryValue
-        { typ; return_type; body; model; permissions }
+        { typ; return_type; body; model; permissions; route }
     in
     GlobalEnvironment.allocate global_env ~key:id ~data:declaration_value
 end

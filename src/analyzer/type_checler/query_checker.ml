@@ -18,7 +18,7 @@ let check_where_arg global_env loc id model fields =
   let field_info : GlobalEnvironment.field_value =
     LocalEnvironment.lookup model_value ~key:field
   in
-  let field_attrs_table = field_info.field_attrs_table in
+  let field_attrs_table = Option.value_exn field_info.field_attrs_table in
   if not (LocalEnvironment.contains model_value ~key:field) then
     raise_undefined_error loc "field" field ~declaration_id:model_id
       ~declaration_type:ModelDeclaration
@@ -61,7 +61,7 @@ let check_data_arg global_env loc query_id query_type model fields =
          | None -> lst @ [ field ])
    in
    let check_required_fields ~key ~(data : GlobalEnvironment.field_value) =
-     let attributes_table = data.field_attrs_table in
+     let attributes_table = Option.value_exn data.field_attrs_table in
      if
        not
          (LocalEnvironment.contains attributes_table ~key:"@default"
@@ -85,7 +85,9 @@ let check_data_arg global_env loc query_id query_type model fields =
           raise_undefined_error loc "field" model_field ~declaration_id:model_id
             ~declaration_type:ModelDeclaration;
         let relation_field = LocalEnvironment.lookup model_table ~key:field in
-        let attributes_table = relation_field.field_attrs_table in
+        let attributes_table =
+          Option.value_exn relation_field.field_attrs_table
+        in
         let relation_args =
           LocalEnvironment.lookup attributes_table ~key:"@relation"
         in
@@ -113,7 +115,7 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.SearchArgument ]
             Query.DataArgument
       | Query.Search (loc, fields) ->
-          check_filter_arg global_env loc model fields
+          check_filter_arg global_env loc (Option.value_exn model) fields
       | _ -> ())
   | Query.FindUnique -> (
       let arg = List.hd_exn args in
@@ -125,7 +127,7 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.WhereArgument ]
             Query.DataArgument
       | Query.Where (loc, fields) ->
-          check_where_arg global_env loc id model fields
+          check_where_arg global_env loc id (Option.value_exn model) fields
       | _ -> ())
   | Query.Create -> (
       let arg = List.hd_exn args in
@@ -137,7 +139,7 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.DataArgument ]
             Query.WhereArgument
       | Query.Data (loc, fields) ->
-          check_data_arg global_env loc id typ model fields
+          check_data_arg global_env loc id typ (Option.value_exn model) fields
       | _ -> ())
   | Query.Update ->
       let args_length = List.length args in
@@ -150,9 +152,10 @@ let check_args global_env loc typ id model args : unit =
                 [ Query.WhereArgument; Query.DataArgument ]
                 Query.SearchArgument
           | Query.Where (loc, field) ->
-              check_where_arg global_env loc id model field
+              check_where_arg global_env loc id (Option.value_exn model) field
           | Query.Data (loc, fields) ->
-              check_data_arg global_env loc id typ model fields
+              check_data_arg global_env loc id typ (Option.value_exn model)
+                fields
           | _ -> ())
   | Query.Delete -> (
       let arg = List.hd_exn args in
@@ -164,25 +167,30 @@ let check_args global_env loc typ id model args : unit =
           raise_query_argument_error loc id [ Query.WhereArgument ]
             Query.DataArgument
       | Query.Where (loc, field) ->
-          check_where_arg global_env loc id model field
+          check_where_arg global_env loc id (Option.value_exn model) field
       | _ -> ())
   | _ -> ()
 
 let check_query global_env app_declaration (query : query_declaration) =
-  let loc, id, typ, return_type, body, model, permissions = query in
+  let loc, id, typ, return_type, body, model, permissions, _ = query in
   (* Check query models *)
-  (match model with
-  | loc, model_id ->
-      if not (GlobalEnvironment.contains global_env ~key:model_id) then
-        raise_undefined_error loc "model" model_id;
-      let declaration_value =
-        GlobalEnvironment.lookup global_env ~key:model_id
-      in
-      if not (GlobalEnvironment.check_type declaration_value ModelDeclaration)
-      then
-        raise_declaration_type_error loc ModelDeclaration model_id
-          (GlobalEnvironment.infer_type declaration_value)
-          ~id);
+  (match typ with
+  | Query.Custom -> ()
+  | _ -> (
+      match Option.value_exn model with
+      | loc, model_id ->
+          if not (GlobalEnvironment.contains global_env ~key:model_id) then
+            raise_undefined_error loc "model" model_id;
+          let declaration_value =
+            GlobalEnvironment.lookup global_env ~key:model_id
+          in
+          if
+            not
+              (GlobalEnvironment.check_type declaration_value ModelDeclaration)
+          then
+            raise_declaration_type_error loc ModelDeclaration model_id
+              (GlobalEnvironment.infer_type declaration_value)
+              ~id));
   (* Check query arguments *)
   check_args global_env loc typ id model body;
   let expected_return_type =

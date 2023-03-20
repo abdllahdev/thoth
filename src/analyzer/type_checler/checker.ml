@@ -21,8 +21,9 @@ let check_app_declaration global_env app_declaration =
 
         if LocalEnvironment.contains user_model_table ~key:id_field then (
           let id_field_attrs =
-            (LocalEnvironment.lookup user_model_table ~key:id_field)
-              .field_attrs_table
+            Option.value_exn
+              (LocalEnvironment.lookup user_model_table ~key:id_field)
+                .field_attrs_table
           in
           if
             not
@@ -39,7 +40,9 @@ let check_app_declaration global_env app_declaration =
           let username_field_table =
             LocalEnvironment.lookup user_model_table ~key:username_field
           in
-          let username_field_attrs = username_field_table.field_attrs_table in
+          let username_field_attrs =
+            Option.value_exn username_field_table.field_attrs_table
+          in
           let username_field_type = username_field_table.typ in
           if
             not

@@ -10,22 +10,17 @@ const {{ name }}Router = express.Router();
 {{ name }}Router.get('/:id/events', sse.init);
 
 {% for route in list %}
-  {{ name }}Router.
-  {% if route.type == "findMany" or route.type == "findFirst" %}
-  get
-  {% elif route.type == "create" %}
-  post
-  {% elif route.type == "update" %}
-  put
-  {% elif route.type == "delete" %}
-  delete
-  {% endif %}
+{% if route.custom %}
+  {{ route.custom }}
+{% else %}
+  {{ name }}Router.{{ route.http_method }}
   (
-    '/{% if route.where %}:{{ route.where }}{% endif %}',
-    middlewares.validate({{ name }}Validators.{{ route.id }}Validator),
+    {% if route.custom_route %}'{{ route.custom_route }}',{% else %}'/{% if route.where %}:{{ route.where }}{% endif %}',{% endif %}
+    {% if not route.custom_route %}middlewares.validate({{ name }}Validators.{{ route.id }}Validator),{% endif %}
     {% for middleware in route.middlewares %}middlewares.{{ middleware }},{% endfor %}
     {{ name }}Controller.{{ route.id }},
   );
+{% endif %}
 {% endfor %}
 
 export default {{ name }}Router;

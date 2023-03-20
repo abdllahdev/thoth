@@ -9,7 +9,7 @@ open Ast.Ast_types
 let string_of_option = function Some str -> str | None -> ""
 let list_of_option = function Some lst -> lst | None -> []
 
-let generate_controller name controller_functions =
+let generate_controller name imports controller_functions =
   let controller_template =
     getcwd () ^ "/templates/server/src/controllers/template.jinja"
   in
@@ -18,6 +18,9 @@ let generate_controller name controller_functions =
       ~models:
         [
           ("name", Jg_types.Tstr (String.uncapitalize name));
+          ( "imports",
+            Jg_types.Tlist
+              (List.map imports ~f:(fun import -> Jg_types.Tstr import)) );
           ( "functions",
             Jg_types.Tlist
               (List.map controller_functions ~f:(fun controller_function ->
@@ -26,31 +29,42 @@ let generate_controller name controller_functions =
                      function_type;
                      required_args;
                      middlewares;
+                     custom_fn;
                    } =
                      controller_function
                    in
-                   let ownsEntry =
-                     match
-                       List.filter middlewares ~f:(fun middleware ->
-                           if String.equal middleware "OwnsEntry" then true
-                           else false)
-                       |> List.hd
-                     with
-                     | Some _ -> true
-                     | None -> false
-                   in
-                   let { requires_where; requires_search; requires_data } =
-                     required_args
-                   in
-                   Jg_types.Tobj
-                     [
-                       ("id", Jg_types.Tstr function_id);
-                       ("type", Jg_types.Tstr function_type);
-                       ("ownsEntry", Jg_types.Tbool ownsEntry);
-                       ("requires_where", Jg_types.Tbool requires_where);
-                       ("requires_search", Jg_types.Tbool requires_search);
-                       ("requires_data", Jg_types.Tbool requires_data);
-                     ])) );
+                   match function_type with
+                   | "custom" ->
+                       Jg_types.Tobj
+                         [
+                           ("id", Jg_types.Tstr function_id);
+                           ("type", Jg_types.Tstr function_type);
+                           ( "custom_fn",
+                             Jg_types.Tstr (Option.value_exn custom_fn) );
+                         ]
+                   | _ ->
+                       let ownsEntry =
+                         match
+                           List.filter middlewares ~f:(fun middleware ->
+                               if String.equal middleware "OwnsEntry" then true
+                               else false)
+                           |> List.hd
+                         with
+                         | Some _ -> true
+                         | None -> false
+                       in
+                       let { requires_where; requires_search; requires_data } =
+                         required_args
+                       in
+                       Jg_types.Tobj
+                         [
+                           ("id", Jg_types.Tstr function_id);
+                           ("type", Jg_types.Tstr function_type);
+                           ("ownsEntry", Jg_types.Tbool ownsEntry);
+                           ("requires_where", Jg_types.Tbool requires_where);
+                           ("requires_search", Jg_types.Tbool requires_search);
+                           ("requires_data", Jg_types.Tbool requires_data);
+                         ])) );
         ]
   in
   let controller_file =
@@ -61,7 +75,8 @@ let generate_controller name controller_functions =
 
 let generate_controllers controllers_specs auth_specs =
   Hashtbl.iteri controllers_specs ~f:(fun ~key ~data ->
-      generate_controller key data);
+      let imports, funcs = data in
+      generate_controller key imports funcs);
   let names =
     let names =
       List.map (Hashtbl.keys controllers_specs) ~f:(fun name ->
@@ -99,17 +114,28 @@ let generate_route name routes =
           ( "list",
             Jg_types.Tlist
               (List.map routes ~f:(fun route ->
-                   let { route_id; route_type; route_param; middlewares } =
+                   let {
+                     route_id;
+                     http_method;
+                     custom_route;
+                     route_param;
+                     middlewares;
+                   } =
                      route
                    in
                    Jg_types.Tobj
                      [
                        ("id", Jg_types.Tstr route_id);
-                       ("type", Jg_types.Tstr route_type);
+                       ("http_method", Jg_types.Tstr http_method);
+                       ( "custom_route",
+                         match custom_route with
+                         | Some custom_route -> Jg_types.Tstr custom_route
+                         | None -> Jg_types.Tnull );
                        ( "middlewares",
                          Jg_types.Tlist
                            (List.map middlewares ~f:(fun middleware ->
-                                Jg_types.Tstr middleware)) );
+                                Jg_types.Tstr (String.uncapitalize middleware)))
+                       );
                        ( "where",
                          match route_param with
                          | Some id -> Jg_types.Tstr id
@@ -160,7 +186,7 @@ let generate_validator name validators =
             Jg_types.Tlist
               (List.map validators ~f:(fun validator ->
                    let { validator_id; fields } = validator in
-                   let { where; search; data } = fields in
+                   let { where; search; data; _ } = fields in
                    Jg_types.Tobj
                      [
                        ("id", Jg_types.Tstr validator_id);

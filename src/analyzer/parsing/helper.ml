@@ -120,18 +120,63 @@ let get_imports loc body =
   match imports with
   | Some imports -> (
       match imports with
-      | ListObjField (loc, imports) ->
-          let imports =
-            List.fold imports ~init:[] ~f:(fun lst import ->
-                match import with
-                | StringObjField (_, import) -> lst @ [ import ]
-                | _ -> raise_type_error loc (Scalar String))
-          in
-          Some (loc, imports)
-      | _ -> raise_type_error loc (Scalar List))
+      | TsObjField (loc, imports) -> Some (loc, imports)
+      | _ -> raise_type_error loc (Scalar String))
   | None -> None
 
-let rec parse_query loc id typ models permissions return_type body =
+let get_permissions attributes =
+  let permissions =
+    List.Assoc.find attributes "@permissions" ~equal:String.equal
+  in
+  match permissions with
+  | Some (loc, args) ->
+      Some
+        (List.map args ~f:(fun arg ->
+             match arg with
+             | ReferenceLiteral (loc, id) -> (loc, id)
+             | _ -> raise_type_error loc (Scalar Reference) ~id:"@permissions"))
+  | None -> None
+
+let get_model attributes =
+  let models = List.Assoc.find attributes "@model" ~equal:String.equal in
+  match models with
+  | Some (loc, args) -> (
+      if List.length args > 1 || List.length args < 1 then
+        raise_argument_number_error loc 1 (List.length args) "@model";
+      let arg = List.hd_exn args in
+      match arg with
+      | ReferenceLiteral (loc, id) -> Some (loc, id)
+      | _ -> raise_type_error loc (Scalar Reference) ~id:"@model")
+  | None -> None
+
+let get_route attributes =
+  let models = List.Assoc.find attributes "@route" ~equal:String.equal in
+  match models with
+  | Some (loc, args) -> (
+      if List.length args > 1 || List.length args < 1 then
+        raise_argument_number_error loc 1 (List.length args) "@route";
+      let arg = List.hd_exn args in
+      match arg with
+      | StringLiteral (loc, route) -> Some (loc, route)
+      | _ -> raise_type_error loc (Scalar String) ~id:"@route")
+  | None -> None
+
+let parse_page_attributes loc id attributes =
+  match attributes with
+  | Some attributes ->
+      let attribute_ids = List.map attributes ~f:(fun (id, _) -> id) in
+      check_dup_exists loc attribute_ids;
+      unexpected_keys_exists loc id attribute_ids [ "@permissions"; "@route" ];
+      let permissions = get_permissions attributes in
+      let route =
+        match get_route attributes with
+        | Some route -> route
+        | None -> raise_required_page_attribute loc id "@route"
+      in
+      (route, permissions)
+  | None -> raise_required_page_attribute loc id "@route"
+
+let rec parse_query loc id typ attributes return_type body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
   check_query_unexpected_keys loc id obj_keys typ;
@@ -162,7 +207,54 @@ let rec parse_query loc id typ models permissions return_type body =
         in
         [ fn ] @ imports
   in
-  Query (loc, id, typ, return_type, query_body, models, permissions)
+  let permissions, model, route =
+    match attributes with
+    | Some attributes ->
+        let attribute_ids = List.map attributes ~f:(fun (id, _) -> id) in
+        check_dup_exists loc attribute_ids;
+        unexpected_keys_exists loc id attribute_ids
+          [ "@model"; "@permissions"; "@route" ];
+        let permissions = get_permissions attributes in
+        let model = get_model attributes in
+        let route = get_query_route attributes in
+        (match typ with
+        | Query.Custom -> (
+            match route with
+            | Some _ -> ()
+            | None -> raise_required_query_attribute loc id typ "@route")
+        | _ -> (
+            match model with
+            | Some _ -> ()
+            | None -> raise_required_query_attribute loc id typ "@model"));
+        (permissions, model, route)
+    | None -> (
+        match typ with
+        | Query.Custom -> raise_required_query_attribute loc id typ "@route"
+        | _ -> raise_required_query_attribute loc id typ "@model")
+  in
+  Query (loc, id, typ, return_type, query_body, model, permissions, route)
+
+and get_query_route attributes =
+  let models = List.Assoc.find attributes "@route" ~equal:String.equal in
+  match models with
+  | Some (loc, args) ->
+      if List.length args > 2 || List.length args < 2 then
+        raise_argument_number_error loc 2 (List.length args) "@route";
+      let http_method =
+        match List.nth_exn args 0 with
+        | StringLiteral (loc, http_method) -> (
+            match http_method with
+            | "get" | "post" | "put" | "patch" | "delete" -> http_method
+            | _ -> raise_undefined_http_method loc http_method)
+        | _ -> raise_type_error loc (Scalar String) ~id:"@route"
+      in
+      let route =
+        match List.nth_exn args 1 with
+        | StringLiteral (_, route) -> route
+        | _ -> raise_type_error loc (Scalar String) ~id:"@route"
+      in
+      Some (loc, http_method, route)
+  | None -> None
 
 and check_query_unexpected_keys loc id obj_keys typ =
   match typ with

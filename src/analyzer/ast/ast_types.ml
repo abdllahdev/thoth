@@ -26,6 +26,7 @@ type literal =
   | StringLiteral of loc * string
   | IntLiteral of loc * int
   | BooleanLiteral of loc * bool
+  | ReferenceLiteral of loc * string
 
 type permission = loc * id
 
@@ -52,7 +53,7 @@ module Query = struct
     | Search of loc * id list
     | Data of loc * data_args
     | Fn of loc * string
-    | Imports of loc * string list
+    | Imports of loc * string
 
   type model = loc * id
   type body = body_arg list
@@ -146,7 +147,7 @@ module Component = struct
   type form_button = form_attr list
 
   type body =
-    | CustomBody of string * string list option
+    | CustomBody of string * string option
     | GeneralBody of XRA.body
     | FindBody of
         (query_id * variable)
@@ -165,10 +166,6 @@ module Component = struct
     | LogoutButtonBody of form_button
 end
 
-module Page = struct
-  type route = string
-end
-
 type model_declaration = loc * id * Model.body
 
 type query_declaration =
@@ -177,14 +174,15 @@ type query_declaration =
   * Query.typ
   * typ option
   * Query.body
-  * Query.model
+  * Query.model option
   * permission list option
+  * (loc * string * string) option
 
 type component_declaration =
   loc * id * Component.typ * Component.arg list option * Component.body
 
 type page_declaration =
-  loc * id * Page.route * permission list option * XRA.body
+  loc * id * (loc * string) * permission list option * XRA.body
 
 type type_declaration = loc * id * (loc * id * typ) list
 

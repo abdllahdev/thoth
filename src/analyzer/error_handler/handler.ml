@@ -133,6 +133,25 @@ let raise_query_type_error loc expected_query_type received_query
           received_query
           (QueryFormatter.string_of_query_type received_query_type)))
 
+let raise_required_query_attribute loc id typ attribute =
+  raise
+    (RequiredAttributeError
+       (Fmt.str "@(%s): Query '%s' of type '%s' requires attribute '%s'"
+          (string_of_loc loc) id
+          (QueryFormatter.string_of_query_type typ)
+          attribute))
+
+let raise_undefined_http_method loc id =
+  raise
+    (UndefinedHttpMethod
+       (Fmt.str "@(%s): Undefined http method '%s'" (string_of_loc loc) id))
+
+let raise_required_page_attribute loc id attribute =
+  raise
+    (RequiredAttributeError
+       (Fmt.str "@(%s): Page %s requires attribute %s" (string_of_loc loc) id
+          attribute))
+
 let raise_undefined_error ?declaration_id ?declaration_type loc declaration id =
   if Option.is_none declaration_id && Option.is_none declaration_type then
     raise

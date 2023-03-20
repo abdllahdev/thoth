@@ -25,3 +25,5 @@ exception CompilationError of string
 exception UnexpectedEntryError of string
 exception RequiredEntryError of string
 exception FormInputTypeError of string
+exception RequiredAttributeError of string
+exception UndefinedHttpMethod of string
