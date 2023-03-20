@@ -48,12 +48,12 @@ let generate_find_component find_component_specs =
   in
   let {
     id;
-    find_from;
+    model;
+    find_func;
     result_variable;
     result_type;
     result_scalar_type;
     imported_components;
-    requires_auth;
     on_error;
     on_loading;
     render_expression;
@@ -69,8 +69,11 @@ let generate_find_component find_component_specs =
               (List.map imported_components ~f:(fun imported_component ->
                    Jg_types.Tstr imported_component)) );
           ("id", Jg_types.Tstr id);
-          ("requires_auth", Jg_types.Tbool requires_auth);
-          ("find_from", Jg_types.Tstr find_from);
+          ( "model",
+            match model with
+            | Some model -> Jg_types.Tstr (String.uncapitalize model)
+            | None -> Jg_types.Tnull );
+          ("find_func", Jg_types.Tstr find_func);
           ( "variable",
             Jg_types.Tobj
               [
@@ -98,12 +101,11 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
     id;
     args;
     typ;
-    post_to;
     global_style;
     form_validation_scheme;
     form_inputs;
     form_button;
-    requires_auth;
+    action_func;
   } =
     action_form_component_specs
   in
@@ -144,8 +146,7 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
                           ("value", Jg_types.Tstr style);
                         ])
               | None -> []) );
-          ("post_to", Jg_types.Tstr post_to);
-          ("requires_auth", Jg_types.Tbool requires_auth);
+          ("action_func", Jg_types.Tstr action_func);
           ( "form_inputs",
             Jg_types.Tlist
               (List.map form_inputs ~f:(fun form_input ->
@@ -212,7 +213,7 @@ let generate_action_button_component ?on_success_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_button_component_template.jinja"
   in
-  let { id; args; post_to; typ; form_button; requires_auth } =
+  let { id; args; typ; form_button; action_func } =
     action_button_component_specs
   in
   let action_button_component_code =
@@ -229,8 +230,7 @@ let generate_action_button_component ?on_success_redirect_to
                        ("id", Jg_types.Tstr arg_id);
                        ("type", Jg_types.Tstr arg_type);
                      ])) );
-          ("post_to", Jg_types.Tstr post_to);
-          ("requires_auth", Jg_types.Tbool requires_auth);
+          ("action_func", Jg_types.Tstr action_func);
           ("type", Jg_types.Tstr typ);
           ( "form_button",
             Jg_types.Tlist
@@ -373,13 +373,24 @@ let generate_auth auth_specs =
         let user_type_file = getcwd () ^ "/.out/client/src/types/user.ts" in
         write_file user_type_file types_user_type_code
       in
+      let generate_auth_service () =
+        let auth_service_template =
+          getcwd () ^ "/templates/client/src/services/auth.jinja"
+        in
+        let auth_service_code = Jg_template.from_file auth_service_template in
+        let auth_service_file =
+          getcwd () ^ "/.out/client/src/services/auth.ts"
+        in
+        write_file auth_service_file auth_service_code
+      in
       generate_action_form_component signup_form ~on_success_redirect_to
         ~on_fail_redirect_to;
       generate_action_form_component login_form ~on_success_redirect_to
         ~on_fail_redirect_to;
       generate_action_button_component logout_button ~on_success_redirect_to
         ~on_fail_redirect_to;
-      generate_user_type ()
+      generate_user_type ();
+      generate_auth_service ()
   | None -> ()
 
 let generate_custom_component custom_components_specs =
@@ -423,12 +434,56 @@ let generate_app_title app_title =
   let app_index_file = getcwd () ^ "/.out/client/index.html" in
   write_file app_index_file app_index_code
 
+let generate_service service_specs =
+  let id, funcs = service_specs in
+  let service_template =
+    getcwd () ^ "/templates/client/src/services/template.jinja"
+  in
+  let service_component_code =
+    Jg_template.from_file service_template
+      ~models:
+        [
+          ( "functions",
+            Jg_types.Tlist
+              (List.map funcs ~f:(fun func ->
+                   let { func_id; http_method; route; requires_auth } = func in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr func_id);
+                       ("http_method", Jg_types.Tstr http_method);
+                       ("route", Jg_types.Tstr route);
+                       ("requires_auth", Jg_types.Tbool requires_auth);
+                     ])) );
+        ]
+  in
+  let service_component_file =
+    getcwd () ^ "/.out/client/src/services/" ^ id ^ ".ts"
+  in
+  write_file service_component_file service_component_code
+
+let generate_services services_specs =
+  List.iter services_specs ~f:generate_service;
+  let names =
+    List.map services_specs ~f:(fun (name, _) ->
+        Jg_types.Tstr (String.uncapitalize name))
+  in
+  let services_index_template =
+    getcwd () ^ "/templates/client/src/services/index.jinja"
+  in
+  let services_index_code =
+    Jg_template.from_file services_index_template
+      ~models:[ ("names", Jg_types.Tlist names) ]
+  in
+  let services_index_file = getcwd () ^ "/.out/client/src/services/index.ts" in
+  write_file services_index_file services_index_code
+
 let setup_client_folder =
   let destination = getcwd () ^ "/templates/client" in
   create_folder destination;
   system (Fmt.str "rm %s/.out/client/index.jinja" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/components/*" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/pages/*" (getcwd ())) |> ignore;
+  system (Fmt.str "rm %s/.out/client/src/services/*" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/types/*" (getcwd ())) |> ignore
 
 let generate_client client_specs =
@@ -442,6 +497,7 @@ let generate_client client_specs =
     custom_components_specs;
     pages_specs;
     types_specs;
+    services_specs;
     auth_specs;
   } =
     client_specs
@@ -452,6 +508,7 @@ let generate_client client_specs =
   List.iter ~f:generate_action_button_component action_button_components_specs;
   List.iter ~f:generate_custom_component custom_components_specs;
   List.iter ~f:generate_page pages_specs;
+  generate_services services_specs;
   generate_app_title app_title;
   generate_auth auth_specs;
   generate_types types_specs auth_specs

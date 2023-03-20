@@ -13,9 +13,9 @@ export enum FormInputType {
   PasswordInput = 'password',
   NumberInput = 'number',
   RelationInput = 'relation',
-  DateTimeInput = "datetime-local",
+  DateTimeInput = 'datetime-local',
   DateInput = 'date',
-  CheckboxInput = "checkbox"
+  CheckboxInput = 'checkbox',
 }
 
 type FormInput = {
@@ -40,8 +40,7 @@ type FormButton = {
 };
 
 type FormProps = {
-  method: 'POST' | 'PUT';
-  url: string;
+  formFunc: (data: any) => Promise<Response>;
   formStyle?: string;
   formElementStyle?: string;
   formInputStyle?: string;
@@ -51,12 +50,10 @@ type FormProps = {
   formButton: FormButton;
   formValidationSchema: z.AnyZodObject;
   handleResponse?: (response: any) => void;
-  accessToken?: string | null;
 };
 
 const Form = ({
-  method,
-  url,
+  formFunc,
   formElements,
   formButton,
   formValidationSchema,
@@ -66,7 +63,6 @@ const Form = ({
   formInputErrorStyle,
   formInputLabelStyle,
   handleResponse,
-  accessToken,
 }: FormProps) => {
   type FormSchemaType = z.infer<typeof formValidationSchema>;
   const formDefaultValues: { [key: string]: any } = {};
@@ -87,14 +83,7 @@ const Form = ({
 
   const onSubmit: SubmitHandler<FormSchemaType> = async (formData: any) => {
     try {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ ...formData, ...formDefaultValues }),
-      });
+      const response = await formFunc({ ...formData, ...formDefaultValues });
 
       const data = await response.json();
 

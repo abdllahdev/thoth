@@ -1,0 +1,19 @@
+const baseUrl = 'http://localhost:4000';
+
+export const signup = async (data: any) =>
+  await fetch(`${baseUrl}/auth/signup`, {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data)
+  });
+
+export const login = async (data: any) =>
+  await fetch(`${baseUrl}/auth/login`, {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data)
+  });

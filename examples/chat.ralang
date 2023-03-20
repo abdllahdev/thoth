@@ -43,35 +43,6 @@ query<FindMany> getMessages {
 	search: [content]
 }
 
-type Test {
-	testMessage String
-}
-
-@route("get", "/test")
-@permissions(IsAuth)
-query<Custom> testFn : Test {
-	imports: [|
-		import something from "someFunc"
-	|],
-	fn: [|
-		 async (req: Request, res: Response, next: NextFunction) => {
-			const test = "I'm a test function"
-			res.status(200).json({ testMessage: test })
-		 }
-	|]
-}
-
-component<Custom> TestComponent(name: String) {
-	imports: [|
-		import smth from "someWhere"
-	|],
-	fn: [|
-		return (
-			<div>{ name }</div>
-		)
-	|]
-}
-
 component<FindMany> MessagesComponent {
 	findQuery: getMessages as messages,
 	onError: render(

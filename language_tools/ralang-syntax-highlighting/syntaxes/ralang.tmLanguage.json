@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "scopeName": "source.ra",
+  "scopeName": "source.ralang",
   "name": "RaLang",
   "patterns": [
     {

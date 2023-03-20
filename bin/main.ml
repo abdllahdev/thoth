@@ -13,7 +13,7 @@ let parse_file (filename : string) =
   parse_with_error lexbuf
 
 let () =
-  let filename = getcwd () ^ "/examples/chat.ra" in
+  let filename = getcwd () ^ "/examples/chat.ralang" in
   Fmt.str "Parsing %s\n" filename |> print_string;
   match parse_file filename with
   | Ok ast ->

@@ -11,7 +11,7 @@ let generate_attr_arg_specs arg =
   match arg with
   | Model.AttrArgLiteral literal -> string_of_literal literal
   | Model.AttrArgRef (_, id) -> Fmt.str "[%s]" id
-  | Model.AttrArgNow _ -> Fmt.str "Now()"
+  | Model.AttrArgNow _ -> Fmt.str "now()"
 
 let generate_attr_specs (Model.Attribute (_, id, args)) =
   if List.length args > 0 then

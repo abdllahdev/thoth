@@ -1,16 +1,13 @@
 {% if type == "logout" %}
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { User } from "@/types";
 {% endif %}
-{% if requires_auth %}
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User } from "@/types";
-{% endif %}
 {% for imported_type in imported_types %}
 import { {{ imported_type }} } from "@/types"
 {% endfor %}
 import Button from "@/ui/Button";
+import * as Queries from "@/services"
 
 {% if type != "logout" %}
 const baseUrl = "http://localhost:4000";
@@ -25,7 +22,7 @@ type {{ id }}Props = {
 {% endif %}
 
 const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %}) => {
-    {% if type == "delete" %}
+  {% if type == "delete" %}
     const url = `${baseUrl}/{{ post_to }}/${ {{args[0].id}} }`;
     {% if requires_auth %}
     const storedUser = localStorage.getItem("LoggedInUser");
@@ -54,14 +51,7 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
     localStorage.removeItem("LoggedInUser");
     setUser(undefined);
     {% else %}
-    await fetch(url, {
-      method: "DELETE",
-      {% if requires_auth %}
-      headers: {
-        Authorization: `Bearer ${LoggedInUser?.accessToken}`
-      }
-      {% endif %}
-    });
+    Queries.{{ delete_func }}()
     {% endif %}
   };
 

@@ -1,0 +1,4 @@
+export * from './auth'
+{% for name in names %}
+export * from './{{ name }}';
+{% endfor %}

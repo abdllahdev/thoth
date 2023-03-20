@@ -120,6 +120,7 @@ let generate_route name routes =
                      custom_route;
                      route_param;
                      middlewares;
+                     _;
                    } =
                      route
                    in

@@ -1,0 +1,26 @@
+import { User } from '@/types';
+
+const storedUser = localStorage.getItem('LoggedInUser');
+const accessToken = (storedUser ? (JSON.parse(storedUser) as User) : undefined)
+  ?.accessToken;
+
+const baseUrl = 'http://localhost:4000';
+
+{% for func in functions %}
+export const {{ func.id }} = async (
+  {% if func.http_method == "post" or func.http_method == "put" %}
+  data: any
+  {% endif %} ) =>
+  await fetch(`${baseUrl}/{{ func.route }}`, {
+    method: "{{ func.http_method }}",
+    headers: {
+      'Content-Type': 'application/json',
+      {% if func.requires_auth %}
+      Authorization: `Bearer ${accessToken}`,
+      {% endif %}
+    },
+    {% if func.http_method == "post" or func.http_method == "put" %}
+    body: JSON.stringify(data),
+    {% endif %}
+  });
+{% endfor %}

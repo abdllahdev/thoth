@@ -46,6 +46,7 @@ type route_specs = {
   route_id : string;
   http_method : string;
   middlewares : string list;
+  default_route : string option;
   custom_route : string option;
   route_param : string option;
 }
@@ -276,21 +277,18 @@ let generate_controllers_specs queries =
 
 let generate_routes_specs queries =
   let get_route lst query =
-    let { query_id; query_type; query_args; query_permissions; query_route; _ }
-        =
+    let {
+      query_id;
+      query_type;
+      query_args;
+      query_permissions;
+      query_route;
+      query_model;
+      _;
+    } =
       query
     in
     let route =
-      let http_method, custom_route =
-        match query_type with
-        | Query.FindMany | Query.FindUnique -> ("get", None)
-        | Query.Create -> ("post", None)
-        | Query.Update -> ("put", None)
-        | Query.Delete -> ("delete", None)
-        | Query.Custom ->
-            let http_method, route = Option.value_exn query_route in
-            (http_method, Some route)
-      in
       let { where; _ } = query_args in
       let route_param =
         match where with
@@ -304,13 +302,35 @@ let generate_routes_specs queries =
         | Some permissions -> permissions
         | None -> []
       in
-      {
-        route_id = query_id;
-        http_method;
-        custom_route;
-        route_param;
-        middlewares;
-      }
+      let http_method, route =
+        match query_type with
+        | Query.FindMany | Query.FindUnique -> ("get", query_model)
+        | Query.Create -> ("post", query_model)
+        | Query.Update -> ("put", query_model)
+        | Query.Delete -> ("delete", query_model)
+        | Query.Custom ->
+            let http_method, route = Option.value_exn query_route in
+            (http_method, Some route)
+      in
+      match query_type with
+      | Query.Custom ->
+          {
+            route_id = query_id;
+            http_method;
+            default_route = None;
+            custom_route = route;
+            route_param;
+            middlewares;
+          }
+      | _ ->
+          {
+            route_id = query_id;
+            http_method;
+            default_route = route;
+            custom_route = None;
+            route_param;
+            middlewares;
+          }
     in
     route :: lst
   in

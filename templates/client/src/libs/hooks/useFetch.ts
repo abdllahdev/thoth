@@ -1,21 +1,13 @@
 import { useEffect, useState } from "react";
 
 // TODO: create a store in the app and update the cached data based on the events pushed by the server
-const useFetch = <T>(url: string, accessToken?: string | null) => {
+const useFetch = <T>(findFunc : () => Promise<Response>, eventsUrl?: string) => {
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetcher = async () => {
-    let headers: { [x: string]: string } = {};
-
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-
-    const response = await fetch(url, {
-      headers,
-    });
+    const response = await findFunc()
 
     if (!response.ok) {
       setError("An error occurred");
@@ -28,29 +20,30 @@ const useFetch = <T>(url: string, accessToken?: string | null) => {
   };
 
   useEffect(() => {
-    setIsLoading(true);
-    const eventSource = new EventSource(
-      `${url}/events?accessToken=${accessToken}`
-    );
+    if (eventsUrl) {
+      setIsLoading(true);
 
-    eventSource.addEventListener("create", (event) => {
+      const eventSource = new EventSource(eventsUrl);
+
+      eventSource.addEventListener('create', (event) => {
+        fetcher();
+      });
+
+      eventSource.addEventListener('update', (event) => {
+        fetcher();
+      });
+
+      eventSource.addEventListener('delete', (event) => {
+        fetcher();
+      });
+
       fetcher();
-    });
+      setIsLoading(false);
 
-    eventSource.addEventListener("update", (event) => {
-      fetcher();
-    });
-
-    eventSource.addEventListener("delete", (event) => {
-      fetcher();
-    });
-
-    fetcher();
-    setIsLoading(false);
-
-    return () => {
-      eventSource.close();
-    };
+      return () => {
+        eventSource.close();
+      };
+    }
   }, []);
 
   return { data, isLoading, error };
