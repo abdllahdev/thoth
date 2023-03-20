@@ -5,11 +5,13 @@ import { {{ imported_type }} } from "@/types"
   import {{ imported_component }} from "./{{ imported_component }}"
 {% endfor %}
 
+{% if args %}
 type {{ id }}Props = {
   {% for arg in args %}
   {{ arg.id }}{{ arg.type }};
   {% endfor %}
 }
+{% endif %}
 
 const {{ id }} = ({ {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props) => {
   return (

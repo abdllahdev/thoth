@@ -1,0 +1,19 @@
+{%- autoescape false -%}
+{% if imports %}
+  {{ imports }}
+{% endif %}
+
+{% if args %}
+type {{ id }}Props = {
+  {% for arg in args %}
+  {{ arg.id }}{{ arg.type }};
+  {% endfor %}
+}
+{% endif %}
+
+const {{ id }} = ({ {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props) => {
+  {{ fn }}
+};
+
+export default {{ id }};
+{% endautoescape -%}

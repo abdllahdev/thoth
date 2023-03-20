@@ -219,13 +219,13 @@
     },
     "component_declaration": {
       "name": "source.ralang.embedded.source",
-      "begin": "\\s*(component)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton|Custom)\\s*>\\s*([A-Za-z][\\w]*)\\s*(\\(\\s*(([A-Za-z][\\w]*)s*:\\s*([A-Za-z][\\w]*))*\\s*\\))?\\s*\\{",
+      "begin": "\\s*(component)\\s*(<\\s*(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton|Custom)\\s*>)?\\s*([A-Za-z][\\w]*)\\s*(\\(\\s*(([A-Za-z][\\w]*)s*:\\s*([A-Za-z][\\w]*))*\\s*\\))?\\s*\\{",
       "beginCaptures": {
         "1": { "name": "storage.type.component.ralang" },
-        "2": { "name": "support.type.component_type.ralang" },
-        "3": { "name": "entity.name.type.ralang" },
-        "6": { "name": "variable.other.ralang" },
-        "7": { "name": "support.type.parameter_type.ralang" }
+        "3": { "name": "support.type.component_type.ralang" },
+        "4": { "name": "entity.name.type.ralang" },
+        "7": { "name": "variable.other.ralang" },
+        "8": { "name": "support.type.parameter_type.ralang" }
       },
       "end": "(\\s*\\})(?=(\\s*\\}\\s*(,|\\n)?)*$)",
       "endCaptures": {
@@ -530,7 +530,7 @@
     },
     "form_input_type": {
       "name": "support.type.form_input_type.ralang",
-      "match": "\\b(TextInput|PasswordInput|EmailInput|RelationInput)\\b"
+      "match": "\\b(TextInput|PasswordInput|EmailInput|DefaultInput)\\b"
     },
     "double_quoted_string": {
       "begin": "\"",

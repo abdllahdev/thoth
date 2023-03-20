@@ -29,41 +29,41 @@ model Task {
 
 @on(Task)
 @permission(IsAuth, OwnsEntry)
-query<findMany> getTasks : Task[] {
-	search: { title, isDone }
+query<FindMany> getTasks {
+	search: [ title, isDone ]
 }
 
 @on(Task)
 @permission(IsAuth, OwnsEntry)
-query<findUnique> getTaskById {
-	where: { id }
+query<FindUnique> getTaskById {
+	where: [ id ]
 }
 
 @on(Task)
 @permission(IsAuth)
-query<create> createTask {
+query<Create> createTask {
 	data: {
-		title,
-		user: {
-			id: userId
+		fields: [title],
+		relationFields: {
+			user: connect id with userId
 		}
 	}
 }
 
 @on(Task)
 @permission(IsAuth, OwnsEntry)
-query<update> updateTaskById {
-	where: { id },
-	data: { title, isDone }
+query<Update> updateTaskById {
+	where: [ id ],
+	data: [ title, isDone ]
 }
 
 @on(Task)
 @permission(IsAuth, OwnsEntry)
-query<delete> deleteTaskById {
-	where: { id }
+query<Delete> deleteTaskById {
+	where: [ id ]
 }
 
-component<create:createTask> TaskCreateForm {
+component<Create> TaskCreateForm {
 	formInputs: {
 		title: {
 			input: {
@@ -77,22 +77,17 @@ component<create:createTask> TaskCreateForm {
 			input: {
 				type: RelationInput,
 				isVisible: false,
-				defaultValue: {
-					connect: {
-						id: LoggedInUser.id
-					}
-				}
+				defaultValue: connect id with LoggedInUser.id
 			}
 		}
 	},
-
 	formButton: {
 		name: "Create",
 		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
 	}
 }
 
-component<delete:deleteTaskById> TaskDeleteButton(id: Int) {
+component<Delete> TaskDeleteButton(id: Int) {
 	formButton: {
 		name: "Delete"
 	}
@@ -108,32 +103,28 @@ component TaskComponent(task: Task) {
 	)
 }
 
-component<findMany:getTasks as tasks> TasksComponent {
+component<FindMany> TasksComponent {
+	findQuery: getMessages as messages,
 	onError: render(
 		<div>{ "An error occured" }</div>
-	)
-
+	),
 	onLoading: render(
 		<div>{ "Loading..." }</div>
-	)
-
+	),
 	onSuccess: render(
 		<>
-			{
-				for task in tasks: (
+				[% for task in tasks %]
 					<>
 						<TaskComponent task={ task } />
 						<div className="border-y border-black"></div>
 					</>
-				)
-			}
+				[% endfor %]
 		</>
 	)
 }
 
-component<signupForm> SignupForm {
+component<SignupForm> SignupForm {
 	style: "space-y-2",
-
 	formInputs: {
 		username: {
 			input: {
@@ -150,16 +141,14 @@ component<signupForm> SignupForm {
 			}
 		}
 	},
-
 	formButton: {
 		name: "Sign Up",
 		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
 	}
 }
 
-component<loginForm> LoginForm {
+component<LoginForm> LoginForm {
 	style: "space-y-2",
-
 	formInputs: {
 		username: {
 			input: {
@@ -176,14 +165,13 @@ component<loginForm> LoginForm {
 			}
 		}
 	},
-
 	formButton: {
 		name: "Login",
 		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
 	}
 }
 
-component<logoutButton> LogoutButton {
+component<LogoutButton> LogoutButton {
 	formButton: {
 		name: "Logout"
 	}

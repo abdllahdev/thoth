@@ -393,6 +393,14 @@ xra_component_type:
 
 xra_component:
   | COMPONENT;
+    typ = xra_component_type;
+    id = ID;
+    args = option(xra_component_args);
+    LEFT_BRACE;
+    body = separated_list(COMMA, obj_field);
+    RIGHT_BRACE
+    { parse_component $startpos id typ args body }
+  | COMPONENT;
     component_id = ID;
     args = option(xra_component_args);
     xra_general_body = xra_general_body
@@ -402,14 +410,6 @@ xra_component:
         Component.General,
         args,
         Component.GeneralBody(xra_general_body)) }
-  | COMPONENT;
-    typ = xra_component_type;
-    id = ID;
-    args = option(xra_component_args);
-    LEFT_BRACE;
-    body = separated_list(COMMA, obj_field);
-    RIGHT_BRACE
-    { parse_component $startpos id typ args body }
   ;
 
 declaration:

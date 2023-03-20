@@ -61,6 +61,17 @@ query<Custom> testFn : Test {
 	|]
 }
 
+component<Custom> TestComponent(name: String) {
+	imports: [|
+		import smth from "someWhere"
+	|],
+	fn: [|
+		return (
+			<div>{ name }</div>
+		)
+	|]
+}
+
 component<FindMany> MessagesComponent {
 	findQuery: getMessages as messages,
 	onError: render(

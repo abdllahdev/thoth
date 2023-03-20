@@ -26,6 +26,13 @@ type find_component_specs = {
   render_expression : string;
 }
 
+type custom_component_specs = {
+  id : string;
+  args : (string * string) list;
+  imports : string option;
+  fn : string;
+}
+
 type form_input = {
   wrapper_style : (string * string) option;
   label_attrs : (string * string) list option;
@@ -80,6 +87,7 @@ type client_specs = {
   find_components_specs : find_component_specs list;
   action_form_components_specs : action_form_component_specs list;
   action_button_components_specs : action_button_component_specs list;
+  custom_components_specs : custom_component_specs list;
   pages_specs : page_specs list;
   types_specs : (string, type_specs) Hashtbl.t;
   auth_specs : auth_specs option;
@@ -671,6 +679,21 @@ let generate_client_specs global_env app_declaration component_declarations
               (generate_action_button_components_specs ~global_env id args body)
         | _ -> None)
   in
+  let custom_components_specs =
+    List.filter_map component_declarations ~f:(fun component_declaration ->
+        let _, id, typ, args, body = component_declaration in
+        match typ with
+        | Component.Custom ->
+            let args = get_component_args args in
+            let imports, fn =
+              (match body with
+              | Component.CustomBody (imports, fn) -> Some (imports, fn)
+              | _ -> None)
+              |> Option.value_exn
+            in
+            Some { id; args; imports; fn }
+        | _ -> None)
+  in
   let pages_specs =
     List.map page_declarations ~f:(fun declaration_page ->
         generate_page_specs global_env declaration_page auth_specs)
@@ -681,6 +704,7 @@ let generate_client_specs global_env app_declaration component_declarations
     find_components_specs;
     action_form_components_specs;
     action_button_components_specs;
+    custom_components_specs;
     pages_specs;
     types_specs;
     auth_specs;

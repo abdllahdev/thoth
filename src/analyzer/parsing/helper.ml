@@ -402,8 +402,8 @@ let rec parse_component loc id typ args body =
           | None -> None
         in
         let _, fn = get_fn loc id body in
-        Component.CustomBody (fn, imports)
-    | _ -> raise_compiler_error ()
+        Component.CustomBody (imports, fn)
+    | Component.General -> raise_compiler_error ()
   in
   Component (loc, id, typ, args, component_body)
 
@@ -427,6 +427,9 @@ and check_component_unexpected_keys loc id obj_keys typ =
       unexpected_keys_exists loc id obj_keys expected_keys
   | Component.LogoutButton ->
       let expected_keys = [ "formButton" ] in
+      unexpected_keys_exists loc id obj_keys expected_keys
+  | Component.Custom ->
+      let expected_keys = [ "fn"; "imports" ] in
       unexpected_keys_exists loc id obj_keys expected_keys
   | _ -> raise_compiler_error ()
 

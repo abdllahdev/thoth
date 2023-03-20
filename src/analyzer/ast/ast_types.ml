@@ -147,7 +147,7 @@ module Component = struct
   type form_button = form_attr list
 
   type body =
-    | CustomBody of string * string option
+    | CustomBody of string option * string
     | GeneralBody of XRA.body
     | FindBody of
         (query_id * variable)

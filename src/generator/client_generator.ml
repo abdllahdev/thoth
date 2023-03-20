@@ -382,6 +382,38 @@ let generate_auth auth_specs =
       generate_user_type ()
   | None -> ()
 
+let generate_custom_component custom_components_specs =
+  let custom_component_template =
+    getcwd ()
+    ^ "/templates/client/src/components/custom_component_template.jinja"
+  in
+  let { id; args; imports; fn } = custom_components_specs in
+  let custom_component_code =
+    Jg_template.from_file custom_component_template
+      ~models:
+        [
+          ("id", Jg_types.Tstr id);
+          ( "args",
+            Jg_types.Tlist
+              (List.map args ~f:(fun arg ->
+                   let arg_id, arg_type = arg in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr arg_id);
+                       ("type", Jg_types.Tstr arg_type);
+                     ])) );
+          ( "imports",
+            match imports with
+            | Some imports -> Jg_types.Tstr imports
+            | None -> Jg_types.Tnull );
+          ("fn", Jg_types.Tstr fn);
+        ]
+  in
+  let custom_component_file =
+    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
+  in
+  write_file custom_component_file custom_component_code
+
 let generate_app_title app_title =
   let app_index_template = getcwd () ^ "/templates/client/index.jinja" in
   let app_index_code =
@@ -407,6 +439,7 @@ let generate_client client_specs =
     find_components_specs;
     action_form_components_specs;
     action_button_components_specs;
+    custom_components_specs;
     pages_specs;
     types_specs;
     auth_specs;
@@ -417,6 +450,7 @@ let generate_client client_specs =
   List.iter ~f:generate_find_component find_components_specs;
   List.iter ~f:generate_action_form_component action_form_components_specs;
   List.iter ~f:generate_action_button_component action_button_components_specs;
+  List.iter ~f:generate_custom_component custom_components_specs;
   List.iter ~f:generate_page pages_specs;
   generate_app_title app_title;
   generate_auth auth_specs;
