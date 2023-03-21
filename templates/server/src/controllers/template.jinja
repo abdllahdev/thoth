@@ -34,6 +34,16 @@ async (
       {% if func.requires_data %}
       data: req.validatedPayload.data,
       {% endif %}
+
+      {% if func.type == "findMany" or func.type == "findFirst" %}
+      {% if func.find_includes %}
+      include: {
+        {% for field in func.find_includes %}
+        {{ field }}: true,
+        {% endfor %}
+      }
+      {% endif %}
+      {% endif %}
     };
 
     {% if func.type == "update" or func.type == "delete" %}
@@ -54,7 +64,7 @@ async (
       });
     {% endif %}
 
-    {% if func.ownsEntry and (func.type == "update" or func.type == "delete") %}
+    {% if func.owns_entry and (func.type == "update" or func.type == "delete") %}
       const {user, ...wherePayload} = payload.where
       const {{ func.type }}Payload = {where: wherePayload,
         {% if func.type == "update" %}
@@ -67,7 +77,7 @@ async (
     const result =
     {% endif %}
     await prismaClient.{{ name  }}.{{ func.type }}(
-      {% if func.ownsEntry and (func.type == "update" or func.type == "delete") %}
+      {% if func.owns_entry and (func.type == "update" or func.type == "delete") %}
         {{ func.type }}Payload
       {% else %}
       payload

@@ -7,155 +7,146 @@ open Environment
 
 let rec check_expressions global_env xra_env expressions =
   let rec check_dot_expression ?local_symbol_table ?xra_env dot_expression =
-    let is_relation_field (field : GlobalEnvironment.field_value) =
-      if
-        LocalEnvironment.contains
-          (Option.value_exn field.field_attrs_table)
-          ~key:"@relation"
-      then true
-      else false
-    in
     match dot_expression with
     | XRA.DotExpression
         ( _,
           XRA.VariableExpression (hd_loc, hd_id),
-          XRA.VariableExpression (tl_loc, tl_id) ) -> (
-        match xra_env with
-        | Some xra_env -> (
-            if not (XRAEnvironment.contains xra_env hd_id) then
-              raise_undefined_error hd_loc "variable" hd_id
-            else
-              let hd_type = XRAEnvironment.lookup xra_env hd_loc hd_id in
-              let custom_type = get_custom_type hd_type in
-              match custom_type with
-              | Some custom_type -> (
-                  let declaration =
-                    GlobalEnvironment.lookup global_env ~key:custom_type
-                  in
-                  match declaration with
-                  | GlobalEnvironment.ModelValue _ as value ->
-                      let model_value =
-                        GlobalEnvironment.get_model_value value
-                      in
-                      let field : GlobalEnvironment.field_value =
-                        LocalEnvironment.lookup model_value ~key:tl_id
-                      in
-                      if is_relation_field field then
-                        raise_dot_operator_error hd_loc tl_id hd_id hd_type;
-                      if not (LocalEnvironment.contains model_value ~key:tl_id)
-                      then
-                        raise_undefined_error tl_loc "field" tl_id
-                          ~declaration_id:custom_type
-                          ~declaration_type:ModelDeclaration
-                      else
-                        Some
-                          ( tl_id,
-                            (LocalEnvironment.lookup model_value ~key:tl_id).typ
-                          )
-                  | _ -> raise_dot_operator_error hd_loc tl_id hd_id hd_type)
-              | None -> raise_dot_operator_error hd_loc tl_id hd_id hd_type)
-        | None -> (
-            match local_symbol_table with
-            | Some local_symbol_table -> (
-                if not (LocalEnvironment.contains local_symbol_table ~key:hd_id)
-                then raise_undefined_error hd_loc "field" hd_id
-                else
-                  let field : GlobalEnvironment.field_value =
-                    LocalEnvironment.lookup local_symbol_table ~key:hd_id
-                  in
-                  let hd_type = field.typ in
-                  if is_relation_field field then
-                    raise_dot_operator_error hd_loc tl_id hd_id hd_type;
-                  let custom_type = get_custom_type hd_type in
-                  match custom_type with
-                  | Some custom_type -> (
-                      let declaration =
-                        GlobalEnvironment.lookup global_env ~key:custom_type
-                      in
-                      match declaration with
-                      | GlobalEnvironment.ModelValue _ as value ->
-                          let model_value =
-                            GlobalEnvironment.get_model_value value
-                          in
-                          if
-                            not
-                              (LocalEnvironment.contains model_value ~key:tl_id)
-                          then
-                            raise_undefined_error tl_loc "field" tl_id
-                              ~declaration_id:custom_type
-                              ~declaration_type:ModelDeclaration
-                          else
-                            Some
-                              ( tl_id,
-                                (LocalEnvironment.lookup model_value ~key:tl_id)
-                                  .typ )
-                      | _ -> raise_dot_operator_error hd_loc tl_id hd_id hd_type
-                      )
-                  | None -> raise_dot_operator_error hd_loc tl_id hd_id hd_type)
-            | None -> None))
-    | XRA.DotExpression (_, XRA.VariableExpression (hd_loc, hd_id), tl) -> (
-        let member =
-          (match tl with
-          | XRA.DotExpression (_, XRA.VariableExpression (_, hd_id), _) ->
-              Some hd_id
-          | _ -> None)
-          |> Option.value_exn
-        in
-        match xra_env with
-        | Some xra_env -> (
-            if not (XRAEnvironment.contains xra_env hd_id) then
-              raise_undefined_error hd_loc "variable" hd_id
-            else
-              let hd_type = XRAEnvironment.lookup xra_env hd_loc hd_id in
-              let custom_type = get_custom_type hd_type in
-              match custom_type with
-              | Some custom_type -> (
-                  let declaration =
-                    GlobalEnvironment.lookup global_env ~key:custom_type
-                  in
-                  match declaration with
-                  | GlobalEnvironment.ModelValue _ as value ->
-                      let model_value =
-                        GlobalEnvironment.get_model_value value
-                      in
-                      let field : GlobalEnvironment.field_value =
-                        LocalEnvironment.lookup model_value ~key:member
-                      in
-                      if is_relation_field field then
-                        raise_dot_operator_error hd_loc member hd_id hd_type;
-                      check_dot_expression ~local_symbol_table:model_value tl
-                  | _ -> raise_dot_operator_error hd_loc member hd_id hd_type)
-              | None -> raise_dot_operator_error hd_loc member hd_id hd_type)
-        | None -> (
-            match local_symbol_table with
-            | Some local_symbol_table -> (
-                if not (LocalEnvironment.contains local_symbol_table ~key:hd_id)
-                then raise_undefined_error hd_loc "field" hd_id
-                else
-                  let field : GlobalEnvironment.field_value =
-                    LocalEnvironment.lookup local_symbol_table ~key:hd_id
-                  in
-                  let hd_type = field.typ in
-                  if is_relation_field field then
-                    raise_dot_operator_error hd_loc member hd_id hd_type;
-                  let custom_type = get_custom_type hd_type in
-                  match custom_type with
-                  | Some custom_type -> (
-                      let declaration =
-                        GlobalEnvironment.lookup global_env ~key:custom_type
-                      in
-                      match declaration with
-                      | GlobalEnvironment.ModelValue _ as value ->
-                          let model_value =
-                            GlobalEnvironment.get_model_value value
-                          in
-                          check_dot_expression ~local_symbol_table:model_value
-                            tl
-                      | _ ->
-                          raise_dot_operator_error hd_loc member hd_id hd_type)
-                  | None -> raise_dot_operator_error hd_loc member hd_id hd_type
-                )
-            | None -> None))
+          XRA.VariableExpression (tl_loc, tl_id) ) ->
+        if not (String.equal hd_id "LoggedInUser") then
+          match xra_env with
+          | Some xra_env -> (
+              if not (XRAEnvironment.contains xra_env hd_id) then
+                raise_undefined_error hd_loc "variable" hd_id
+              else
+                let hd_type = XRAEnvironment.lookup xra_env hd_loc hd_id in
+                let custom_type = get_custom_type hd_type in
+                match custom_type with
+                | Some custom_type -> (
+                    let declaration =
+                      GlobalEnvironment.lookup global_env ~key:custom_type
+                    in
+                    match declaration with
+                    | GlobalEnvironment.ModelValue _ as value ->
+                        let model_value =
+                          GlobalEnvironment.get_model_value value
+                        in
+                        if
+                          not (LocalEnvironment.contains model_value ~key:tl_id)
+                        then
+                          raise_undefined_error tl_loc "field" tl_id
+                            ~declaration_id:custom_type
+                            ~declaration_type:ModelDeclaration
+                        else
+                          Some
+                            ( tl_id,
+                              (LocalEnvironment.lookup model_value ~key:tl_id)
+                                .typ )
+                    | _ -> raise_dot_operator_error hd_loc tl_id hd_id hd_type)
+                | None -> raise_dot_operator_error hd_loc tl_id hd_id hd_type)
+          | None -> (
+              match local_symbol_table with
+              | Some local_symbol_table -> (
+                  if
+                    not
+                      (LocalEnvironment.contains local_symbol_table ~key:hd_id)
+                  then raise_undefined_error hd_loc "field" hd_id
+                  else
+                    let field : GlobalEnvironment.field_value =
+                      LocalEnvironment.lookup local_symbol_table ~key:hd_id
+                    in
+                    let hd_type = field.typ in
+                    let custom_type = get_custom_type hd_type in
+                    match custom_type with
+                    | Some custom_type -> (
+                        let declaration =
+                          GlobalEnvironment.lookup global_env ~key:custom_type
+                        in
+                        match declaration with
+                        | GlobalEnvironment.ModelValue _ as value ->
+                            let model_value =
+                              GlobalEnvironment.get_model_value value
+                            in
+                            if
+                              not
+                                (LocalEnvironment.contains model_value
+                                   ~key:tl_id)
+                            then
+                              raise_undefined_error tl_loc "field" tl_id
+                                ~declaration_id:custom_type
+                                ~declaration_type:ModelDeclaration
+                            else
+                              Some
+                                ( tl_id,
+                                  (LocalEnvironment.lookup model_value
+                                     ~key:tl_id)
+                                    .typ )
+                        | _ ->
+                            raise_dot_operator_error hd_loc tl_id hd_id hd_type)
+                    | None ->
+                        raise_dot_operator_error hd_loc tl_id hd_id hd_type)
+              | None -> None)
+        else None
+    | XRA.DotExpression (_, XRA.VariableExpression (hd_loc, hd_id), tl) ->
+        if not (String.equal hd_id "LoggedInUser") then
+          let member =
+            (match tl with
+            | XRA.DotExpression (_, XRA.VariableExpression (_, hd_id), _) ->
+                Some hd_id
+            | _ -> None)
+            |> Option.value_exn
+          in
+          match xra_env with
+          | Some xra_env -> (
+              if not (XRAEnvironment.contains xra_env hd_id) then
+                raise_undefined_error hd_loc "variable" hd_id
+              else
+                let hd_type = XRAEnvironment.lookup xra_env hd_loc hd_id in
+                let custom_type = get_custom_type hd_type in
+                match custom_type with
+                | Some custom_type -> (
+                    let declaration =
+                      GlobalEnvironment.lookup global_env ~key:custom_type
+                    in
+                    match declaration with
+                    | GlobalEnvironment.ModelValue _ as value ->
+                        let model_value =
+                          GlobalEnvironment.get_model_value value
+                        in
+                        check_dot_expression ~local_symbol_table:model_value tl
+                    | _ -> raise_dot_operator_error hd_loc member hd_id hd_type)
+                | None -> raise_dot_operator_error hd_loc member hd_id hd_type)
+          | None -> (
+              match local_symbol_table with
+              | Some local_symbol_table -> (
+                  if
+                    not
+                      (LocalEnvironment.contains local_symbol_table ~key:hd_id)
+                  then raise_undefined_error hd_loc "field" hd_id
+                  else
+                    let field : GlobalEnvironment.field_value =
+                      LocalEnvironment.lookup local_symbol_table ~key:hd_id
+                    in
+                    let hd_type = field.typ in
+                    let custom_type = get_custom_type hd_type in
+                    match custom_type with
+                    | Some custom_type -> (
+                        let declaration =
+                          GlobalEnvironment.lookup global_env ~key:custom_type
+                        in
+                        match declaration with
+                        | GlobalEnvironment.ModelValue _ as value ->
+                            let model_value =
+                              GlobalEnvironment.get_model_value value
+                            in
+                            check_dot_expression ~local_symbol_table:model_value
+                              tl
+                        | _ ->
+                            raise_dot_operator_error hd_loc member hd_id hd_type
+                        )
+                    | None ->
+                        raise_dot_operator_error hd_loc member hd_id hd_type)
+              | None -> None)
+        else None
     | _ -> None
   in
   let check_element loc id attributes children =

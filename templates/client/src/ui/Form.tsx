@@ -40,7 +40,10 @@ type FormButton = {
 };
 
 type FormProps = {
-  formFunc: (data: any) => Promise<Response>;
+  formFunc: (id: any) => string;
+  httpMethod: string;
+  id?: number;
+  accessToken?: string;
   formStyle?: string;
   formElementStyle?: string;
   formInputStyle?: string;
@@ -54,6 +57,9 @@ type FormProps = {
 
 const Form = ({
   formFunc,
+  id,
+  accessToken,
+  httpMethod,
   formElements,
   formButton,
   formValidationSchema,
@@ -66,6 +72,7 @@ const Form = ({
 }: FormProps) => {
   type FormSchemaType = z.infer<typeof formValidationSchema>;
   const formDefaultValues: { [key: string]: any } = {};
+  const url = formFunc(id);
 
   formElements.map((formElement) => {
     const formInput = formElement.formInput;
@@ -83,7 +90,20 @@ const Form = ({
 
   const onSubmit: SubmitHandler<FormSchemaType> = async (formData: any) => {
     try {
-      const response = await formFunc({ ...formData, ...formDefaultValues });
+      let headers: { [x: string]: string } = {};
+
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
+      const response = await fetch(url, {
+        method: httpMethod,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers
+        },
+        body: JSON.stringify({ ...formData, ...formDefaultValues })
+      });
 
       const data = await response.json();
 
@@ -98,7 +118,7 @@ const Form = ({
   };
 
   return (
-    <form className={formStyle} onSubmit={handleSubmit(onSubmit)}>
+    <form className={formStyle} onSubmit={handleSubmit(onSubmit)} autoComplete="off">
       {formElements.map((formElement, idx) => {
         const formInput = formElement.formInput;
         const formLabel = formElement?.formInputLabel;

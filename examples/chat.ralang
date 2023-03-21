@@ -14,6 +14,7 @@ model User {
 	id        Int       @id
 	username  String    @unique
 	password  String
+	online		Boolean		@default(false)
 	message   Message[]
 }
 
@@ -43,6 +44,46 @@ query<FindMany> getMessages {
 	search: [content]
 }
 
+@model(User)
+@permissions(IsAuth)
+query<FindMany> getUsers {
+	search: [username]
+}
+
+type Test {
+	test String
+}
+
+@route("get", "/test")
+query<Custom> test : Test {
+	fn: [|
+		(req: Request, res: Response, next: NextFunction) => {
+			res.send({
+				test: "Test"
+			})
+		}
+	|]
+}
+
+component<Custom> TestComponent {
+	fn: [|
+		const { data } = useFetch<any>(Queries.test);
+
+		if (data) {
+			return (
+				<div>{ data.test }</div>
+			)
+		}
+	|]
+}
+
+@route("/test")
+page TestPage {
+	render(
+		<TestComponent />
+	)
+}
+
 component<FindMany> MessagesComponent {
 	findQuery: getMessages as messages,
 	onError: render(
@@ -52,24 +93,76 @@ component<FindMany> MessagesComponent {
 		<div>{ "Loading..." }</div>
 	),
 	onSuccess: render(
-		<>
+    <div className="flex flex-col gap-2 flex-1">
 			[% for message in messages %]
-				<div className="flex space-x-3 text-white">
-					<div>{ message.userId }</div>
-					<div>{ message.content }</div>
+				<div
+					key={message.id}
+					className=[% if message.userId == LoggedInUser.id %]
+											{ "flex gap-2 justify-end" }
+										[% else %]
+											{ "flex gap-2" }
+										[% endif %]>
+					<div
+						className=[%  if message.userId == LoggedInUser.id %]
+												{ "p-2 rounded-lg max-w-lg bg-blue-100" }
+											[% else %]
+												{ "p-2 rounded-lg max-w-lg bg-gray-100" }
+											[% endif %]>
+						<p>{message.content}</p>
+						<span className="text-gray-500 text-sm">
+							{message.user.username} {" • "}
+							{message.createdAt}
+						</span>
+					</div>
 				</div>
 			[% endfor %]
-		</>
+    </div>
+	)
+}
+
+component<FindMany> OnlineUsersComponent {
+	findQuery: getUsers as users,
+	onError: render(
+		<div>{ "An error occured" }</div>
+	),
+	onLoading: render(
+		<div>{ "Loading..." }</div>
+	),
+	onSuccess: render(
+		<div className="flex flex-col gap-2">
+      <div className="font-bold text-lg mb-2">{ "Online Users" }</div>
+			[% for user in users %]
+				<div
+          className=[% if user.id == LoggedInUser.id %]
+											{ "flex items-center gap-2 font-bold" }
+										[% else %]
+											{ "flex items-center gap-2" }
+										[% endif %]>
+          <div
+            className=[% if user.online %]
+												{ "w-3 h-3 rounded-full bg-green-500" }
+											[% else %]
+												{ "w-3 h-3 rounded-full bg-gray-500" }
+											[% endif %]></div>
+          <div>{ user.username }</div>
+        </div>
+			[% endfor %]
+    </div>
 	)
 }
 
 component<Create> CreateMessageForm  {
+	globalStyle: {
+		form: "flex w-full"
+	},
 	actionQuery: createMessage,
 	formInputs: {
 		content: {
+			style: "flex w-full",
 			input: {
 				type: TextInput,
-				placeholder: "Enter message"
+				placeholder: "Type your message here...",
+				style: "flex-1 rounded-md border-gray-300 mr-2 px-4 py-2"
 			}
 		},
 		user: {
@@ -82,7 +175,7 @@ component<Create> CreateMessageForm  {
 	},
 	formButton: {
 		name: "Send",
-		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+		style: "rounded-md bg-blue-500 text-white px-4 py-2"
 	}
 }
 
@@ -144,13 +237,25 @@ component<LogoutButton> MyLogoutButton {
 @permissions(IsAuth)
 page Home {
 	render(
-		<div className="flex h-screen items-center justify-center bg-slate-800">
-			<div className="space-y-2">
-				<MessagesComponent />
-				<CreateMessageForm />
-				<MyLogoutButton />
-			</div>
-		</div>
+    <div className="flex justify-center">
+      <div className="flex flex-col w-full h-screen border shadow">
+        <div className="flex flex-row h-full">
+          <div className="bg-gray-100 flex flex-col w-1/4 p-4">
+            <OnlineUsersComponent />
+          </div>
+          <div className="flex flex-col w-3/4 p-4">
+            <div className="flex-1 overflow-y-auto">
+              <MessagesComponent />
+            </div>
+            <div className="bg-gray-100 flex flex-row p-4 rounded-lg">
+              <div className="flex-1">
+                <CreateMessageForm />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 	)
 }
 

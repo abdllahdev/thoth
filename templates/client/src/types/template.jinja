@@ -1,5 +1,9 @@
+{% for imported_type in imported_types %}
+import {{ imported_type }} from "@/types"
+{% endfor %}
+
 export type {{ id }} = {
-  {% for element in elements %}
-  {{ element.id }}{{ element.type }};
+  {% for type in types %}
+  {{ type.id }}{{ type.type }};
   {% endfor %}
 };

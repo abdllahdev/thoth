@@ -4,9 +4,6 @@ import { useNavigate } from "react-router";
 {% endif %}
 import { useEffect, useState } from "react";
 import { User } from "@/types";
-{% for imported_type in imported_types %}
-import { {{ imported_type }} } from "@/types"
-{% endfor %}
 import Form, { FormInputType } from "@/ui/Form";
 import * as Queries from "@/services"
 
@@ -27,13 +24,14 @@ const {{ id }}ValidationScheme = z.object({
 });
 
 const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %}) => {
+  {% if type == "login" or type == "signup" %}
+  const navigate = useNavigate();
+
   const storedUser = localStorage.getItem("LoggedInUser")
     ? JSON.parse(localStorage.getItem("LoggedInUser") as string)
     : undefined;
   const [LoggedInUser, setUser] = useState<User | undefined>(storedUser);
 
-  {% if type == "login" or type == "signup" %}
-  const navigate = useNavigate();
   const handleResponse = async (response: User) => {
     localStorage.setItem("LoggedInUser", JSON.stringify(response));
     const storedUser = localStorage.getItem("LoggedInUser") as string;
@@ -45,12 +43,24 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
       navigate("{{ on_success_redirect_to }}");
     }
   }, [LoggedInUser]);
+  {% else %}
+  const storedUser = localStorage.getItem("LoggedInUser")
+    ? JSON.parse(localStorage.getItem("LoggedInUser") as string)
+    : undefined;
+  const [LoggedInUser, _] = useState<User | undefined>(storedUser);
   {% endif %}
 
   return (
     <>
       <Form
         formFunc={ Queries.{% if type == "signup" %}signup{% elif type == "login" %}login{% else %}{{ action_func }}{% endif %} }
+        {% if type == "update" %}
+        id={ {{ args[0].id }} }
+        {% endif %}
+        httpMethod= {% if type == "update" %}"put"{% else %}"post"{% endif %}
+        {% if requires_auth %}
+        accessToken={ LoggedInUser.accessToken }
+        {% endif %}
         formValidationSchema={ {{ id }}ValidationScheme}
         {% for style in global_style %}
           {{ style.id }}Style="{{ style.value }}"

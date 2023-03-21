@@ -17,6 +17,9 @@ type general_component_specs = {
 type find_component_specs = {
   id : string;
   find_func : string;
+  func_type : string;
+  requires_auth : bool;
+  args : (string * string) list;
   model : string option;
   result_variable : string;
   result_type : string;
@@ -43,8 +46,9 @@ type form_input = {
 type action_form_component_specs = {
   id : string;
   args : (string * string) list;
-  typ : string;
   action_func : string;
+  func_type : string;
+  requires_auth : bool;
   form_validation_scheme : (string * string) option list;
   form_inputs : form_input list;
   form_button : (string * string) list;
@@ -55,11 +59,15 @@ type action_button_component_specs = {
   id : string;
   args : (string * string) list;
   action_func : string;
-  typ : string;
+  requires_auth : bool;
+  func_type : string;
   form_button : (string * string) list;
 }
 
-type type_specs = (string, string) Hashtbl.t
+type type_specs = {
+  imported_types : string list;
+  types : (string, string) Hashtbl.t;
+}
 
 type page_specs = {
   id : string;
@@ -82,6 +90,7 @@ type auth_specs = {
 
 type service_func_specs = {
   func_id : string;
+  func_type : string;
   http_method : string;
   route : string;
   requires_auth : bool;
@@ -318,7 +327,8 @@ let generate_general_component_specs global_env id args body =
   in
   { id; args; imported_types; imported_components; render_expression }
 
-let generate_find_component_specs global_env id body types_specs =
+let generate_find_component_specs global_env id args body types_specs =
+  let args = get_component_args args in
   let ( imported_components,
         query_id,
         variable_id,
@@ -366,6 +376,10 @@ let generate_find_component_specs global_env id body types_specs =
   let result_scalar_type =
     get_scalar_type query.return_type |> string_of_scalar_type
   in
+  let requires_auth =
+    let permissions = query.permissions in
+    match permissions with Some _ -> true | None -> false
+  in
   let model =
     match
       (GlobalEnvironment.lookup global_env ~key:query_id
@@ -375,21 +389,34 @@ let generate_find_component_specs global_env id body types_specs =
     | Some (_, model) -> Some model
     | None -> None
   in
-  if not (Hashtbl.mem types_specs result_scalar_type) then (
-    let model_value =
-      GlobalEnvironment.lookup global_env ~key:result_scalar_type
-      |> GlobalEnvironment.get_model_value
-    in
-    let type_specs = Hashtbl.create ~size:17 (module String) in
-    Hashtbl.iteri model_value ~f:(fun ~key ~data ->
-        if not (is_custom_type data.typ) then
+  (if not (Hashtbl.mem types_specs result_scalar_type) then
+   let model_value =
+     GlobalEnvironment.lookup global_env ~key:result_scalar_type
+     |> GlobalEnvironment.get_model_value
+   in
+   let type_specs = Hashtbl.create ~size:17 (module String) in
+   let imported_types =
+     Hashtbl.fold model_value ~init:[] ~f:(fun ~key ~data lst ->
+         let field_attrs = data.field_attrs_table |> Option.value_exn in
+         (if
+          (not (is_custom_type data.typ))
+          || LocalEnvironment.contains field_attrs ~key:"@relation"
+         then
           let field_type = convert_type data.typ in
           Hashtbl.add_exn type_specs ~key ~data:field_type);
-    Hashtbl.add_exn types_specs ~key:result_scalar_type ~data:type_specs);
+         if LocalEnvironment.contains field_attrs ~key:"@relation" then
+           lst @ [ string_of_scalar_type (get_scalar_type data.typ) ]
+         else lst)
+   in
+   Hashtbl.add_exn types_specs ~key:result_scalar_type
+     ~data:{ types = type_specs; imported_types });
   {
     id;
     find_func = query_id;
+    func_type = QueryFormatter.string_of_query_type query.typ;
+    args;
     model;
+    requires_auth;
     result_variable = variable_id;
     result_type = string_of_type query.return_type;
     result_scalar_type =
@@ -495,6 +522,7 @@ let generate_action_form_components_specs ?global_env id args body =
   in
   let args = get_component_args args in
   let ( action_func,
+        requires_auth,
         typ,
         global_style,
         form_validation_scheme,
@@ -512,9 +540,14 @@ let generate_action_form_components_specs ?global_env id args body =
           GlobalEnvironment.lookup global_env ~key:query_id
           |> GlobalEnvironment.get_query_value
         in
+        let requires_auth =
+          let permissions = query.permissions in
+          match permissions with Some _ -> true | None -> false
+        in
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some
           ( query_id,
+            requires_auth,
             QueryFormatter.string_of_query_type query.typ,
             global_style,
             form_validation_scheme,
@@ -526,6 +559,7 @@ let generate_action_form_components_specs ?global_env id args body =
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some
           ( "signup",
+            false,
             "signup",
             global_style,
             form_validation_scheme,
@@ -537,6 +571,7 @@ let generate_action_form_components_specs ?global_env id args body =
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some
           ( "login",
+            false,
             "login",
             global_style,
             form_validation_scheme,
@@ -548,7 +583,8 @@ let generate_action_form_components_specs ?global_env id args body =
   {
     id;
     args;
-    typ;
+    requires_auth;
+    func_type = typ;
     action_func;
     form_validation_scheme;
     global_style;
@@ -556,18 +592,27 @@ let generate_action_form_components_specs ?global_env id args body =
     form_button;
   }
 
-let generate_action_button_components_specs id args body =
+let generate_action_button_components_specs ?global_env id args body =
   let args = get_component_args args in
-  let action_func, typ, form_button =
+  let action_func, requires_auth, typ, form_button =
     (match body with
     | Component.DeleteBody ((_, query_id), form_button) ->
-        Some (query_id, "delete", get_button_specs form_button)
+        let global_env = Option.value_exn global_env in
+        let query =
+          GlobalEnvironment.lookup global_env ~key:query_id
+          |> GlobalEnvironment.get_query_value
+        in
+        let requires_auth =
+          let permissions = query.permissions in
+          match permissions with Some _ -> true | None -> false
+        in
+        Some (query_id, requires_auth, "delete", get_button_specs form_button)
     | Component.LogoutButtonBody form_button ->
-        Some ("logout", "logout", get_button_specs form_button)
+        Some ("logout", false, "logout", get_button_specs form_button)
     | _ -> None)
     |> Option.value_exn
   in
-  { id; args; action_func; typ; form_button }
+  { id; args; requires_auth; action_func; func_type = typ; form_button }
 
 let generate_service_specs server_specs =
   let { routes_specs; _ } = server_specs in
@@ -582,6 +627,7 @@ let generate_service_specs server_specs =
                   custom_route;
                   default_route;
                   middlewares;
+                  route_type;
                   _;
                 } =
                   route
@@ -598,7 +644,13 @@ let generate_service_specs server_specs =
                   | Some _, Some _ -> failwith "Something wrong happened"
                   | None, None -> failwith "Something wrong happened"
                 in
-                { func_id = route_id; http_method; route; requires_auth }) );
+                {
+                  func_id = route_id;
+                  http_method;
+                  route;
+                  requires_auth;
+                  func_type = route_type;
+                }) );
         ])
 
 let generate_client_specs global_env app_declaration component_declarations
@@ -673,10 +725,11 @@ let generate_client_specs global_env app_declaration component_declarations
   in
   let find_components_specs =
     List.filter_map component_declarations ~f:(fun component_declaration ->
-        let _, id, typ, _, body = component_declaration in
+        let _, id, typ, args, body = component_declaration in
         match typ with
         | Component.FindMany | Component.FindUnique ->
-            Some (generate_find_component_specs global_env id body types_specs)
+            Some
+              (generate_find_component_specs global_env id args body types_specs)
         | _ -> None)
   in
   let action_form_components_specs =
@@ -693,7 +746,8 @@ let generate_client_specs global_env app_declaration component_declarations
         let _, id, typ, args, body = component_declaration in
         match typ with
         | Component.Delete ->
-            Some (generate_action_button_components_specs id args body)
+            Some
+              (generate_action_button_components_specs id args body ~global_env)
         | _ -> None)
   in
   let custom_components_specs =

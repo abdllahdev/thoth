@@ -50,6 +50,9 @@ let generate_find_component find_component_specs =
     id;
     model;
     find_func;
+    requires_auth;
+    args;
+    func_type;
     result_variable;
     result_type;
     result_scalar_type;
@@ -69,11 +72,22 @@ let generate_find_component find_component_specs =
               (List.map imported_components ~f:(fun imported_component ->
                    Jg_types.Tstr imported_component)) );
           ("id", Jg_types.Tstr id);
+          ("requires_auth", Jg_types.Tbool requires_auth);
+          ( "args",
+            Jg_types.Tlist
+              (List.map args ~f:(fun arg ->
+                   let arg_id, arg_type = arg in
+                   Jg_types.Tobj
+                     [
+                       ("id", Jg_types.Tstr arg_id);
+                       ("type", Jg_types.Tstr arg_type);
+                     ])) );
           ( "model",
             match model with
             | Some model -> Jg_types.Tstr (String.uncapitalize model)
             | None -> Jg_types.Tnull );
           ("find_func", Jg_types.Tstr find_func);
+          ("func_type", Jg_types.Tstr func_type);
           ( "variable",
             Jg_types.Tobj
               [
@@ -100,7 +114,8 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
   let {
     id;
     args;
-    typ;
+    requires_auth;
+    func_type;
     global_style;
     form_validation_scheme;
     form_inputs;
@@ -114,6 +129,7 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
       ~models:
         [
           ("id", Jg_types.Tstr id);
+          ("requires_auth", Jg_types.Tbool requires_auth);
           ( "args",
             Jg_types.Tlist
               (List.map args ~f:(fun arg ->
@@ -123,7 +139,7 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
                        ("id", Jg_types.Tstr arg_id);
                        ("type", Jg_types.Tstr arg_type);
                      ])) );
-          ("type", Jg_types.Tstr typ);
+          ("type", Jg_types.Tstr func_type);
           ( "form_validation_scheme",
             Jg_types.Tlist
               (List.map form_validation_scheme ~f:(fun rule ->
@@ -213,7 +229,7 @@ let generate_action_button_component ?on_success_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_button_component_template.jinja"
   in
-  let { id; args; typ; form_button; action_func } =
+  let { id; args; requires_auth; func_type; form_button; action_func } =
     action_button_component_specs
   in
   let action_button_component_code =
@@ -221,6 +237,7 @@ let generate_action_button_component ?on_success_redirect_to
       ~models:
         [
           ("id", Jg_types.Tstr id);
+          ("requires_auth", Jg_types.Tbool requires_auth);
           ( "args",
             Jg_types.Tlist
               (List.map args ~f:(fun arg ->
@@ -231,7 +248,7 @@ let generate_action_button_component ?on_success_redirect_to
                        ("type", Jg_types.Tstr arg_type);
                      ])) );
           ("action_func", Jg_types.Tstr action_func);
-          ("type", Jg_types.Tstr typ);
+          ("type", Jg_types.Tstr func_type);
           ( "form_button",
             Jg_types.Tlist
               (List.map form_button ~f:(fun (attr_name, attr_value) ->
@@ -294,18 +311,24 @@ let generate_page page_specs =
   in
   write_file page_file page_code
 
-let generate_type type_id type_data =
+let generate_type id type_specs =
   let type_template =
     getcwd () ^ "/templates/client/src/types/template.jinja"
   in
+  let { imported_types; types } = type_specs in
+  let types = Hashtbl.to_alist types in
   let type_code =
     Jg_template.from_file type_template
       ~models:
         [
-          ("id", Jg_types.Tstr type_id);
-          ( "elements",
+          ( "imported_types",
             Jg_types.Tlist
-              (List.map type_data ~f:(fun element ->
+              (List.map imported_types ~f:(fun import -> Jg_types.Tstr import))
+          );
+          ("id", Jg_types.Tstr id);
+          ( "types",
+            Jg_types.Tlist
+              (List.map types ~f:(fun element ->
                    let id, typ = element in
                    Jg_types.Tobj
                      [ ("id", Jg_types.Tstr id); ("type", Jg_types.Tstr typ) ]))
@@ -313,7 +336,7 @@ let generate_type type_id type_data =
         ]
   in
   let type_file =
-    getcwd () ^ "/.out/client/src/types/" ^ String.uncapitalize type_id ^ ".ts"
+    getcwd () ^ "/.out/client/src/types/" ^ String.uncapitalize id ^ ".ts"
   in
   write_file type_file type_code
 
@@ -329,9 +352,7 @@ let generate_types types_specs auth_specs =
         names @ [ Jg_types.Tstr (String.uncapitalize user_model) ]
     | None -> names
   in
-  Hashtbl.iteri types_specs ~f:(fun ~key ~data ->
-      let data = Hashtbl.to_alist data in
-      generate_type key data);
+  Hashtbl.iteri types_specs ~f:(fun ~key ~data -> generate_type key data);
   let types_index_template =
     getcwd () ^ "/templates/client/src/types/index.jinja"
   in
@@ -446,11 +467,15 @@ let generate_service service_specs =
           ( "functions",
             Jg_types.Tlist
               (List.map funcs ~f:(fun func ->
-                   let { func_id; http_method; route; requires_auth } = func in
+                   let { func_id; http_method; route; requires_auth; func_type }
+                       =
+                     func
+                   in
                    Jg_types.Tobj
                      [
                        ("id", Jg_types.Tstr func_id);
                        ("http_method", Jg_types.Tstr http_method);
+                       ("type", Jg_types.Tstr func_type);
                        ("route", Jg_types.Tstr route);
                        ("requires_auth", Jg_types.Tbool requires_auth);
                      ])) );

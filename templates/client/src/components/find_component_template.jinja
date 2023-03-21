@@ -1,37 +1,55 @@
+{% if variable.scalar_type != "User" %}
+import {  {{ variable.scalar_type  }}  } from "@/types";
+{% endif %}
+import useFetch from "@/libs/hooks/useFetch";
+{% if requires_auth %}
 import { useState } from "react";
 import { User } from "@/types";
-import {  {{ variable.scalar_type  }}  } from "@/types";
-import useFetch from "@/libs/hooks/useFetch";
+{% endif %}
 {% for imported_component in imported_components %}
   import {{ imported_component }} from "./{{ imported_component }}"
 {% endfor %}
 import * as Queries from "@/services"
 
-const baseUrl = 'http://localhost:4000';
+{% if args %}
+type {{ id }}Props = {
+  {% for arg in args %}
+  {{ arg.id }}{{ arg.type }};
+  {% endfor %}
+}
+{% endif %}
 
-const {{ id }} = () => {
+const {{ id }} = ( {% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %} ) => {
+  {% if requires_auth %}
   const storedUser = localStorage.getItem("LoggedInUser");
   const [LoggedInUser, _] = useState<User | undefined>(
     storedUser ? (JSON.parse(storedUser) as User) : undefined
   );
-
-  const { data: {{ variable.id }}, isLoading, error } = useFetch<{{ variable.type }}>( Queries.{{ find_func }},
-    {% if model %}
-    `${baseUrl}/{{ model }}/events?accessToken=${LoggedInUser.accessToken}`
-    {% endif %} );
+  {% endif %}
+  const { data: {{ variable.id }}, isLoading, error } = useFetch<{{ variable.type }}> ( {
+      findFunc: Queries.{{ find_func }},
+      {% if func_type == "findFirst" %} where: {{ args[0].id }},{% endif %}
+      {% if requires_auth %}accessToken: LoggedInUser.accessToken,{% endif %}
+  } ) ;
 
   if (error) {
     return (
+      <>
       {%- autoescape false -%}
         {{ on_error }}
-      {% endautoescape -%})
+      {% endautoescape -%}
+      </>
+    )
   };
 
   if (isLoading) {
     return (
+      <>
       {%- autoescape false -%}
         {{ on_loading }}
-      {% endautoescape -%})
+      {% endautoescape -%}
+      </>
+    )
   };
 
   return (
@@ -40,7 +58,7 @@ const {{ id }} = () => {
         {{ render_expression }}
       {% endautoescape -%}
     </>
-  );
+    )
 };
 
 export default {{ id }};

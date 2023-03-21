@@ -30,6 +30,7 @@ let generate_controller name imports controller_functions =
                      required_args;
                      middlewares;
                      custom_fn;
+                     find_includes;
                    } =
                      controller_function
                    in
@@ -60,7 +61,14 @@ let generate_controller name imports controller_functions =
                          [
                            ("id", Jg_types.Tstr function_id);
                            ("type", Jg_types.Tstr function_type);
-                           ("ownsEntry", Jg_types.Tbool ownsEntry);
+                           ("owns_entry", Jg_types.Tbool ownsEntry);
+                           ( "find_includes",
+                             Jg_types.Tlist
+                               (match find_includes with
+                               | Some find_includes ->
+                                   List.map find_includes ~f:(fun field ->
+                                       Jg_types.Tstr field)
+                               | None -> []) );
                            ("requires_where", Jg_types.Tbool requires_where);
                            ("requires_search", Jg_types.Tbool requires_search);
                            ("requires_data", Jg_types.Tbool requires_data);
@@ -83,11 +91,7 @@ let generate_controllers controllers_specs auth_specs =
           Jg_types.Tstr (String.uncapitalize name))
     in
     match auth_specs with
-    | Some { user_model; _ } ->
-        names
-        @ [
-            Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
-          ]
+    | Some _ -> names @ [ Jg_types.Tstr "auth" ]
     | None -> names
   in
   let controllers_index_template =
@@ -120,6 +124,7 @@ let generate_route name routes =
                      custom_route;
                      route_param;
                      middlewares;
+                     route_type;
                      _;
                    } =
                      route
@@ -132,6 +137,7 @@ let generate_route name routes =
                          match custom_route with
                          | Some custom_route -> Jg_types.Tstr custom_route
                          | None -> Jg_types.Tnull );
+                       ("route_type", Jg_types.Tstr route_type);
                        ( "middlewares",
                          Jg_types.Tlist
                            (List.map middlewares ~f:(fun middleware ->
@@ -157,11 +163,7 @@ let generate_routes routes_specs auth_specs =
           Jg_types.Tstr (String.uncapitalize name))
     in
     match auth_specs with
-    | Some { user_model; _ } ->
-        names
-        @ [
-            Jg_types.Tstr "auth"; Jg_types.Tstr (String.uncapitalize user_model);
-          ]
+    | Some _ -> names @ [ Jg_types.Tstr "auth" ]
     | None -> names
   in
   let routes_index_template =
@@ -275,18 +277,12 @@ let generate_validator name validators =
   in
   write_file validator_file validator_code
 
-let generate_validators validators_specs auth_specs =
+let generate_validators validators_specs =
   Hashtbl.iteri validators_specs ~f:(fun ~key ~data ->
       generate_validator key data);
   let names =
-    let names =
-      List.map (Hashtbl.keys validators_specs) ~f:(fun name ->
-          Jg_types.Tstr (String.uncapitalize name))
-    in
-    match auth_specs with
-    | Some { user_model; _ } ->
-        names @ [ Jg_types.Tstr (String.uncapitalize user_model) ]
-    | None -> names
+    List.map (Hashtbl.keys validators_specs) ~f:(fun name ->
+        Jg_types.Tstr (String.uncapitalize name))
   in
   let validators_index_template =
     getcwd () ^ "/templates/server/src/validators/index.jinja"
@@ -304,34 +300,26 @@ let generate_auth auth_specs =
   match auth_specs with
   | Some { user_model; id_field; username_field; password_field; _ } ->
       List.iter [ "controllers"; "routes"; "validators" ] ~f:(fun component ->
-          List.iter
-            [ "auth"; String.uncapitalize user_model ]
-            ~f:(fun file ->
-              if
-                not
-                  (String.equal component "validators"
-                  && String.equal file "auth")
-              then
-                let template =
-                  Fmt.str "%s/templates/server/src/%s/%s.jinja" (getcwd ())
-                    component file
-                in
-                let code =
-                  Jg_template.from_file template
-                    ~models:
-                      [
-                        ( "user_model",
-                          Jg_types.Tstr (String.uncapitalize user_model) );
-                        ("id_field", Jg_types.Tstr id_field);
-                        ("username_field", Jg_types.Tstr username_field);
-                        ("password_field", Jg_types.Tstr password_field);
-                      ]
-                in
-                let output_file =
-                  Fmt.str "%s/.out/server/src/%s/%s.ts" (getcwd ()) component
-                    file
-                in
-                write_file output_file code))
+          if not (String.equal component "validators") then
+            let template =
+              Fmt.str "%s/templates/server/src/%s/auth.jinja" (getcwd ())
+                component
+            in
+            let code =
+              Jg_template.from_file template
+                ~models:
+                  [
+                    ( "user_model",
+                      Jg_types.Tstr (String.uncapitalize user_model) );
+                    ("id_field", Jg_types.Tstr id_field);
+                    ("username_field", Jg_types.Tstr username_field);
+                    ("password_field", Jg_types.Tstr password_field);
+                  ]
+            in
+            let output_file =
+              Fmt.str "%s/.out/server/src/%s/auth.ts" (getcwd ()) component
+            in
+            write_file output_file code)
   | None -> ()
 
 let setup_server_folder =
@@ -347,6 +335,6 @@ let generate_server server_specs =
     server_specs
   in
   generate_controllers controllers_specs auth_specs;
-  generate_validators validators_specs auth_specs;
+  generate_validators validators_specs;
   generate_routes routes_specs auth_specs;
   generate_auth auth_specs

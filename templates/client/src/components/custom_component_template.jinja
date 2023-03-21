@@ -1,4 +1,5 @@
 import * as Queries from "@/services"
+import useFetch from "@/libs/hooks/useFetch";
 {%- autoescape false -%}
 {% if imports %}
   {{ imports }}
@@ -12,7 +13,7 @@ type {{ id }}Props = {
 }
 {% endif %}
 
-const {{ id }} = ({ {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props) => {
+const {{ id }} = ( {% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %} ) => {
   {{ fn }}
 };
 

@@ -52,6 +52,7 @@ module Query = struct
     | Where of loc * id list
     | Search of loc * id list
     | Data of loc * data_args
+    | Include of loc * id list
     | Fn of loc * string
     | Imports of loc * string
 

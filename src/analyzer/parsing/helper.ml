@@ -257,22 +257,16 @@ and get_query_route attributes =
   | None -> None
 
 and check_query_unexpected_keys loc id obj_keys typ =
-  match typ with
-  | Query.FindMany ->
-      let expected_keys = [ "search" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Query.FindUnique | Query.Delete ->
-      let expected_keys = [ "where" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Query.Create ->
-      let expected_keys = [ "data" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Query.Update ->
-      let expected_keys = [ "data"; "where" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Query.Custom ->
-      let expected_keys = [ "imports"; "fn" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
+  let expected_keys =
+    match typ with
+    | Query.FindMany -> [ "search" ]
+    | Query.FindUnique -> [ "where" ]
+    | Query.Delete -> [ "where" ]
+    | Query.Create -> [ "data" ]
+    | Query.Update -> [ "data"; "where" ]
+    | Query.Custom -> [ "imports"; "fn" ]
+  in
+  unexpected_keys_exists loc id obj_keys expected_keys
 
 and get_where loc id body =
   let where = List.Assoc.find body "where" ~equal:String.equal in
@@ -408,30 +402,20 @@ let rec parse_component loc id typ args body =
   Component (loc, id, typ, args, component_body)
 
 and check_component_unexpected_keys loc id obj_keys typ =
-  match typ with
-  | Component.FindMany | Component.FindUnique ->
-      let expected_keys =
+  let expected_keys =
+    match typ with
+    | Component.FindMany | Component.FindUnique ->
         [ "findQuery"; "onError"; "onLoading"; "onSuccess" ]
-      in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Component.Create | Component.Update ->
-      let expected_keys =
+    | Component.Create | Component.Update ->
         [ "actionQuery"; "globalStyle"; "formInputs"; "formButton" ]
-      in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Component.SignupForm | Component.LoginForm ->
-      let expected_keys = [ "globalStyle"; "formInputs"; "formButton" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Component.Delete ->
-      let expected_keys = [ "actionQuery"; "formButton" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Component.LogoutButton ->
-      let expected_keys = [ "formButton" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | Component.Custom ->
-      let expected_keys = [ "fn"; "imports" ] in
-      unexpected_keys_exists loc id obj_keys expected_keys
-  | _ -> raise_compiler_error ()
+    | Component.SignupForm | Component.LoginForm ->
+        [ "globalStyle"; "formInputs"; "formButton" ]
+    | Component.Delete -> [ "actionQuery"; "formButton" ]
+    | Component.LogoutButton -> [ "formButton" ]
+    | Component.Custom -> [ "fn"; "imports" ]
+    | _ -> raise_compiler_error ()
+  in
+  unexpected_keys_exists loc id obj_keys expected_keys
 
 and get_find_query_and_variable loc id body =
   let find_query = List.Assoc.find body "findQuery" ~equal:String.equal in

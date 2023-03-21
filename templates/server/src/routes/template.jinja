@@ -15,7 +15,7 @@ const {{ name }}Router = express.Router();
 {% else %}
   {{ name }}Router.{{ route.http_method }}
   (
-    {% if route.custom_route %}'{{ route.custom_route }}',{% else %}'/{% if route.where %}:{{ route.where }}{% endif %}',{% endif %}
+    {% if route.custom_route %}'',{% else %}'/{% if route.where %}:{{ route.where }}{% endif %}',{% endif %}
     {% if not route.custom_route %}middlewares.validate({{ name }}Validators.{{ route.id }}Validator),{% endif %}
     {% for middleware in route.middlewares %}middlewares.{{ middleware }},{% endfor %}
     {{ name }}Controller.{{ route.id }},

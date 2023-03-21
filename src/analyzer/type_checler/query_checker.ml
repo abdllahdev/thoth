@@ -12,9 +12,6 @@ let check_where_arg global_env loc id model fields =
     GlobalEnvironment.lookup global_env ~key:model_id
     |> GlobalEnvironment.get_model_value
   in
-  if not (LocalEnvironment.contains model_value ~key:field) then
-    raise_undefined_error loc "field" field ~declaration_id:model_id
-      ~declaration_type:ModelDeclaration;
   let field_info : GlobalEnvironment.field_value =
     LocalEnvironment.lookup model_value ~key:field
   in
@@ -29,6 +26,25 @@ let check_where_arg global_env loc id model fields =
   then
     raise_unique_field_error loc Model.UniqueField field Model.NonUniqueField
       ~id
+
+let check_include_arg global_env loc id model fields =
+  let _, model_id = model in
+  let model_value =
+    GlobalEnvironment.lookup global_env ~key:model_id
+    |> GlobalEnvironment.get_model_value
+  in
+  List.iter fields ~f:(fun field ->
+      let field_info : GlobalEnvironment.field_value =
+        LocalEnvironment.lookup model_value ~key:field
+      in
+      let field_attrs_table = Option.value_exn field_info.field_attrs_table in
+      if not (LocalEnvironment.contains model_value ~key:field) then
+        raise_undefined_error loc "field" field ~declaration_id:model_id
+          ~declaration_type:ModelDeclaration
+      else if not (LocalEnvironment.contains field_attrs_table ~key:"@relation")
+      then
+        raise_unique_field_error loc Model.UniqueField field
+          Model.NonUniqueField ~id)
 
 let check_filter_arg global_env loc model fields =
   let _, model_id = model in
@@ -116,6 +132,8 @@ let check_args global_env loc typ id model args : unit =
             Query.DataArgument
       | Query.Search (loc, fields) ->
           check_filter_arg global_env loc (Option.value_exn model) fields
+      | Query.Include (loc, fields) ->
+          check_include_arg global_env loc id (Option.value_exn model) fields
       | _ -> ())
   | Query.FindUnique -> (
       let arg = List.hd_exn args in
@@ -128,6 +146,8 @@ let check_args global_env loc typ id model args : unit =
             Query.DataArgument
       | Query.Where (loc, fields) ->
           check_where_arg global_env loc id (Option.value_exn model) fields
+      | Query.Include (loc, fields) ->
+          check_include_arg global_env loc id (Option.value_exn model) fields
       | _ -> ())
   | Query.Create -> (
       let arg = List.hd_exn args in

@@ -1,17 +1,10 @@
 {% if type == "logout" %}
 import { useNavigate } from "react-router";
-{% endif %}
 import { useEffect, useState } from "react";
 import { User } from "@/types";
-{% for imported_type in imported_types %}
-import { {{ imported_type }} } from "@/types"
-{% endfor %}
+{% endif %}
 import Button from "@/ui/Button";
 import * as Queries from "@/services"
-
-{% if type != "logout" %}
-const baseUrl = "http://localhost:4000";
-{% endif %}
 
 {% if args %}
 type {{ id }}Props = {
@@ -22,16 +15,6 @@ type {{ id }}Props = {
 {% endif %}
 
 const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %} }: {{ id }}Props {% endif %}) => {
-  {% if type == "delete" %}
-    const url = `${baseUrl}/{{ post_to }}/${ {{args[0].id}} }`;
-    {% if requires_auth %}
-    const storedUser = localStorage.getItem("LoggedInUser");
-    const [LoggedInUser, _] = useState<User | undefined>(
-      storedUser ? (JSON.parse(storedUser) as User) : undefined
-    );
-    {% endif %}
-  {% endif %}
-
   {% if type == "logout" %}
   const navigate = useNavigate();
   const storedUser = localStorage.getItem("LoggedInUser")
@@ -44,6 +27,8 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
       navigate("{{ on_fail_redirect_to }}");
     }
   }, [LoggedInUser]);
+  {% else %}
+  const url = Queries.{{ action_func }}( {{ args[0].id }} );
   {% endif %}
 
   const handleOnClick = async () => {
@@ -51,7 +36,18 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
     localStorage.removeItem("LoggedInUser");
     setUser(undefined);
     {% else %}
-    Queries.{{ delete_func }}()
+    let headers: { [x: string]: string } = {
+      'Content-Type': 'application/json',
+    };
+
+    if (LoggedInUser.accessToken) {
+      headers['Authorization'] = `Bearer ${LoggedInUser.accessToken}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'delete',
+      headers,
+    });
     {% endif %}
   };
 

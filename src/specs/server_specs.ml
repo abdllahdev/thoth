@@ -37,6 +37,7 @@ type required_args = {
 type controller_function_specs = {
   function_id : string;
   function_type : string;
+  find_includes : string list option;
   middlewares : string list;
   required_args : required_args;
   custom_fn : string option;
@@ -47,6 +48,7 @@ type route_specs = {
   http_method : string;
   middlewares : string list;
   default_route : string option;
+  route_type : string;
   custom_route : string option;
   route_param : string option;
 }
@@ -243,9 +245,12 @@ let generate_function_imports queries =
       let { imports; _ } = query_args in
       match imports with Some imports -> lst @ [ imports ] | None -> lst)
 
-let generate_controllers_specs queries =
+let generate_controllers_specs global_env queries =
   let get_controller_function lst query =
-    let { query_id; query_type; query_args; query_permissions; _ } = query in
+    let { query_id; query_type; query_args; query_permissions; query_model; _ }
+        =
+      query
+    in
     let function_type = QueryFormatter.string_of_query_type query_type in
     let { fn; _ } = query_args in
     let required_args =
@@ -262,10 +267,29 @@ let generate_controllers_specs queries =
       | Some permissions -> permissions
       | None -> []
     in
+    let find_includes =
+      match query_type with
+      | Query.FindMany | Query.FindUnique ->
+          let model_table =
+            GlobalEnvironment.lookup global_env
+              ~key:(Option.value_exn query_model)
+            |> GlobalEnvironment.get_model_value
+          in
+          Some
+            (Hashtbl.fold model_table ~init:[] ~f:(fun ~key ~data lst ->
+                 let field_attrs_table =
+                   data.field_attrs_table |> Option.value_exn
+                 in
+                 if LocalEnvironment.contains field_attrs_table ~key:"@relation"
+                 then lst @ [ key ]
+                 else lst))
+      | _ -> None
+    in
     let controller_function =
       {
         function_id = query_id;
         function_type;
+        find_includes;
         middlewares;
         required_args;
         custom_fn = fn;
@@ -302,15 +326,15 @@ let generate_routes_specs queries =
         | Some permissions -> permissions
         | None -> []
       in
-      let http_method, route =
+      let http_method, route, query_type =
         match query_type with
-        | Query.FindMany | Query.FindUnique -> ("get", query_model)
-        | Query.Create -> ("post", query_model)
-        | Query.Update -> ("put", query_model)
-        | Query.Delete -> ("delete", query_model)
+        | Query.FindMany | Query.FindUnique -> ("get", query_model, query_type)
+        | Query.Create -> ("post", query_model, query_type)
+        | Query.Update -> ("put", query_model, query_type)
+        | Query.Delete -> ("delete", query_model, query_type)
         | Query.Custom ->
             let http_method, route = Option.value_exn query_route in
-            (http_method, Some route)
+            (http_method, Some route, query_type)
       in
       match query_type with
       | Query.Custom ->
@@ -318,6 +342,7 @@ let generate_routes_specs queries =
             route_id = query_id;
             http_method;
             default_route = None;
+            route_type = QueryFormatter.string_of_query_type query_type;
             custom_route = route;
             route_param;
             middlewares;
@@ -328,6 +353,7 @@ let generate_routes_specs queries =
             http_method;
             default_route = route;
             custom_route = None;
+            route_type = QueryFormatter.string_of_query_type query_type;
             route_param;
             middlewares;
           }
@@ -392,7 +418,8 @@ let generate_server_specs global_env app_declaration query_declarations =
   let groups = group_queries queries_specs in
   let controllers_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data ->
-        (generate_function_imports data, generate_controllers_specs data))
+        ( generate_function_imports data,
+          generate_controllers_specs global_env data ))
   in
   let routes_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_routes_specs data)
