@@ -36,18 +36,23 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
     localStorage.removeItem("LoggedInUser");
     setUser(undefined);
     {% else %}
-    let headers: { [x: string]: string } = {
-      'Content-Type': 'application/json',
-    };
+    try {
+      let headers: { [x: string]: string } = {
+        'Content-Type': 'application/json',
+      };
 
-    if (LoggedInUser.accessToken) {
-      headers['Authorization'] = `Bearer ${LoggedInUser.accessToken}`;
+      if (LoggedInUser.accessToken) {
+        headers['Authorization'] = `Bearer ${LoggedInUser.accessToken}`;
+      }
+
+      await fetch(url, {
+        method: 'delete',
+        headers,
+      });
+
+    } catch (error) {
+      console.log(error)
     }
-
-    const response = await fetch(url, {
-      method: 'delete',
-      headers,
-    });
     {% endif %}
   };
 

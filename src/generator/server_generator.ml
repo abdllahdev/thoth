@@ -30,7 +30,7 @@ let generate_controller name imports controller_functions =
                      required_args;
                      middlewares;
                      custom_fn;
-                     find_includes;
+                     includes;
                    } =
                      controller_function
                    in
@@ -62,11 +62,11 @@ let generate_controller name imports controller_functions =
                            ("id", Jg_types.Tstr function_id);
                            ("type", Jg_types.Tstr function_type);
                            ("owns_entry", Jg_types.Tbool ownsEntry);
-                           ( "find_includes",
+                           ( "includes",
                              Jg_types.Tlist
-                               (match find_includes with
-                               | Some find_includes ->
-                                   List.map find_includes ~f:(fun field ->
+                               (match includes with
+                               | Some includes ->
+                                   List.map includes ~f:(fun field ->
                                        Jg_types.Tstr field)
                                | None -> []) );
                            ("requires_where", Jg_types.Tbool requires_where);
@@ -298,8 +298,18 @@ let generate_validators validators_specs =
 
 let generate_auth auth_specs =
   match auth_specs with
-  | Some { user_model; id_field; username_field; password_field; _ } ->
-      List.iter [ "controllers"; "routes"; "validators" ] ~f:(fun component ->
+  | Some
+      {
+        user_model;
+        id_field;
+        username_field;
+        password_field;
+        is_online_field;
+        last_active_field;
+        _;
+      } ->
+      List.iter [ "controllers"; "routes"; "validators"; "utils" ]
+        ~f:(fun component ->
           if not (String.equal component "validators") then
             let template =
               Fmt.str "%s/templates/server/src/%s/auth.jinja" (getcwd ())
@@ -314,6 +324,8 @@ let generate_auth auth_specs =
                     ("id_field", Jg_types.Tstr id_field);
                     ("username_field", Jg_types.Tstr username_field);
                     ("password_field", Jg_types.Tstr password_field);
+                    ("is_online_field", Jg_types.Tstr is_online_field);
+                    ("last_active_field", Jg_types.Tstr last_active_field);
                   ]
             in
             let output_file =
@@ -322,18 +334,36 @@ let generate_auth auth_specs =
             write_file output_file code)
   | None -> ()
 
+let generate_server_file auth_specs =
+  let template = Fmt.str "%s/templates/server/src/app.jinja" (getcwd ()) in
+  let code =
+    match auth_specs with
+    | Some _ ->
+        Jg_template.from_file template
+          ~models:[ ("requires_auth", Jg_types.Tbool true) ]
+    | None ->
+        Jg_template.from_file template
+          ~models:[ ("requires_auth", Jg_types.Tbool false) ]
+  in
+  let output_file = Fmt.str "%s/.out/server/src/app.ts" (getcwd ()) in
+  write_file output_file code
+
 let setup_server_folder =
   let destination = getcwd () ^ "/templates/server" in
   create_folder destination;
   system (Fmt.str "rm %s/.out/server/src/controllers/*" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/server/src/routes/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/server/src/validators/*" (getcwd ())) |> ignore
+  system (Fmt.str "rm %s/.out/server/src/validators/*" (getcwd ())) |> ignore;
+  system (Fmt.str "rm %s/.out/server/src/utils/auth.jinja" (getcwd ()))
+  |> ignore;
+  system (Fmt.str "rm %s/.out/server/src/app.jinja" (getcwd ())) |> ignore
 
 let generate_server server_specs =
   setup_server_folder;
   let { controllers_specs; routes_specs; validators_specs; auth_specs } =
     server_specs
   in
+  generate_server_file auth_specs;
   generate_controllers controllers_specs auth_specs;
   generate_validators validators_specs;
   generate_routes routes_specs auth_specs;

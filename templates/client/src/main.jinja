@@ -1,0 +1,52 @@
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { Suspense, useState, useEffect } from "react";
+import { BrowserRouter as Router, useRoutes } from "react-router-dom";
+import routes from "~react-pages";
+import "virtual:windi.css";
+
+{% if requires_auth %}
+import {User} from "@/types"
+
+function useHeartbeat() {
+  const storedUser = localStorage.getItem('LoggedInUser');
+  const [LoggedInUser, _] = useState<User | undefined>(
+    storedUser ? (JSON.parse(storedUser) as User) : undefined,
+  );
+
+  useEffect(() => {
+    // Send a heartbeat to the server every minute
+    const interval = setInterval(async () => {
+      try {
+        await fetch("http://localhost:4000/auth/heartbeat", {
+          method:"POST",
+          headers: {
+            Authorization: `Bearer ${LoggedInUser.accessToken}`
+          }
+        })
+      } catch (error) {
+        console.log(error)
+      }
+    }, 1000);
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(interval);
+  }, []);
+}
+{% endif %}
+
+const App = () => {
+  {% if requires_auth %}
+  const _ = useHeartbeat()
+  {% endif %}
+
+  return <Suspense fallback={<p>Loading...</p>}>{useRoutes(routes)}</Suspense>;
+};
+
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+  <React.StrictMode>
+    <Router>
+      <App />
+    </Router>
+  </React.StrictMode>
+);

@@ -13,4 +13,6 @@ authRouter.post(
 
 authRouter.post('/login', validate(authValidators.loginValidator), authController.login);
 
+authRouter.post('/heartbeat', isAuth, authController.heartbeat);
+
 export default authRouter;

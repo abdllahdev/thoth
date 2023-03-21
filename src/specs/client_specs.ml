@@ -18,6 +18,7 @@ type find_component_specs = {
   id : string;
   find_func : string;
   func_type : string;
+  func_model : string;
   requires_auth : bool;
   args : (string * string) list;
   model : string option;
@@ -424,6 +425,7 @@ let generate_find_component_specs global_env id args body types_specs =
     id;
     find_func = query_id;
     func_type = QueryFormatter.string_of_query_type query.typ;
+    func_model = String.uncapitalize (Option.value_exn model);
     args;
     model;
     requires_auth;

@@ -50,6 +50,7 @@ let generate_find_component find_component_specs =
     id;
     model;
     find_func;
+    func_model;
     requires_auth;
     args;
     func_type;
@@ -72,6 +73,7 @@ let generate_find_component find_component_specs =
               (List.map imported_components ~f:(fun imported_component ->
                    Jg_types.Tstr imported_component)) );
           ("id", Jg_types.Tstr id);
+          ("func_model", Jg_types.Tstr func_model);
           ("requires_auth", Jg_types.Tbool requires_auth);
           ( "args",
             Jg_types.Tlist
@@ -509,7 +511,22 @@ let setup_client_folder =
   system (Fmt.str "rm %s/.out/client/src/components/*" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/pages/*" (getcwd ())) |> ignore;
   system (Fmt.str "rm %s/.out/client/src/services/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/client/src/types/*" (getcwd ())) |> ignore
+  system (Fmt.str "rm %s/.out/client/src/types/*" (getcwd ())) |> ignore;
+  system (Fmt.str "rm %s/.out/client/src/main.jinja" (getcwd ())) |> ignore
+
+let generate_main_file auth_specs =
+  let template = Fmt.str "%s/templates/client/src/main.jinja" (getcwd ()) in
+  let code =
+    match auth_specs with
+    | Some _ ->
+        Jg_template.from_file template
+          ~models:[ ("requires_auth", Jg_types.Tbool true) ]
+    | None ->
+        Jg_template.from_file template
+          ~models:[ ("requires_auth", Jg_types.Tbool false) ]
+  in
+  let output_file = Fmt.str "%s/.out/client/src/main.tsx" (getcwd ()) in
+  write_file output_file code
 
 let generate_client client_specs =
   setup_client_folder;
@@ -533,6 +550,7 @@ let generate_client client_specs =
   List.iter ~f:generate_action_button_component action_button_components_specs;
   List.iter ~f:generate_custom_component custom_components_specs;
   List.iter ~f:generate_page pages_specs;
+  generate_main_file auth_specs;
   generate_services services_specs;
   generate_app_title app_title;
   generate_auth auth_specs;

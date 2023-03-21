@@ -37,7 +37,7 @@ type required_args = {
 type controller_function_specs = {
   function_id : string;
   function_type : string;
-  find_includes : string list option;
+  includes : string list option;
   middlewares : string list;
   required_args : required_args;
   custom_fn : string option;
@@ -267,9 +267,10 @@ let generate_controllers_specs global_env queries =
       | Some permissions -> permissions
       | None -> []
     in
-    let find_includes =
+    let includes =
       match query_type with
-      | Query.FindMany | Query.FindUnique ->
+      | Query.Custom -> None
+      | _ ->
           let model_table =
             GlobalEnvironment.lookup global_env
               ~key:(Option.value_exn query_model)
@@ -296,13 +297,12 @@ let generate_controllers_specs global_env queries =
                          | true -> lst
                          | false -> lst @ [ key ]))
                  | false -> lst))
-      | _ -> None
     in
     let controller_function =
       {
         function_id = query_id;
         function_type;
-        find_includes;
+        includes;
         middlewares;
         required_args;
         custom_fn = fn;

@@ -213,6 +213,8 @@ type auth_config = {
   id_field : string;
   username_field : string;
   password_field : string;
+  is_online_field : string;
+  last_active_field : string;
   on_success_redirect_to : string;
   on_fail_redirect_to : string;
 }

@@ -1,0 +1,13 @@
+import  cron from 'node-cron';
+import prismaClient from './prismaClient';
+import sse from '../utils/sse';
+
+const job = cron.schedule('*/1 * * * * *', async () => {
+  const result = await prismaClient.{{ user_model }}.updateMany({
+    where: { {{ last_active_field }}: { lt: new Date(Date.now() - 1000) } },
+    data: { {{ is_online_field }}: false },
+  });
+  sse.send(result, 'update{{ user_model }}');
+});
+
+export default job;

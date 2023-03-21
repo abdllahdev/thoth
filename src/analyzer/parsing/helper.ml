@@ -51,12 +51,17 @@ let parse_permissions loc permissions =
   in
   List.map permissions ~f:check_permission
 
-let parse_app_configs loc id body =
-  List.fold body ~init:[] ~f:(fun seen (key, _) ->
-      if List.mem seen key ~equal:String.equal then
-        raise_multi_definitions_error loc key
-      else seen @ [ key ])
-  |> ignore;
+let rec check_dup_exists loc keys =
+  match keys with
+  | [] -> ()
+  | hd :: tl ->
+      if List.exists ~f:(String.equal hd) tl then
+        raise_multi_definitions_error loc hd
+      else check_dup_exists loc tl
+
+let rec parse_app_configs loc id body =
+  let obj_keys = List.map body ~f:(fun (key, _) -> key) in
+  check_dup_exists loc obj_keys;
   List.map body ~f:(fun (key, value) ->
       match key with
       | "title" -> (
@@ -66,16 +71,15 @@ let parse_app_configs loc id body =
       | "auth" -> (
           match value with
           | AssocObjField (loc, auth_obj) ->
+              let obj_keys = List.map auth_obj ~f:(fun (key, _) -> key) in
+              check_dup_exists loc obj_keys;
+              check_auth_config_entries loc id obj_keys;
               Auth
-                (List.fold auth_obj ~init:[] ~f:(fun seen (key, _) ->
-                     if List.mem seen key ~equal:String.equal then
-                       raise_multi_definitions_error loc key
-                     else seen @ [ key ])
-                 |> ignore;
-                 List.map auth_obj ~f:(fun (key, value) ->
+                (List.map auth_obj ~f:(fun (key, value) ->
                      match key with
                      | "userModel" | "idField" | "usernameField"
-                     | "passwordField" -> (
+                     | "passwordField" | "isOnlineField" | "lastActiveField"
+                       -> (
                          match value with
                          | ReferenceObjField (_, value) -> (key, value)
                          | _ -> raise_type_error loc (Scalar Reference))
@@ -86,6 +90,23 @@ let parse_app_configs loc id body =
                      | entry -> raise_unexpected_entry_error loc id entry))
           | _ -> raise_type_error loc (Scalar Assoc))
       | entry -> raise_unexpected_entry_error loc id entry)
+
+and check_auth_config_entries loc id keys =
+  let required_entries =
+    [
+      "userModel";
+      "idField";
+      "usernameField";
+      "passwordField";
+      "isOnlineField";
+      "lastActiveField";
+      "onSuccessRedirectTo";
+      "onFailRedirectTo";
+    ]
+  in
+  List.iter required_entries ~f:(fun entry ->
+      if not (List.exists keys ~f:(fun key -> String.equal key entry)) then
+        raise_required_entry_error loc id entry)
 
 let parse_xra_element loc opening_id closing_id attributes children =
   if not (String.equal opening_id closing_id) then

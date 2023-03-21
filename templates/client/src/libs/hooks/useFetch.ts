@@ -1,14 +1,13 @@
-import { useLayoutEffect, useState } from 'react';
-
-// TODO: create a store in the app and update the cached data based on the events pushed by the server
+import { useEffect, useState } from 'react';
 
 type UseFetchType = {
   findFunc: (where?: number) => string;
   where?: number;
+  model?: string;
   accessToken?: string;
 };
 
-const useFetch = <T>({ findFunc, where, accessToken }: UseFetchType) => {
+const useFetch = <T>({ findFunc, where, model, accessToken }: UseFetchType) => {
   const url = findFunc(where);
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string | undefined>();
@@ -16,10 +15,10 @@ const useFetch = <T>({ findFunc, where, accessToken }: UseFetchType) => {
 
   const fetcher = async () => {
     try {
-      let headers: { [x: string]: string } = {};
+      const headers: { [x: string]: string } = {};
 
       if (accessToken) {
-        headers["Authorization"] = `Bearer ${accessToken}`;
+        headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
       const response = await fetch(url, {
@@ -28,6 +27,7 @@ const useFetch = <T>({ findFunc, where, accessToken }: UseFetchType) => {
 
       if (!response.ok) {
         setError('An error occurred');
+        setIsLoading(false);
         return;
       }
 
@@ -35,38 +35,60 @@ const useFetch = <T>({ findFunc, where, accessToken }: UseFetchType) => {
 
       setData(data);
       setError(undefined);
+      setIsLoading(false);
     } catch (err: any) {
       setData(undefined);
       setError(err);
+      setIsLoading(false);
     }
   };
 
-  useLayoutEffect(() => {
-    setIsLoading(true);
-
+  useEffect(() => {
     const eventSource = new EventSource(
       `${url}/events?accessToken=${accessToken}`,
     );
 
-    eventSource.addEventListener('create', (event) => {
-      fetcher();
-    });
-
-    eventSource.addEventListener('update', (event) => {
-      fetcher();
-    });
-
-    eventSource.addEventListener('delete', (event) => {
-      fetcher();
-    });
+    setIsLoading(true);
 
     fetcher();
+
+    eventSource.addEventListener(`create${model}`, (event) => {
+      setData((prevData: T) => {
+        return Array.isArray(prevData)
+          ? [...prevData, JSON.parse(event.data)]
+          : JSON.parse(event.data);
+      });
+    });
+
+    eventSource.addEventListener(`update${model}`, (event) => {
+      setData((prevData: T) => {
+        if (!Array.isArray(prevData)) return JSON.parse(event.data);
+        const updatedItem = JSON.parse(event.data);
+        const updatedIndex = prevData.findIndex(
+          (item) => item.id === updatedItem.id,
+        );
+        if (updatedIndex === -1) return prevData;
+        const newData = [...prevData];
+        newData[updatedIndex] = updatedItem;
+        return newData;
+      });
+    });
+
+    eventSource.addEventListener(`delete${model}`, (event) => {
+      setData((prevData: T) => {
+        if (!Array.isArray(prevData)) return undefined;
+        const deletedId = JSON.parse(event.data).id;
+        const newData = prevData.filter((item) => item.id !== deletedId);
+        return newData;
+      });
+    });
+
     setIsLoading(false);
 
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [url]);
 
   return { data, isLoading, error };
 };

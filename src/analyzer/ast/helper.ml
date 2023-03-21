@@ -49,6 +49,8 @@ let get_auth_config app_declaration =
               id_field = get_value "idField";
               username_field = get_value "usernameField";
               password_field = get_value "passwordField";
+              is_online_field = get_value "isOnlineField";
+              last_active_field = get_value "lastActiveField";
               on_success_redirect_to = get_value "onSuccessRedirectTo";
               on_fail_redirect_to = get_value "onFailRedirectTo";
             }

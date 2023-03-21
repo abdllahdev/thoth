@@ -15,6 +15,13 @@ import ApiError from './utils/apiError';
 // Init express app
 const app = express();
 
+{% if requires_auth %}
+import updateUsers from "./utils/auth"
+
+// Update users job
+updateUsers.start();
+{% endif %}
+
 // Set security HTTP headers
 app.use(helmet());
 

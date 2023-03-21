@@ -3,6 +3,7 @@ import httpStatus from 'http-status';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prismaClient from '../utils/prismaClient';
+import sse from '../utils/sse';
 import ApiError from '../utils/apiError';
 
 export const signup = async (
@@ -40,8 +41,15 @@ export const signup = async (
 
     const user = await prismaClient.user.create(payload);
 
+    const result = await prismaClient.{{ user_model }}.update({
+      where: { {{ id_field }}: user.{{ id_field }} },
+      data: { {{ is_online_field }}: true, {{ last_active_field }}: new Date() },
+    });
+
+    sse.send(result, 'update{{ user_model }}');
+
     const accessToken = jwt.sign(
-      { userId: user.id },
+      { id: user.id },
       process.env.JWT_ACCESS_SECRET as string,
       {},
     );
@@ -93,14 +101,44 @@ export const login = async (
       });
 
     const accessToken = jwt.sign(
-      { userId: existingUser.{{ id_field }} },
+      { id: existingUser.{{ id_field }} },
       process.env.JWT_ACCESS_SECRET as string,
       {},
     );
 
+    const result = await prismaClient.{{ user_model }}.update({
+      where: { {{ id_field }}: existingUser.{{ id_field }} },
+      data: { {{ is_online_field }}: true, {{ last_active_field }}: new Date() },
+    });
+
+    sse.send(result, 'update{{ user_model }}');
+
     const { {{ password_field }}, ...loggedUser } = existingUser;
 
     res.status(httpStatus.OK).json({ ...loggedUser, accessToken });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+};
+
+
+export const heartbeat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+  const userId = req.user.id;
+
+  const result = await prismaClient.{{ user_model }}.update({
+    where: { {{ id_field }}: userId },
+    data: { {{ is_online_field }}: true, {{ last_active_field }}: new Date() },
+  });
+
+  sse.send(result, 'update{{ user_model }}');
+
+  res.status(httpStatus.OK).send();
   } catch (err) {
     console.log(err);
     next(err);

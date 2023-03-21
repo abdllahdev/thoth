@@ -35,14 +35,12 @@ async (
       data: req.validatedPayload.data,
       {% endif %}
 
-      {% if func.type == "findMany" or func.type == "findFirst" %}
-      {% if func.find_includes %}
+      {% if func.includes %}
       include: {
-        {% for field in func.find_includes %}
+        {% for field in func.includes %}
         {{ field }}: true,
         {% endfor %}
-      }
-      {% endif %}
+      },
       {% endif %}
     };
 
@@ -96,11 +94,11 @@ async (
     {% endif %}
 
     {% if func.type == "create" %}
-    sse.send(result, 'create');
+    sse.send(result, 'create{{ name }}');
     {% elif func.type == "update" %}
-    sse.send(result, 'update');
+    sse.send(result, 'update{{ name }}');
     {% elif func.type == "delete" %}
-    sse.send(item, 'delete');
+    sse.send(item, 'delete{{ name }}');
     {% endif %}
 
     res.status(

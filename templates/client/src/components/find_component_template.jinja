@@ -29,6 +29,7 @@ const {{ id }} = ( {% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %
   const { data: {{ variable.id }}, isLoading, error } = useFetch<{{ variable.type }}> ( {
       findFunc: Queries.{{ find_func }},
       {% if func_type == "findFirst" %} where: {{ args[0].id }},{% endif %}
+      model: "{{ func_model }}",
       {% if requires_auth %}accessToken: LoggedInUser.accessToken,{% endif %}
   } ) ;
 
