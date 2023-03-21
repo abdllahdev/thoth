@@ -397,16 +397,26 @@ let generate_find_component_specs global_env id args body types_specs =
    let type_specs = Hashtbl.create ~size:17 (module String) in
    let imported_types =
      Hashtbl.fold model_value ~init:[] ~f:(fun ~key ~data lst ->
-         let field_attrs = data.field_attrs_table |> Option.value_exn in
-         (if
-          (not (is_custom_type data.typ))
-          || LocalEnvironment.contains field_attrs ~key:"@relation"
-         then
-          let field_type = convert_type data.typ in
-          Hashtbl.add_exn type_specs ~key ~data:field_type);
-         if LocalEnvironment.contains field_attrs ~key:"@relation" then
-           lst @ [ string_of_scalar_type (get_scalar_type data.typ) ]
-         else lst)
+         let field_type = convert_type data.typ in
+         let field_attrs_table = data.field_attrs_table |> Option.value_exn in
+         match
+           LocalEnvironment.contains field_attrs_table ~key:"@relation"
+           || not (is_custom_type data.typ)
+         with
+         | true ->
+             Hashtbl.add_exn type_specs ~key ~data:field_type;
+             if is_custom_type data.typ then
+               lst @ [ string_of_scalar_type (get_scalar_type data.typ) ]
+             else lst
+         | false -> (
+             match
+               String.equal
+                 (QueryFormatter.string_of_query_type query.typ)
+                 "findMany"
+             with
+             | true -> lst
+             | false ->
+                 lst @ [ string_of_scalar_type (get_scalar_type data.typ) ]))
    in
    Hashtbl.add_exn types_specs ~key:result_scalar_type
      ~data:{ types = type_specs; imported_types });

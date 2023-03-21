@@ -15,7 +15,7 @@ model User {
 	username  String    @unique
 	password  String
 	online		Boolean		@default(false)
-	message   Message[]
+	messages  Message[]
 }
 
 model Message {
