@@ -30,6 +30,9 @@ const {{ id }} = ( {% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %
       findFunc: Queries.{{ find_func }},
       {% if func_type == "findFirst" %} where: {{ args[0].id }},{% endif %}
       model: "{{ func_model }}",
+      {% if owns_entry %}
+      privateStream: {{ owns_entry }},
+      {% endif %}
       {% if requires_auth %}accessToken: LoggedInUser.accessToken,{% endif %}
   } ) ;
 

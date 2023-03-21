@@ -9,7 +9,8 @@ open Ast.Ast_types
 let string_of_option = function Some str -> str | None -> ""
 let list_of_option = function Some lst -> lst | None -> []
 
-let generate_controller name imports controller_functions =
+let generate_controller name imports controller_functions
+    find_unique_requires_owns_entry find_many_requires_owns_entry =
   let controller_template =
     getcwd () ^ "/templates/server/src/controllers/template.jinja"
   in
@@ -21,6 +22,10 @@ let generate_controller name imports controller_functions =
           ( "imports",
             Jg_types.Tlist
               (List.map imports ~f:(fun import -> Jg_types.Tstr import)) );
+          ( "find_unique_requires_owns_entry",
+            Jg_types.Tbool find_unique_requires_owns_entry );
+          ( "find_many_requires_owns_entry",
+            Jg_types.Tbool find_many_requires_owns_entry );
           ( "functions",
             Jg_types.Tlist
               (List.map controller_functions ~f:(fun controller_function ->
@@ -83,8 +88,14 @@ let generate_controller name imports controller_functions =
 
 let generate_controllers controllers_specs auth_specs =
   Hashtbl.iteri controllers_specs ~f:(fun ~key ~data ->
-      let imports, funcs = data in
-      generate_controller key imports funcs);
+      let ( imports,
+            find_unique_requires_owns_entry,
+            find_many_requires_owns_entry,
+            funcs ) =
+        data
+      in
+      generate_controller key imports funcs find_unique_requires_owns_entry
+        find_many_requires_owns_entry);
   let names =
     let names =
       List.map (Hashtbl.keys controllers_specs) ~f:(fun name ->

@@ -4,10 +4,11 @@ type UseFetchType = {
   findFunc: (where?: number) => string;
   where?: number;
   model?: string;
+  privateStream?: boolean;
   accessToken?: string;
 };
 
-const useFetch = <T>({ findFunc, where, model, accessToken }: UseFetchType) => {
+const useFetch = <T>({ findFunc, where, model, privateStream, accessToken }: UseFetchType) => {
   const url = findFunc(where);
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string | undefined>();
@@ -52,7 +53,9 @@ const useFetch = <T>({ findFunc, where, model, accessToken }: UseFetchType) => {
 
     fetcher();
 
-    eventSource.addEventListener(`create${model}`, (event) => {
+    let createStream = `create${model}`
+    if (privateStream) createStream += accessToken
+    eventSource.addEventListener(createStream, (event) => {
       setData((prevData: T) => {
         return Array.isArray(prevData)
           ? [...prevData, JSON.parse(event.data)]
@@ -60,7 +63,9 @@ const useFetch = <T>({ findFunc, where, model, accessToken }: UseFetchType) => {
       });
     });
 
-    eventSource.addEventListener(`update${model}`, (event) => {
+    let updateStream = `update${model}`
+    if (privateStream) updateStream += accessToken
+    eventSource.addEventListener(updateStream, (event) => {
       setData((prevData: T) => {
         if (!Array.isArray(prevData)) return JSON.parse(event.data);
         const updatedItem = JSON.parse(event.data);
@@ -74,7 +79,9 @@ const useFetch = <T>({ findFunc, where, model, accessToken }: UseFetchType) => {
       });
     });
 
-    eventSource.addEventListener(`delete${model}`, (event) => {
+    let deleteStream = `delete${model}`
+    if (privateStream) deleteStream += accessToken
+    eventSource.addEventListener(deleteStream, (event) => {
       setData((prevData: T) => {
         if (!Array.isArray(prevData)) return undefined;
         const deletedId = JSON.parse(event.data).id;

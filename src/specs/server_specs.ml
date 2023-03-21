@@ -55,7 +55,9 @@ type route_specs = {
 
 type server_specs = {
   controllers_specs :
-    (string, string list * controller_function_specs list) Hashtbl.t;
+    ( string,
+      string list * bool * bool * controller_function_specs list )
+    Hashtbl.t;
   routes_specs : (string, route_specs list) Hashtbl.t;
   validators_specs : (string, validator_specs list) Hashtbl.t;
   auth_specs : auth_config option;
@@ -312,6 +314,24 @@ let generate_controllers_specs global_env queries =
   in
   List.fold_left ~init:[] ~f:get_controller_function queries
 
+let find_many_requires_owns_entry controller_functions =
+  List.exists controller_functions ~f:(fun func ->
+      let { function_type; middlewares; _ } = func in
+      match function_type with
+      | "findMany" ->
+          List.exists middlewares ~f:(fun middleware ->
+              match middleware with "OwnsEntry" -> true | _ -> false)
+      | _ -> false)
+
+let find_unique_requires_owns_entry controller_functions =
+  List.exists controller_functions ~f:(fun func ->
+      let { function_type; middlewares; _ } = func in
+      match function_type with
+      | "findFirst" ->
+          List.exists middlewares ~f:(fun middleware ->
+              match middleware with "OwnsEntry" -> true | _ -> false)
+      | _ -> false)
+
 let generate_routes_specs queries =
   let get_route lst query =
     let {
@@ -431,8 +451,11 @@ let generate_server_specs global_env app_declaration query_declarations =
   let groups = group_queries queries_specs in
   let controllers_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data ->
+        let controller_funcs = generate_controllers_specs global_env data in
         ( generate_function_imports data,
-          generate_controllers_specs global_env data ))
+          find_unique_requires_owns_entry controller_funcs,
+          find_many_requires_owns_entry controller_funcs,
+          controller_funcs ))
   in
   let routes_specs =
     Hashtbl.mapi groups ~f:(fun ~key:_ ~data -> generate_routes_specs data)

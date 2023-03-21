@@ -27,7 +27,10 @@ async (
         ...req.validatedPayload?.where,
         {% endif %}
         {% if func.requires_search %}
-        ...req.validatedPayload?.search
+        ...req.validatedPayload?.search,
+        {% if func.owns_entry %}
+        ...req.validatedPayload?.where,
+        {% endif %}
         {% endif %} },
       {% endif %}
 
@@ -94,11 +97,11 @@ async (
     {% endif %}
 
     {% if func.type == "create" %}
-    sse.send(result, 'create{{ name }}');
+    sse.send(result, `create{{ name }}{% if find_many_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
     {% elif func.type == "update" %}
-    sse.send(result, 'update{{ name }}');
+    sse.send(result, `update{{ name }}{% if find_unique_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
     {% elif func.type == "delete" %}
-    sse.send(item, 'delete{{ name }}');
+    sse.send(item, `delete{{ name }}{% if find_unique_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
     {% endif %}
 
     res.status(

@@ -663,7 +663,9 @@ let check_component global_env xra_env app_declaration loc id typ args body =
   in
   let check_component_body body =
     match body with
-    | Component.GeneralBody body -> check_general_body global_env xra_env body
+    | Component.GeneralBody body ->
+        check_args loc args Component.General;
+        check_general_body global_env xra_env body
     | Component.FindBody
         ( ((query_loc, query_id), (variable_loc, variable)),
           on_error,

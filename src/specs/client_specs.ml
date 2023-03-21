@@ -19,6 +19,7 @@ type find_component_specs = {
   find_func : string;
   func_type : string;
   func_model : string;
+  owns_entry : bool;
   requires_auth : bool;
   args : (string * string) list;
   model : string option;
@@ -377,9 +378,14 @@ let generate_find_component_specs global_env id args body types_specs =
   let result_scalar_type =
     get_scalar_type query.return_type |> string_of_scalar_type
   in
-  let requires_auth =
+  let requires_auth, owns_entry =
     let permissions = query.permissions in
-    match permissions with Some _ -> true | None -> false
+    match permissions with
+    | Some permissions ->
+        ( true,
+          List.exists permissions ~f:(fun (_, permission) ->
+              if String.equal permission "OwnsEntry" then true else false) )
+    | None -> (false, false)
   in
   let model =
     match
@@ -427,6 +433,7 @@ let generate_find_component_specs global_env id args body types_specs =
     func_type = QueryFormatter.string_of_query_type query.typ;
     func_model = String.uncapitalize (Option.value_exn model);
     args;
+    owns_entry;
     model;
     requires_auth;
     result_variable = variable_id;

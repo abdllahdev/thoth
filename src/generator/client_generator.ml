@@ -50,6 +50,7 @@ let generate_find_component find_component_specs =
     id;
     model;
     find_func;
+    owns_entry;
     func_model;
     requires_auth;
     args;
@@ -75,6 +76,7 @@ let generate_find_component find_component_specs =
           ("id", Jg_types.Tstr id);
           ("func_model", Jg_types.Tstr func_model);
           ("requires_auth", Jg_types.Tbool requires_auth);
+          ("owns_entry", Jg_types.Tbool owns_entry);
           ( "args",
             Jg_types.Tlist
               (List.map args ~f:(fun arg ->

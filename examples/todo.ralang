@@ -3,6 +3,8 @@ app Todo {
 	auth: {
 		userModel: User,
 		idField: id,
+		isOnlineField: isOnline,
+		lastActiveField: lastActive,
 		usernameField: username,
 		passwordField: password,
 		onSuccessRedirectTo: "/",
@@ -14,6 +16,8 @@ model User {
 	id        Int     @id
 	username  String  @unique
 	password  String
+	isOnline	 Boolean	 @default(false)
+	lastActive DateTime  @default(Now)
 	tasks 		Task[]
 }
 
@@ -27,20 +31,20 @@ model Task {
 	updatedAt DateTime @updatedAt
 }
 
-@on(Task)
-@permission(IsAuth, OwnsEntry)
+@model(Task)
+@permissions(IsAuth, OwnsEntry)
 query<FindMany> getTasks {
 	search: [ title, isDone ]
 }
 
-@on(Task)
-@permission(IsAuth, OwnsEntry)
+@model(Task)
+@permissions(IsAuth, OwnsEntry)
 query<FindUnique> getTaskById {
 	where: [ id ]
 }
 
-@on(Task)
-@permission(IsAuth)
+@model(Task)
+@permissions(IsAuth)
 query<Create> createTask {
 	data: {
 		fields: [title],
@@ -50,27 +54,34 @@ query<Create> createTask {
 	}
 }
 
-@on(Task)
-@permission(IsAuth, OwnsEntry)
+@model(Task)
+@permissions(IsAuth, OwnsEntry)
 query<Update> updateTaskById {
 	where: [ id ],
-	data: [ title, isDone ]
+	data: {
+		fields: [ title, isDone ]
+	}
 }
 
-@on(Task)
-@permission(IsAuth, OwnsEntry)
+@model(Task)
+@permissions(IsAuth, OwnsEntry)
 query<Delete> deleteTaskById {
 	where: [ id ]
 }
 
 component<Create> TaskCreateForm {
+	actionQuery: createTask,
+	globalStyle: {
+		form: "flex mt-4"
+	},
 	formInputs: {
 		title: {
+			style: "flex w-full",
 			input: {
 				type: TextInput,
-				placeholder: "Enter title",
+				placeholder: "Enter task title",
 				isVisible: true,
-				style: "shadow appearance-none border rounded w-full border py-2 px-3 text-gray-700 leading-tight"
+				style: "shadow border rounded py-2 px-3 w-full mr-4 text-grey-darker"
 			}
 		},
 		user: {
@@ -83,28 +94,29 @@ component<Create> TaskCreateForm {
 	},
 	formButton: {
 		name: "Create",
-		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+		style: "rounded-md bg-teal-500 text-white px-4 py-2"
 	}
 }
 
 component<Delete> TaskDeleteButton(id: Int) {
+	actionQuery: deleteTaskById,
 	formButton: {
-		name: "Delete"
+		name: "Delete",
+		style: "rounded-md bg-red-500 text-white px-4 py-2"
 	}
 }
 
 component TaskComponent(task: Task) {
 	render(
-		<div className="text-gray-900">
-			<div>{ task.title }</div>
-			<div>{ task.createdAt }</div>
+		<div className="flex mb-4 items-center">
+			<div className="w-full text-gray-500 text-xl">{ task.title }</div>
 			<TaskDeleteButton id={task.id} />
 		</div>
 	)
 }
 
 component<FindMany> TasksComponent {
-	findQuery: getMessages as messages,
+	findQuery: getTasks as tasks,
 	onError: render(
 		<div>{ "An error occured" }</div>
 	),
@@ -114,17 +126,18 @@ component<FindMany> TasksComponent {
 	onSuccess: render(
 		<>
 				[% for task in tasks %]
-					<>
+					<div>
 						<TaskComponent task={ task } />
-						<div className="border-y border-black"></div>
-					</>
+					</div>
 				[% endfor %]
 		</>
 	)
 }
 
-component<SignupForm> SignupForm {
-	style: "space-y-2",
+component<SignupForm> MySignupForm {
+	globalStyle: {
+		form: "space-y-2"
+	},
 	formInputs: {
 		username: {
 			input: {
@@ -147,8 +160,10 @@ component<SignupForm> SignupForm {
 	}
 }
 
-component<LoginForm> LoginForm {
-	style: "space-y-2",
+component<LoginForm> MyLoginForm {
+	globalStyle: {
+		form: "space-y-2"
+	},
 	formInputs: {
 		username: {
 			input: {
@@ -171,55 +186,47 @@ component<LoginForm> LoginForm {
 	}
 }
 
-component<LogoutButton> LogoutButton {
+component<LogoutButton> MyLogoutButton {
 	formButton: {
 		name: "Logout"
 	}
 }
 
-@at("/")
-page Home {
-	render(
-		<div className="flex h-screen items-center justify-center bg-slate-800">
-			<div className="text-white">{ "Home Page" }</div>
-		</div>
-	)
-}
-
-@at("/tasks")
-@permission(IsAuth)
+@route("/")
+@permissions(IsAuth)
 page Tasks {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
-			<div className="px-40 py-14 rounded-xl bg-white">
-				<TaskCreateForm />
-				<div className="py-2"></div>
-				<div className="font-bold text-size-[24px] py-2">{ "Tasks" }</div>
+			<div className="bg-white rounded shadow p-6 m-4 w-full lg:w-3/4 lg:max-w-lg">
+				<div className="mb-4">
+					<h1 className="text-grey-darkest text-xl font-bold mb-4">{"Todo List"}</h1>
+					<TaskCreateForm />
+				</div>
 				<TasksComponent />
 			</div>
 		</div>
 	)
 }
 
-@at("/login")
+@route("/login")
 page LoginPage {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Login form"}</span>
-				<LoginForm/>
+				<MyLoginForm/>
 			</div>
 		</div>
 	)
 }
 
-@at("/signup")
+@route("/signup")
 page SignupPage {
 	render(
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Sign up form"}</span>
-				<SignupForm/>
+				<MySignupForm/>
 			</div>
 		</div>
 	)

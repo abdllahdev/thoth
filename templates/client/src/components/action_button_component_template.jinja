@@ -2,6 +2,9 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import { User } from "@/types";
+{% else %}
+import { useState } from "react";
+import { User } from "@/types";
 {% endif %}
 import Button from "@/ui/Button";
 import * as Queries from "@/services"
@@ -29,6 +32,10 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
   }, [LoggedInUser]);
   {% else %}
   const url = Queries.{{ action_func }}( {{ args[0].id }} );
+  const storedUser = localStorage.getItem("LoggedInUser")
+    ? JSON.parse(localStorage.getItem("LoggedInUser") as string)
+    : undefined;
+  const [LoggedInUser, setUser] = useState<User | undefined>(storedUser);
   {% endif %}
 
   const handleOnClick = async () => {
