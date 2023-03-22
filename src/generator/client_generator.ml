@@ -4,7 +4,7 @@ open Jingoo
 open Specs.Client_specs
 open File_generator
 
-let generate_general_component general_component_specs =
+let generate_general_component output_dir general_component_specs =
   let general_component_template =
     getcwd ()
     ^ "/templates/client/src/components/general_component_template.jinja"
@@ -38,11 +38,11 @@ let generate_general_component general_component_specs =
         ]
   in
   let general_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
+    Fmt.str "%s/%s/client/src/components/%s.tsx" (getcwd ()) output_dir id
   in
   write_file general_component_file general_component_code
 
-let generate_find_component find_component_specs =
+let generate_find_component output_dir find_component_specs =
   let find_component_template =
     getcwd () ^ "/templates/client/src/components/find_component_template.jinja"
   in
@@ -105,12 +105,12 @@ let generate_find_component find_component_specs =
         ]
   in
   let find_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
+    Fmt.str "%s/%s/client/src/components/%s.tsx" (getcwd ()) output_dir id
   in
   write_file find_component_file find_component_code
 
 let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
-    action_form_component_specs =
+    output_dir action_form_component_specs =
   let generate_action_form_template =
     getcwd ()
     ^ "/templates/client/src/components/action_form_component_template.jinja"
@@ -223,12 +223,12 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
         ]
   in
   let action_form_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
+    Fmt.str "%s/%s/client/src/components/%s.tsx" (getcwd ()) output_dir id
   in
   write_file action_form_component_file action_form_component_code
 
 let generate_action_button_component ?on_success_redirect_to
-    ?on_fail_redirect_to action_button_component_specs =
+    ?on_fail_redirect_to output_dir action_button_component_specs =
   let action_button_component_template =
     getcwd ()
     ^ "/templates/client/src/components/action_button_component_template.jinja"
@@ -272,11 +272,11 @@ let generate_action_button_component ?on_success_redirect_to
         ]
   in
   let action_button_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
+    Fmt.str "%s/%s/client/src/components/%s.tsx" (getcwd ()) output_dir id
   in
   write_file action_button_component_file action_button_component_code
 
-let generate_page page_specs =
+let generate_page output_dir page_specs =
   let page_template =
     getcwd () ^ "/templates/client/src/pages/template.jinja"
   in
@@ -309,13 +309,15 @@ let generate_page page_specs =
       String.concat ~sep:"/"
         ([ "/client/src/pages" ] @ List.slice splitted_route 1 0)
     in
-    make_directory path;
-    if is_parameter then getcwd () ^ "/.out/client/src/pages" ^ route ^ ".tsx"
-    else getcwd () ^ "/.out/client/src/pages" ^ route ^ "/index.tsx"
+    make_directory output_dir path;
+    if is_parameter then
+      Fmt.str "%s/%s/client/src/pages/%s.tsx" (getcwd ()) output_dir route
+    else
+      Fmt.str "%s/%s/client/src/pages/%s/index.tsx" (getcwd ()) output_dir route
   in
   write_file page_file page_code
 
-let generate_type id type_specs =
+let generate_type output_dir id type_specs =
   let type_template =
     getcwd () ^ "/templates/client/src/types/template.jinja"
   in
@@ -340,11 +342,12 @@ let generate_type id type_specs =
         ]
   in
   let type_file =
-    getcwd () ^ "/.out/client/src/types/" ^ String.uncapitalize id ^ ".ts"
+    Fmt.str "%s/%s/client/src/types/%s.ts" (getcwd ()) output_dir
+      (String.uncapitalize id)
   in
   write_file type_file type_code
 
-let generate_types types_specs auth_specs =
+let generate_types output_dir types_specs auth_specs =
   let names =
     let names =
       List.map (Hashtbl.keys types_specs) ~f:(fun name ->
@@ -356,7 +359,8 @@ let generate_types types_specs auth_specs =
         names @ [ Jg_types.Tstr (String.uncapitalize user_model) ]
     | None -> names
   in
-  Hashtbl.iteri types_specs ~f:(fun ~key ~data -> generate_type key data);
+  Hashtbl.iteri types_specs ~f:(fun ~key ~data ->
+      generate_type output_dir key data);
   let types_index_template =
     getcwd () ^ "/templates/client/src/types/index.jinja"
   in
@@ -364,10 +368,12 @@ let generate_types types_specs auth_specs =
     Jg_template.from_file types_index_template
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
-  let types_index_file = getcwd () ^ "/.out/client/src/types/index.ts" in
+  let types_index_file =
+    Fmt.str "%s/%s/client/src/types/index.ts" (getcwd ()) output_dir
+  in
   write_file types_index_file types_index_code
 
-let generate_auth auth_specs =
+let generate_auth output_dir auth_specs =
   match auth_specs with
   | Some auth_specs ->
       let {
@@ -395,7 +401,9 @@ let generate_auth auth_specs =
                 ("username_field", Jg_types.Tstr username_field);
               ]
         in
-        let user_type_file = getcwd () ^ "/.out/client/src/types/user.ts" in
+        let user_type_file =
+          Fmt.str "%s/%s/client/src/types/user.ts" (getcwd ()) output_dir
+        in
         write_file user_type_file types_user_type_code
       in
       let generate_auth_service () =
@@ -404,21 +412,21 @@ let generate_auth auth_specs =
         in
         let auth_service_code = Jg_template.from_file auth_service_template in
         let auth_service_file =
-          getcwd () ^ "/.out/client/src/services/auth.ts"
+          Fmt.str "%s/%s/client/src/services/auth.ts" (getcwd ()) output_dir
         in
         write_file auth_service_file auth_service_code
       in
-      generate_action_form_component signup_form ~on_success_redirect_to
-        ~on_fail_redirect_to;
-      generate_action_form_component login_form ~on_success_redirect_to
-        ~on_fail_redirect_to;
-      generate_action_button_component logout_button ~on_success_redirect_to
-        ~on_fail_redirect_to;
+      generate_action_form_component output_dir signup_form
+        ~on_success_redirect_to ~on_fail_redirect_to;
+      generate_action_form_component output_dir login_form
+        ~on_success_redirect_to ~on_fail_redirect_to;
+      generate_action_button_component output_dir logout_button
+        ~on_success_redirect_to ~on_fail_redirect_to;
       generate_user_type ();
       generate_auth_service ()
   | None -> ()
 
-let generate_custom_component custom_components_specs =
+let generate_custom_component output_dir custom_components_specs =
   let custom_component_template =
     getcwd ()
     ^ "/templates/client/src/components/custom_component_template.jinja"
@@ -446,20 +454,11 @@ let generate_custom_component custom_components_specs =
         ]
   in
   let custom_component_file =
-    getcwd () ^ "/.out/client/src/components/" ^ id ^ ".tsx"
+    Fmt.str "%s/%s/client/src/components/%s.tsx" (getcwd ()) output_dir id
   in
   write_file custom_component_file custom_component_code
 
-let generate_app_title app_title =
-  let app_index_template = getcwd () ^ "/templates/client/index.jinja" in
-  let app_index_code =
-    Jg_template.from_file app_index_template
-      ~models:[ ("app_title", Jg_types.Tstr app_title) ]
-  in
-  let app_index_file = getcwd () ^ "/.out/client/index.html" in
-  write_file app_index_file app_index_code
-
-let generate_service service_specs =
+let generate_service output_dir service_specs =
   let id, funcs = service_specs in
   let service_template =
     getcwd () ^ "/templates/client/src/services/template.jinja"
@@ -486,12 +485,13 @@ let generate_service service_specs =
         ]
   in
   let service_component_file =
-    getcwd () ^ "/.out/client/src/services/" ^ id ^ ".ts"
+    Fmt.str "%s/%s/client/src/services/%s.ts" (getcwd ()) output_dir id
   in
   write_file service_component_file service_component_code
 
-let generate_services services_specs =
-  List.iter services_specs ~f:generate_service;
+let generate_services output_dir services_specs =
+  List.iter services_specs ~f:(fun service ->
+      generate_service output_dir service);
   let names =
     List.map services_specs ~f:(fun (name, _) ->
         Jg_types.Tstr (String.uncapitalize name))
@@ -503,35 +503,64 @@ let generate_services services_specs =
     Jg_template.from_file services_index_template
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
-  let services_index_file = getcwd () ^ "/.out/client/src/services/index.ts" in
+  let services_index_file =
+    Fmt.str "%s/%s/client/src/services/index.ts" (getcwd ()) output_dir
+  in
   write_file services_index_file services_index_code
 
-let setup_client_folder =
-  let destination = getcwd () ^ "/templates/client" in
-  create_folder destination;
-  system (Fmt.str "rm %s/.out/client/index.jinja" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/client/src/components/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/client/src/pages/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/client/src/services/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/client/src/types/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/client/src/main.jinja" (getcwd ())) |> ignore
+let generate_index_file output_dir app_title =
+  let app_index_template = getcwd () ^ "/templates/client/index.jinja" in
+  let app_index_code =
+    Jg_template.from_file app_index_template
+      ~models:[ ("app_title", Jg_types.Tstr app_title) ]
+  in
+  let app_index_file =
+    Fmt.str "%s/%s/client/index.html" (getcwd ()) output_dir
+  in
+  write_file app_index_file app_index_code
 
-let generate_main_file auth_specs =
-  let template = Fmt.str "%s/templates/client/src/main.jinja" (getcwd ()) in
+let generate_env_file output_dir server_port =
+  let app_index_template = getcwd () ^ "/templates/client/.env.jinja" in
+  let app_index_code =
+    Jg_template.from_file app_index_template
+      ~models:[ ("server_port", Jg_types.Tint server_port) ]
+  in
+  let app_index_file = Fmt.str "%s/%s/client/.env" (getcwd ()) output_dir in
+  write_file app_index_file app_index_code
+
+let generate_main_file output_dir auth_specs =
+  let main_template =
+    Fmt.str "%s/templates/client/src/main.jinja" (getcwd ())
+  in
   let code =
     match auth_specs with
     | Some _ ->
-        Jg_template.from_file template
+        Jg_template.from_file main_template
           ~models:[ ("requires_auth", Jg_types.Tbool true) ]
     | None ->
-        Jg_template.from_file template
+        Jg_template.from_file main_template
           ~models:[ ("requires_auth", Jg_types.Tbool false) ]
   in
-  let output_file = Fmt.str "%s/.out/client/src/main.tsx" (getcwd ()) in
+  let output_file =
+    Fmt.str "%s/%s/client/src/main.tsx" (getcwd ()) output_dir
+  in
   write_file output_file code
 
-let generate_client client_specs =
-  setup_client_folder;
+let setup_client_folder output_dir =
+  system (Fmt.str "rm %s/%s/client/index.jinja" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/client/src/components/*" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/client/src/pages/*" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/client/src/services/*" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/client/src/types/*" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/client/.env.jinja" (getcwd ()) output_dir) |> ignore
+
+let generate_client client_specs output_dir server_port =
+  setup_client_folder output_dir;
   let {
     app_title;
     general_components_specs;
@@ -546,14 +575,20 @@ let generate_client client_specs =
   } =
     client_specs
   in
-  List.iter ~f:generate_general_component general_components_specs;
-  List.iter ~f:generate_find_component find_components_specs;
-  List.iter ~f:generate_action_form_component action_form_components_specs;
-  List.iter ~f:generate_action_button_component action_button_components_specs;
-  List.iter ~f:generate_custom_component custom_components_specs;
-  List.iter ~f:generate_page pages_specs;
-  generate_main_file auth_specs;
-  generate_services services_specs;
-  generate_app_title app_title;
-  generate_auth auth_specs;
-  generate_types types_specs auth_specs
+  List.iter general_components_specs ~f:(fun component ->
+      generate_general_component output_dir component);
+  List.iter find_components_specs ~f:(fun component ->
+      generate_find_component output_dir component);
+  List.iter action_form_components_specs ~f:(fun component ->
+      generate_action_form_component output_dir component);
+  List.iter action_button_components_specs ~f:(fun component ->
+      generate_action_button_component output_dir component);
+  List.iter custom_components_specs ~f:(fun component ->
+      generate_custom_component output_dir component);
+  List.iter pages_specs ~f:(fun page -> generate_page output_dir page);
+  generate_main_file output_dir auth_specs;
+  generate_env_file output_dir server_port;
+  generate_index_file output_dir app_title;
+  generate_services output_dir services_specs;
+  generate_auth output_dir auth_specs;
+  generate_types output_dir types_specs auth_specs

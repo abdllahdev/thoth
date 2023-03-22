@@ -9,7 +9,7 @@ open Ast.Ast_types
 let string_of_option = function Some str -> str | None -> ""
 let list_of_option = function Some lst -> lst | None -> []
 
-let generate_controller name imports controller_functions
+let generate_controller output_dir name imports controller_functions
     find_unique_requires_owns_entry find_many_requires_owns_entry =
   let controller_template =
     getcwd () ^ "/templates/server/src/controllers/template.jinja"
@@ -81,12 +81,12 @@ let generate_controller name imports controller_functions
         ]
   in
   let controller_file =
-    getcwd () ^ "/.out/server/src/controllers/" ^ String.uncapitalize name
-    ^ ".ts"
+    Fmt.str "%s/%s/server/src/controllers/%s.ts" (getcwd ()) output_dir
+      (String.uncapitalize name)
   in
   write_file controller_file controller_code
 
-let generate_controllers controllers_specs auth_specs =
+let generate_controllers output_dir controllers_specs auth_specs =
   Hashtbl.iteri controllers_specs ~f:(fun ~key ~data ->
       let ( imports,
             find_unique_requires_owns_entry,
@@ -94,8 +94,8 @@ let generate_controllers controllers_specs auth_specs =
             funcs ) =
         data
       in
-      generate_controller key imports funcs find_unique_requires_owns_entry
-        find_many_requires_owns_entry);
+      generate_controller output_dir key imports funcs
+        find_unique_requires_owns_entry find_many_requires_owns_entry);
   let names =
     let names =
       List.map (Hashtbl.keys controllers_specs) ~f:(fun name ->
@@ -113,11 +113,11 @@ let generate_controllers controllers_specs auth_specs =
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
   let controller_index_file =
-    getcwd () ^ "/.out/server/src/controllers/index.ts"
+    Fmt.str "%s/%s/server/src/controllers/index.ts" (getcwd ()) output_dir
   in
   write_file controller_index_file controllers_index_code
 
-let generate_route name routes =
+let generate_route output_dir name routes =
   let route_template =
     getcwd () ^ "/templates/server/src/routes/template.jinja"
   in
@@ -162,12 +162,14 @@ let generate_route name routes =
         ]
   in
   let route_file =
-    getcwd () ^ "/.out/server/src/routes/" ^ String.uncapitalize name ^ ".ts"
+    Fmt.str "%s/%s/server/src/routes/%s.ts" (getcwd ()) output_dir
+      (String.uncapitalize name)
   in
   write_file route_file route_code
 
-let generate_routes routes_specs auth_specs =
-  Hashtbl.iteri routes_specs ~f:(fun ~key ~data -> generate_route key data);
+let generate_routes output_dir routes_specs auth_specs =
+  Hashtbl.iteri routes_specs ~f:(fun ~key ~data ->
+      generate_route output_dir key data);
   let names =
     let names =
       List.map (Hashtbl.keys routes_specs) ~f:(fun name ->
@@ -184,10 +186,12 @@ let generate_routes routes_specs auth_specs =
     Jg_template.from_file routes_index_template
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
-  let routes_index_file = getcwd () ^ "/.out/server/src/routes/index.ts" in
+  let routes_index_file =
+    Fmt.str "%s/%s/server/src/routes/index.ts" (getcwd ()) output_dir
+  in
   write_file routes_index_file routes_index_code
 
-let generate_validator name validators =
+let generate_validator output_dir name validators =
   let validator_template =
     getcwd () ^ "/templates/server/src/validators/template.jinja"
   in
@@ -283,14 +287,14 @@ let generate_validator name validators =
         ]
   in
   let validator_file =
-    getcwd () ^ "/.out/server/src/validators/" ^ String.uncapitalize name
-    ^ ".ts"
+    Fmt.str "%s/%s/server/src/validators/%s.ts" (getcwd ()) output_dir
+      (String.uncapitalize name)
   in
   write_file validator_file validator_code
 
-let generate_validators validators_specs =
+let generate_validators output_dir validators_specs =
   Hashtbl.iteri validators_specs ~f:(fun ~key ~data ->
-      generate_validator key data);
+      generate_validator output_dir key data);
   let names =
     List.map (Hashtbl.keys validators_specs) ~f:(fun name ->
         Jg_types.Tstr (String.uncapitalize name))
@@ -303,11 +307,11 @@ let generate_validators validators_specs =
       ~models:[ ("names", Jg_types.Tlist names) ]
   in
   let validators_index_file =
-    getcwd () ^ "/.out/server/src/validators/index.ts"
+    Fmt.str "%s/%s/server/src/validators/index.ts" (getcwd ()) output_dir
   in
   write_file validators_index_file validators_index_code
 
-let generate_auth auth_specs =
+let generate_auth output_dir auth_specs =
   match auth_specs with
   | Some
       {
@@ -340,12 +344,13 @@ let generate_auth auth_specs =
                   ]
             in
             let output_file =
-              Fmt.str "%s/.out/server/src/%s/auth.ts" (getcwd ()) component
+              Fmt.str "%s/%s/server/src/%s/auth.ts" (getcwd ()) output_dir
+                component
             in
             write_file output_file code)
   | None -> ()
 
-let generate_server_file auth_specs =
+let generate_server_file output_dir auth_specs =
   let template = Fmt.str "%s/templates/server/src/app.jinja" (getcwd ()) in
   let code =
     match auth_specs with
@@ -356,26 +361,43 @@ let generate_server_file auth_specs =
         Jg_template.from_file template
           ~models:[ ("requires_auth", Jg_types.Tbool false) ]
   in
-  let output_file = Fmt.str "%s/.out/server/src/app.ts" (getcwd ()) in
+  let output_file = Fmt.str "%s/%s/server/src/app.ts" (getcwd ()) output_dir in
   write_file output_file code
 
-let setup_server_folder =
-  let destination = getcwd () ^ "/templates/server" in
-  create_folder destination;
-  system (Fmt.str "rm %s/.out/server/src/controllers/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/server/src/routes/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/server/src/validators/*" (getcwd ())) |> ignore;
-  system (Fmt.str "rm %s/.out/server/src/utils/auth.jinja" (getcwd ()))
-  |> ignore;
-  system (Fmt.str "rm %s/.out/server/src/app.jinja" (getcwd ())) |> ignore
+let generate_env_file output_dir server_port db_name =
+  let app_index_template = getcwd () ^ "/templates/server/.env.jinja" in
+  let app_index_code =
+    Jg_template.from_file app_index_template
+      ~models:
+        [
+          ("server_port", Jg_types.Tint server_port);
+          ("db_name", Jg_types.Tstr db_name);
+        ]
+  in
+  let app_index_file = Fmt.str "%s/%s/server/.env" (getcwd ()) output_dir in
+  write_file app_index_file app_index_code
 
-let generate_server server_specs =
-  setup_server_folder;
+let setup_server_folder output_dir =
+  system (Fmt.str "rm %s/%s/server/src/controllers/*" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/server/src/routes/*" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/server/src/validators/*" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/server/src/utils/auth.jinja" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/server/src/app.jinja" (getcwd ()) output_dir)
+  |> ignore;
+  system (Fmt.str "rm %s/%s/server/.env.jinja" (getcwd ()) output_dir) |> ignore
+
+let generate_server server_specs output_dir server_port db_name =
+  setup_server_folder output_dir;
   let { controllers_specs; routes_specs; validators_specs; auth_specs } =
     server_specs
   in
-  generate_server_file auth_specs;
-  generate_controllers controllers_specs auth_specs;
-  generate_validators validators_specs;
-  generate_routes routes_specs auth_specs;
-  generate_auth auth_specs
+  generate_env_file output_dir server_port db_name;
+  generate_server_file output_dir auth_specs;
+  generate_controllers output_dir controllers_specs auth_specs;
+  generate_validators output_dir validators_specs;
+  generate_routes output_dir routes_specs auth_specs;
+  generate_auth output_dir auth_specs

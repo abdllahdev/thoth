@@ -53,40 +53,6 @@ query<FindMany> getUsers {
 	search: [username]
 }
 
-type Test {
-	test String
-}
-
-@route("get", "/test")
-query<Custom> test : Test {
-	fn: [|
-		(req: Request, res: Response, next: NextFunction) => {
-			res.send({
-				test: "Test"
-			})
-		}
-	|]
-}
-
-component<Custom> TestComponent {
-	fn: [|
-		const { data } = useFetch<any>(Queries.test);
-
-		if (data) {
-			return (
-				<div>{ data.test }</div>
-			)
-		}
-	|]
-}
-
-@route("/test")
-page TestPage {
-	render(
-		<TestComponent />
-	)
-}
-
 component<FindMany> MessagesComponent {
 	findQuery: getMessages as messages,
 	onError: render(

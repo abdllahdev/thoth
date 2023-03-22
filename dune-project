@@ -5,7 +5,7 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github onlyabdullah/ralang))
 
 (authors "Abdullah Elsayed")
 
@@ -17,9 +17,10 @@
 
 (package
  (name ralang)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml dune)
+ (synopsis "Multitier web language")
+ (description
+  "Multitier web language that compiles to human-readable code in ExpressJS and ReactJS")
+ (depends ocaml dune core core_unix fmt str fileutils jingoo cmdliner)
  (tags
   (topics "to describe" your project)))
 
