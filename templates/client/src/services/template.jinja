@@ -1,9 +1,21 @@
 const baseUrl = import.meta.env.VITE_PUBLIC_API_BASE_URL;
 
+type FuncParameters = {
+  where?: number,
+  search?: { [x: string]: any }
+}
+
 {% for func in functions %}
 export const {{ func.id }} = (
-  {% if func.type == "update" or func.type == "delete" or func.type == "findFirst" %}
-  id: number
-  {% endif %} ) =>
-  `${baseUrl}/{{ func.route }}/{% if func.type == "update" or func.type == "delete" or func.type == "findFirst" %}${id}{% endif %}`
+  {% if func.requires_where or func.requires_search %}
+  { {% if func.requires_where %} where, {% endif %} {% if func.requires_search %} search, {% endif %} }: FuncParameters
+  {% endif %}
+  ) =>
+  `${baseUrl}/{{ func.route }}`
+  {% if func.requires_where %}
+  + `/${where}`
+  {% endif %}
+  {% if func.requires_search %}
+  + `?${search && Object.keys(search).map((key: string) => `${key}=${search[key]}`)}`;
+  {% endif %}
 {% endfor %}

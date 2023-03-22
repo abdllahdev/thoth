@@ -54,8 +54,8 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
     <>
       <Form
         formFunc={ Queries.{% if type == "signup" %}signup{% elif type == "login" %}login{% else %}{{ action_func }}{% endif %} }
-        {% if type == "update" %}
-        id={ {{ args[0].id }} }
+        {% if where_arg %}
+        where={ {{ where_arg }} }
         {% endif %}
         httpMethod= {% if type == "update" %}"put"{% else %}"post"{% endif %}
         {% if requires_auth %}

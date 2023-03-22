@@ -1,5 +1,6 @@
 open Core
 open Ast.Ast_types
+open Ast.Formatter
 open Error_handler.Handler
 
 let parse_id loc id =
@@ -368,6 +369,45 @@ and get_data_relation_fields loc body =
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> []
 
+let get_where_arg loc args =
+  let where = List.Assoc.find args "where" ~equal:String.equal in
+  match where with
+  | Some where -> (
+      match where with
+      | ReferenceObjField (loc, ref) -> Some (loc, ReferenceLiteral (loc, ref))
+      | IntObjField (loc, number) -> Some (loc, IntLiteral (loc, number))
+      | _ ->
+          failwith
+            (Fmt.str "ArgumentError: (%s): Expected a reference or a literal"
+               (string_of_loc loc)))
+  | None -> None
+
+let get_search_arg loc args =
+  let search = List.Assoc.find args "search" ~equal:String.equal in
+  match search with
+  | Some search -> (
+      match search with
+      | AssocObjField (_, obj) ->
+          Some
+            (List.map obj ~f:(fun (id, value) ->
+                 match value with
+                 | StringObjField (loc, str) ->
+                     (loc, id, StringLiteral (loc, str))
+                 | BooleanObjField (loc, boolean) ->
+                     (loc, id, BooleanLiteral (loc, boolean))
+                 | IntObjField (loc, number) ->
+                     (loc, id, IntLiteral (loc, number))
+                 | ReferenceObjField (loc, ref) ->
+                     (loc, id, ReferenceLiteral (loc, ref))
+                 | _ ->
+                     failwith
+                       (Fmt.str
+                          "ArgumentError: (%s): Expected a reference or a \
+                           literal"
+                          (string_of_loc loc))))
+      | _ -> raise_type_error loc (Scalar Assoc))
+  | None -> None
+
 let rec parse_component loc id typ args body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
@@ -382,7 +422,9 @@ let rec parse_component loc id typ args body =
         Component.FindBody
           ((find_query, variable), on_error, on_loading, on_success)
     | Component.Create ->
-        let query = get_action_query loc id body in
+        let query : Component.query_application =
+          get_action_query loc id body
+        in
         let global_style = get_global_style loc body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
@@ -443,8 +485,26 @@ and get_find_query_and_variable loc id body =
   (match find_query with
   | Some find_query -> (
       match find_query with
-      | AsObjField (loc, (query_id, variable)) ->
-          Some ((loc, query_id), (loc, variable))
+      | AsObjField (loc, query_application, var) -> (
+          match query_application with
+          | QueryAppObjField (loc, query_id, args) -> (
+              match args with
+              | Some args -> (
+                  match args with
+                  | AssocObjField (_, args) ->
+                      let query_application =
+                        ( loc,
+                          query_id,
+                          get_where_arg loc args,
+                          get_search_arg loc args )
+                      in
+                      Some (query_application, (loc, var))
+                  | _ -> raise_type_error loc (Scalar Assoc))
+              | None -> Some ((loc, query_id, None, None), (loc, var)))
+          | _ ->
+              failwith
+                (Fmt.str "@(%s): Expected query application" (string_of_loc loc))
+          )
       | _ -> raise_type_error loc (Scalar As))
   | None -> raise_required_entry_error loc id "findQuery")
   |> Option.value_or_thunk ~default:raise_compiler_error
@@ -454,8 +514,23 @@ and get_action_query loc id body =
   (match action_query with
   | Some action_query -> (
       match action_query with
-      | ReferenceObjField (loc, query_id) -> Some (loc, query_id)
-      | _ -> raise_type_error loc (Scalar String))
+      | QueryAppObjField (loc, query_id, args) -> (
+          match args with
+          | Some args -> (
+              match args with
+              | AssocObjField (_, args) ->
+                  let query_application =
+                    ( loc,
+                      query_id,
+                      get_where_arg loc args,
+                      get_search_arg loc args )
+                  in
+                  Some query_application
+              | _ -> raise_type_error loc (Scalar Assoc))
+          | None -> Some (loc, query_id, None, None))
+      | _ ->
+          failwith
+            (Fmt.str "@(%s): Expected query application" (string_of_loc loc)))
   | None -> raise_required_entry_error loc id "actionQuery")
   |> Option.value_or_thunk ~default:raise_compiler_error
 

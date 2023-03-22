@@ -28,7 +28,8 @@ const {{ id }} = ( {% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %
   {% endif %}
   const { data: {{ variable.id }}, isLoading, error } = useFetch<{{ variable.type }}> ( {
       findFunc: Queries.{{ find_func }},
-      {% if func_type == "findFirst" %} where: {{ args[0].id }},{% endif %}
+      {% if where_arg %}where: {{ func_where }},{% endif %}
+      {% if search_arg %}search: { {% for element in search_arg %} {{ element.id }} : {{ element.value }}, {% endfor %} },{% endif %}
       model: "{{ func_model }}",
       {% if owns_entry %}
       privateStream: {{ owns_entry }},

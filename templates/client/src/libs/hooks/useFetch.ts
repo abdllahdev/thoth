@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 
+type FuncParameters = {
+  where?: number,
+  search?: { [x: string]: any }
+}
+
 type UseFetchType = {
-  findFunc: (where?: number) => string;
+  findFunc: (arg: FuncParameters) => string;
   where?: number;
+  search?: { [x: string]: any };
   model?: string;
   privateStream?: boolean;
   accessToken?: string;
 };
 
-const useFetch = <T>({ findFunc, where, model, privateStream, accessToken }: UseFetchType) => {
-  const url = findFunc(where);
+const useFetch = <T>({ findFunc, where, search, model, privateStream, accessToken }: UseFetchType) => {
+  const url = findFunc({where, search});
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState<boolean>(true);

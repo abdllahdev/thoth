@@ -42,7 +42,7 @@ type FormButton = {
 type FormProps = {
   formFunc: (id: any) => string;
   httpMethod: string;
-  id?: number;
+  where?: number;
   accessToken?: string;
   formStyle?: string;
   formElementStyle?: string;
@@ -57,7 +57,7 @@ type FormProps = {
 
 const Form = ({
   formFunc,
-  id,
+  where,
   accessToken,
   httpMethod,
   formElements,
@@ -72,7 +72,7 @@ const Form = ({
 }: FormProps) => {
   type FormSchemaType = z.infer<typeof formValidationSchema>;
   const formDefaultValues: { [key: string]: any } = {};
-  const url = formFunc(id);
+  const url = formFunc(where);
 
   formElements.map((formElement) => {
     const formInput = formElement.formInput;

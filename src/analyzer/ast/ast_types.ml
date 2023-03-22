@@ -90,17 +90,18 @@ module XRA = struct
 end
 
 type obj_field =
-  | AssocObjField of loc * (string * obj_field) list
-  | ReferenceObjField of loc * string
-  | DotReferenceObjField of loc * (string * string)
+  | AssocObjField of loc * (id * obj_field) list
+  | ReferenceObjField of loc * id
+  | DotReferenceObjField of loc * (id * id)
   | StringObjField of loc * string
   | BooleanObjField of loc * bool
   | IntObjField of loc * int
   | RenderObjField of loc * XRA.expression list
   | ListObjField of loc * obj_field list
-  | AsObjField of loc * (string * string)
+  | AsObjField of loc * obj_field * id
+  | QueryAppObjField of loc * id * obj_field option
   | TsObjField of loc * string
-  | ConnectWithObjField of loc * (string * string)
+  | ConnectWithObjField of loc * (id * id)
 
 module Component = struct
   type arg = loc * id * typ
@@ -146,20 +147,32 @@ module Component = struct
     loc * id * style option * form_input_label option * form_input
 
   type form_button = form_attr list
+  type query_argument = literal
+  type search_argument = loc * id * query_argument
+  type where_argument = loc * query_argument
+
+  type query_application =
+    loc * id * where_argument option * search_argument list option
 
   type body =
     | CustomBody of string option * string
     | GeneralBody of XRA.body
     | FindBody of
-        (query_id * variable)
+        (query_application * variable)
         * XRA.expression list
         * XRA.expression list
         * XRA.expression list
     | CreateBody of
-        query_id * global_style list option * form_element list * form_button
+        query_application
+        * global_style list option
+        * form_element list
+        * form_button
     | UpdateBody of
-        query_id * global_style list option * form_element list * form_button
-    | DeleteBody of query_id * form_button
+        query_application
+        * global_style list option
+        * form_element list
+        * form_button
+    | DeleteBody of query_application * form_button
     | SignupFormBody of
         global_style list option * form_element list * form_button
     | LoginFormBody of

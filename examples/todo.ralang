@@ -38,12 +38,6 @@ query<FindMany> getTasks {
 }
 
 @model(Task)
-@permissions(IsAuth, OwnsEntry)
-query<FindUnique> getTaskById {
-	where: [ id ]
-}
-
-@model(Task)
 @permissions(IsAuth)
 query<Create> createTask {
 	data: {
@@ -51,15 +45,6 @@ query<Create> createTask {
 		relationFields: {
 			user: connect id with userId
 		}
-	}
-}
-
-@model(Task)
-@permissions(IsAuth, OwnsEntry)
-query<Update> updateTaskById {
-	where: [ id ],
-	data: {
-		fields: [ title, isDone ]
 	}
 }
 

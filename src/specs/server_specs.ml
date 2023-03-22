@@ -49,6 +49,8 @@ type route_specs = {
   middlewares : string list;
   default_route : string option;
   route_type : string;
+  requires_where : bool;
+  requires_search : bool;
   custom_route : string option;
   route_param : string option;
 }
@@ -374,6 +376,8 @@ let generate_routes_specs queries =
           {
             route_id = query_id;
             http_method;
+            requires_where = false;
+            requires_search = false;
             default_route = None;
             route_type = QueryFormatter.string_of_query_type query_type;
             custom_route = route;
@@ -381,9 +385,18 @@ let generate_routes_specs queries =
             middlewares;
           }
       | _ ->
+          let { where; search; _ } = query_args in
+          let requires_where =
+            match where with Some _ -> true | None -> false
+          in
+          let requires_search =
+            match search with Some _ -> true | None -> false
+          in
           {
             route_id = query_id;
             http_method;
+            requires_where;
+            requires_search;
             default_route = route;
             custom_route = None;
             route_type = QueryFormatter.string_of_query_type query_type;

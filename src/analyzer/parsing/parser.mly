@@ -101,6 +101,10 @@ literal:
     { str }
   ;
 
+query_application:
+  | query_id = ID; LEFT_PARAN; arguments = option(obj_field_value); RIGHT_PARAN
+    { QueryAppObjField($startpos, query_id, arguments) }
+
 obj_field_value:
   | value = ID
     { ReferenceObjField ($startpos, value) }
@@ -120,14 +124,16 @@ obj_field_value:
     { AssocObjField ($startpos, value) }
   | LEFT_BRACKET; value = separated_list(COMMA, obj_field_value); RIGHT_BRACKET
     { ListObjField ($startpos, value) }
-  | value1 = ID; AS; value2 = ID
-    { AsObjField ($startpos, (value1, value2)) }
+  | value1 = query_application; AS; value2 = ID
+    { AsObjField ($startpos, value1, value2) }
   | CONNECT; value1 = ID; WITH; value2 = ID
     { ConnectWithObjField ($startpos, (value1, value2)) }
   | CONNECT; value1 = ID; WITH; left = ID; DOT; right = ID
     { ConnectWithObjField ($startpos, (value1, left ^ "." ^ right)) }
   | value = TYPESCRIPT
     { TsObjField ($startpos, value) }
+  | query_application = query_application
+    { query_application }
   ;
 
 obj_field:

@@ -53,6 +53,8 @@ let generate_find_component output_dir find_component_specs =
     owns_entry;
     func_model;
     requires_auth;
+    where_arg;
+    search_arg;
     args;
     func_type;
     result_variable;
@@ -74,6 +76,21 @@ let generate_find_component output_dir find_component_specs =
               (List.map imported_components ~f:(fun imported_component ->
                    Jg_types.Tstr imported_component)) );
           ("id", Jg_types.Tstr id);
+          ( "where_arg",
+            match where_arg with
+            | Some where_arg -> Jg_types.Tstr where_arg
+            | None -> Jg_types.Tnull );
+          ( "search_arg",
+            match search_arg with
+            | Some search_arg ->
+                Jg_types.Tlist
+                  (List.map search_arg ~f:(fun (id, value) ->
+                       Jg_types.Tobj
+                         [
+                           ("id", Jg_types.Tstr id);
+                           ("value", Jg_types.Tstr value);
+                         ]))
+            | None -> Jg_types.Tnull );
           ("func_model", Jg_types.Tstr func_model);
           ("requires_auth", Jg_types.Tbool requires_auth);
           ("owns_entry", Jg_types.Tbool owns_entry);
@@ -120,6 +137,7 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
     args;
     requires_auth;
     func_type;
+    where_arg;
     global_style;
     form_validation_scheme;
     form_inputs;
@@ -133,6 +151,10 @@ let generate_action_form_component ?on_success_redirect_to ?on_fail_redirect_to
       ~models:
         [
           ("id", Jg_types.Tstr id);
+          ( "where_arg",
+            match where_arg with
+            | Some where_arg -> Jg_types.Tstr where_arg
+            | None -> Jg_types.Tnull );
           ("requires_auth", Jg_types.Tbool requires_auth);
           ( "args",
             Jg_types.Tlist
@@ -233,7 +255,15 @@ let generate_action_button_component ?on_success_redirect_to
     getcwd ()
     ^ "/templates/client/src/components/action_button_component_template.jinja"
   in
-  let { id; args; requires_auth; func_type; form_button; action_func } =
+  let {
+    id;
+    args;
+    requires_auth;
+    func_type;
+    where_arg;
+    form_button;
+    action_func;
+  } =
     action_button_component_specs
   in
   let action_button_component_code =
@@ -241,6 +271,10 @@ let generate_action_button_component ?on_success_redirect_to
       ~models:
         [
           ("id", Jg_types.Tstr id);
+          ( "where_arg",
+            match where_arg with
+            | Some where_arg -> Jg_types.Tstr where_arg
+            | None -> Jg_types.Tnull );
           ("requires_auth", Jg_types.Tbool requires_auth);
           ( "args",
             Jg_types.Tlist
@@ -470,13 +504,22 @@ let generate_service output_dir service_specs =
           ( "functions",
             Jg_types.Tlist
               (List.map funcs ~f:(fun func ->
-                   let { func_id; http_method; route; requires_auth; func_type }
-                       =
+                   let {
+                     func_id;
+                     http_method;
+                     route;
+                     requires_where;
+                     requires_search;
+                     requires_auth;
+                     func_type;
+                   } =
                      func
                    in
                    Jg_types.Tobj
                      [
                        ("id", Jg_types.Tstr func_id);
+                       ("requires_where", Jg_types.Tbool requires_where);
+                       ("requires_search", Jg_types.Tbool requires_search);
                        ("http_method", Jg_types.Tstr http_method);
                        ("type", Jg_types.Tstr func_type);
                        ("route", Jg_types.Tstr route);

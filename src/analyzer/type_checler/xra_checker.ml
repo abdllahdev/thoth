@@ -363,22 +363,6 @@ let check_general_body global_env xra_env body =
 let check_page = check_general_body
 
 let check_component global_env xra_env app_declaration loc id typ args body =
-  let check_query loc id expected_query_type =
-    if not (GlobalEnvironment.contains global_env ~key:id) then
-      raise_undefined_error loc "query" id;
-    let declaration_value = GlobalEnvironment.lookup global_env ~key:id in
-    if not (GlobalEnvironment.check_type declaration_value QueryDeclaration)
-    then
-      raise_declaration_type_error loc QueryDeclaration id
-        (GlobalEnvironment.infer_type declaration_value);
-    let query_value = GlobalEnvironment.get_query_value declaration_value in
-    if
-      not
-        (String.equal
-           (QueryFormatter.string_of_query_type query_value.typ)
-           (QueryFormatter.string_of_query_type expected_query_type))
-    then raise_query_type_error loc expected_query_type id query_value.typ
-  in
   let check_args loc args component_type =
     let args = match args with Some args -> args | None -> [] in
     match component_type with
@@ -412,10 +396,10 @@ let check_component global_env xra_env app_declaration loc id typ args body =
         if args_count > 1 || args_count < 1 then
           raise_argument_number_error loc 1 args_count id
         else
-          let loc, _, typ = List.hd_exn args in
+          let loc, id, typ = List.hd_exn args in
           let scalar_type = get_scalar_type typ in
           match scalar_type with
-          | Int -> ()
+          | Int -> XRAEnvironment.allocate xra_env loc ~key:id ~data:typ
           | _ as received_type ->
               raise_argument_type_error loc
                 (ComponentFormatter.string_of_component_type component_type)
@@ -661,16 +645,124 @@ let check_component global_env xra_env app_declaration loc id typ args body =
     check_unexpected_fields required_fields;
     check_form_fields_type required_fields
   in
+  let check_query query expected_query_type =
+    let loc, id, where, search = query in
+    (* check if query exists *)
+    if not (GlobalEnvironment.contains global_env ~key:id) then
+      raise_undefined_error loc "query" id;
+    let query_value = GlobalEnvironment.lookup global_env ~key:id in
+    if not (GlobalEnvironment.check_type query_value QueryDeclaration) then
+      raise_declaration_type_error loc QueryDeclaration id
+        (GlobalEnvironment.infer_type query_value);
+    let query_value = GlobalEnvironment.get_query_value query_value in
+    (* check if query of the right type *)
+    if
+      not
+        (String.equal
+           (QueryFormatter.string_of_query_type query_value.typ)
+           (QueryFormatter.string_of_query_type expected_query_type))
+    then raise_query_type_error loc expected_query_type id query_value.typ;
+    (* check if query is taking the right arguments *)
+    let model_fields =
+      let _, model_id = Option.value_exn query_value.model in
+      GlobalEnvironment.lookup global_env ~key:model_id
+      |> GlobalEnvironment.get_model_value
+    in
+    let expected_where =
+      List.map query_value.body ~f:(function
+        | Query.Where (_, fields) ->
+            Some
+              (List.map fields ~f:(fun field ->
+                   let arg_type =
+                     (LocalEnvironment.lookup model_fields ~key:field).typ
+                   in
+                   (field, arg_type)))
+        | _ -> None)
+      |> List.find ~f:(function Some _ -> true | None -> false)
+      |> Option.value_or_thunk ~default:(fun () -> None)
+    in
+    let expected_search =
+      List.map query_value.body ~f:(function
+        | Query.Search (_, fields) ->
+            Some
+              (List.map fields ~f:(fun field ->
+                   let arg_type =
+                     (LocalEnvironment.lookup model_fields ~key:field).typ
+                   in
+                   (field, arg_type)))
+        | _ -> None)
+      |> List.find ~f:(function Some _ -> true | None -> false)
+      |> Option.value_or_thunk ~default:(fun () -> None)
+    in
+    let get_arg_type value =
+      match value with
+      | IntLiteral _ -> Scalar Int
+      | BooleanLiteral _ -> Scalar Boolean
+      | StringLiteral _ -> Scalar String
+      | ReferenceLiteral (loc, ref) -> XRAEnvironment.lookup xra_env loc ref
+    in
+    (match expected_where with
+    | Some _ -> (
+        match where with
+        | Some (loc, where) ->
+            let typ = get_arg_type where in
+            if
+              not
+                (String.equal (string_of_type typ)
+                   (string_of_type (Scalar Int)))
+            then
+              raise_type_error loc (Scalar Int)
+                ~received_value:(string_of_literal where) ~received_type:typ
+        | None ->
+            failwith
+              (Fmt.str "RequiredArgument: @(%s): expected argument 'where'"
+                 (string_of_loc loc)))
+    | None -> (
+        match where with
+        | Some _ ->
+            failwith
+              (Fmt.str "RequiredArgument: @(%s): unexpected argument 'where'"
+                 (string_of_loc loc))
+        | None -> ()));
+    match expected_search with
+    | Some expected_search -> (
+        match search with
+        | Some search ->
+            List.iter search ~f:(fun (loc, id, value) ->
+                let expected_arg_type =
+                  List.Assoc.find expected_search id ~equal:String.equal
+                in
+                match expected_arg_type with
+                | Some expected_arg_type ->
+                    let received_type = get_arg_type value in
+                    if
+                      not
+                        (String.equal
+                           (string_of_type expected_arg_type)
+                           (string_of_type received_type))
+                    then
+                      raise_type_error loc expected_arg_type
+                        ~received_value:(string_of_literal value) ~received_type
+                        ~id
+                | None ->
+                    failwith
+                      (Fmt.str
+                         "RequiredArgument: @(%s): expected argument 'search' \
+                          %s"
+                         (string_of_loc loc) id))
+        | None ->
+            failwith
+              (Fmt.str "RequiredArgument: @(%s): expected argument 'search'"
+                 (string_of_loc loc)))
+    | None -> ()
+  in
   let check_component_body body =
     match body with
     | Component.GeneralBody body ->
         check_args loc args Component.General;
         check_general_body global_env xra_env body
     | Component.FindBody
-        ( ((query_loc, query_id), (variable_loc, variable)),
-          on_error,
-          on_loading,
-          on_success ) ->
+        ((query, (variable_loc, variable)), on_error, on_loading, on_success) ->
         let expected_query_type =
           if
             String.equal
@@ -679,7 +771,8 @@ let check_component global_env xra_env app_declaration loc id typ args body =
           then Query.FindMany
           else Query.FindUnique
         in
-        check_query query_loc query_id expected_query_type;
+        check_query query expected_query_type;
+        let _, query_id, _, _ = query in
         let query_return_type =
           (GlobalEnvironment.lookup global_env ~key:query_id
           |> GlobalEnvironment.get_query_value)
@@ -690,16 +783,18 @@ let check_component global_env xra_env app_declaration loc id typ args body =
         check_render_expression global_env xra_env on_error;
         check_render_expression global_env xra_env on_loading;
         check_render_expression global_env xra_env on_success
-    | Component.CreateBody ((query_loc, query_id), _, form_fields, _) ->
-        check_query query_loc query_id Query.Create;
+    | Component.CreateBody (query, _, form_fields, _) ->
+        let _, query_id, _, _ = query in
+        check_query query Query.Create;
         check_form_fields form_fields ~query_id
-    | Component.UpdateBody ((query_loc, query_id), _, form_fields, _) ->
+    | Component.UpdateBody (query, _, form_fields, _) ->
+        let _, query_id, _, _ = query in
         check_args loc args Component.Update;
-        check_query query_loc query_id Query.Update;
+        check_query query Query.Update;
         check_form_fields form_fields ~query_id
-    | Component.DeleteBody ((query_loc, query_id), _) ->
+    | Component.DeleteBody (query, _) ->
         check_args loc args Component.Delete;
-        check_query query_loc query_id Query.Delete
+        check_query query Query.Delete
     | Component.SignupFormBody (_, form_fields, _)
     | Component.LoginFormBody (_, form_fields, _) ->
         check_form_fields form_fields

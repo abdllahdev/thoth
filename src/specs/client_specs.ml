@@ -19,6 +19,8 @@ type find_component_specs = {
   find_func : string;
   func_type : string;
   func_model : string;
+  where_arg : string option;
+  search_arg : (string * string) list option;
   owns_entry : bool;
   requires_auth : bool;
   args : (string * string) list;
@@ -50,6 +52,7 @@ type action_form_component_specs = {
   args : (string * string) list;
   action_func : string;
   func_type : string;
+  where_arg : string option;
   requires_auth : bool;
   form_validation_scheme : (string * string) option list;
   form_inputs : form_input list;
@@ -61,6 +64,7 @@ type action_button_component_specs = {
   id : string;
   args : (string * string) list;
   action_func : string;
+  where_arg : string option;
   requires_auth : bool;
   func_type : string;
   form_button : (string * string) list;
@@ -93,6 +97,8 @@ type auth_specs = {
 type service_func_specs = {
   func_id : string;
   func_type : string;
+  requires_where : bool;
+  requires_search : bool;
   http_method : string;
   route : string;
   requires_auth : bool;
@@ -329,20 +335,40 @@ let generate_general_component_specs global_env id args body =
   in
   { id; args; imported_types; imported_components; render_expression }
 
+let generate_query_application_specs query_app =
+  let _, query_id, where_arg, search_arg = query_app in
+  let where_arg =
+    match where_arg with
+    | Some (_, where_arg) -> Some (string_of_literal where_arg)
+    | None -> None
+  in
+  let search_arg =
+    match search_arg with
+    | Some search_arg ->
+        Some
+          (List.map search_arg ~f:(fun (_, id, value) ->
+               (id, string_of_literal value)))
+    | None -> None
+  in
+  (query_id, where_arg, search_arg)
+
 let generate_find_component_specs global_env id args body types_specs =
   let args = get_component_args args in
   let ( imported_components,
         query_id,
+        where_arg,
+        search_arg,
         variable_id,
         on_error,
         on_loading,
         render_expression ) =
     match body with
     | Component.FindBody
-        ( ((_, query_id), (_, variable_id)),
-          on_error,
-          on_loading,
-          render_expression ) ->
+        ((query_app, (_, variable_id)), on_error, on_loading, render_expression)
+      ->
+        let query_id, where_arg, search_arg =
+          generate_query_application_specs query_app
+        in
         let imported_components =
           List.fold on_error ~init:[] ~f:(fun lst expression ->
               lst @ get_imported_components global_env expression)
@@ -365,11 +391,13 @@ let generate_find_component_specs global_env id args body types_specs =
         in
         ( imported_components,
           query_id,
+          where_arg,
+          search_arg,
           variable_id,
           on_error,
           on_loading,
           render_expression )
-    | _ -> ([ "" ], "", "", "", "", "")
+    | _ -> ([ "" ], "", Some "", Some [ ("", "") ], "", "", "", "")
   in
   let query =
     GlobalEnvironment.lookup global_env ~key:query_id
@@ -434,6 +462,8 @@ let generate_find_component_specs global_env id args body types_specs =
     func_model = String.uncapitalize (Option.value_exn model);
     args;
     owns_entry;
+    where_arg;
+    search_arg;
     model;
     requires_auth;
     result_variable = variable_id;
@@ -541,6 +571,7 @@ let generate_action_form_components_specs ?global_env id args body =
   in
   let args = get_component_args args in
   let ( action_func,
+        where_arg,
         requires_auth,
         typ,
         global_style,
@@ -548,13 +579,15 @@ let generate_action_form_components_specs ?global_env id args body =
         form_inputs,
         form_button ) =
     (match body with
-    | Component.CreateBody
-        ((_, query_id), global_style, form_inputs, form_button)
-    | Component.UpdateBody
-        ((_, query_id), global_style, form_inputs, form_button) ->
+    | Component.CreateBody (query_app, global_style, form_inputs, form_button)
+    | Component.UpdateBody (query_app, global_style, form_inputs, form_button)
+      ->
         let form_validation_scheme = get_form_validation_scheme form_inputs in
         let global_style = get_global_style global_style in
         let global_env = Option.value_exn global_env in
+        let query_id, where_arg, _ =
+          generate_query_application_specs query_app
+        in
         let query =
           GlobalEnvironment.lookup global_env ~key:query_id
           |> GlobalEnvironment.get_query_value
@@ -566,6 +599,7 @@ let generate_action_form_components_specs ?global_env id args body =
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some
           ( query_id,
+            where_arg,
             requires_auth,
             QueryFormatter.string_of_query_type query.typ,
             global_style,
@@ -578,6 +612,7 @@ let generate_action_form_components_specs ?global_env id args body =
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some
           ( "signup",
+            None,
             false,
             "signup",
             global_style,
@@ -590,6 +625,7 @@ let generate_action_form_components_specs ?global_env id args body =
         let form_inputs, form_button = get_form_specs form_inputs form_button in
         Some
           ( "login",
+            None,
             false,
             "login",
             global_style,
@@ -602,6 +638,7 @@ let generate_action_form_components_specs ?global_env id args body =
   {
     id;
     args;
+    where_arg;
     requires_auth;
     func_type = typ;
     action_func;
@@ -613,10 +650,13 @@ let generate_action_form_components_specs ?global_env id args body =
 
 let generate_action_button_components_specs ?global_env id args body =
   let args = get_component_args args in
-  let action_func, requires_auth, typ, form_button =
+  let action_func, where_arg, requires_auth, typ, form_button =
     (match body with
-    | Component.DeleteBody ((_, query_id), form_button) ->
+    | Component.DeleteBody (query_app, form_button) ->
         let global_env = Option.value_exn global_env in
+        let query_id, where_arg, _ =
+          generate_query_application_specs query_app
+        in
         let query =
           GlobalEnvironment.lookup global_env ~key:query_id
           |> GlobalEnvironment.get_query_value
@@ -625,13 +665,26 @@ let generate_action_button_components_specs ?global_env id args body =
           let permissions = query.permissions in
           match permissions with Some _ -> true | None -> false
         in
-        Some (query_id, requires_auth, "delete", get_button_specs form_button)
+        Some
+          ( query_id,
+            where_arg,
+            requires_auth,
+            "delete",
+            get_button_specs form_button )
     | Component.LogoutButtonBody form_button ->
-        Some ("logout", false, "logout", get_button_specs form_button)
+        Some ("logout", None, false, "logout", get_button_specs form_button)
     | _ -> None)
     |> Option.value_exn
   in
-  { id; args; requires_auth; action_func; func_type = typ; form_button }
+  {
+    id;
+    args;
+    requires_auth;
+    action_func;
+    where_arg;
+    func_type = typ;
+    form_button;
+  }
 
 let generate_service_specs server_specs =
   let { routes_specs; _ } = server_specs in
@@ -647,6 +700,8 @@ let generate_service_specs server_specs =
                   default_route;
                   middlewares;
                   route_type;
+                  requires_where;
+                  requires_search;
                   _;
                 } =
                   route
@@ -666,6 +721,8 @@ let generate_service_specs server_specs =
                 {
                   func_id = route_id;
                   http_method;
+                  requires_where;
+                  requires_search;
                   route;
                   requires_auth;
                   func_type = route_type;
