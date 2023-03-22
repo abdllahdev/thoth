@@ -31,7 +31,7 @@ const {{ id }} = ({% if args %} { {% for arg in args %}{{ arg.id }},{% endfor %}
     }
   }, [LoggedInUser]);
   {% else %}
-  const url = Queries.{{ action_func }}( {{ args[0].id }} );
+  const url = Queries.{{ action_func }}( { where: {{ where_arg }} } );
   const storedUser = localStorage.getItem("LoggedInUser")
     ? JSON.parse(localStorage.getItem("LoggedInUser") as string)
     : undefined;

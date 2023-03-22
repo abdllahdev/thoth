@@ -72,7 +72,7 @@ const Form = ({
 }: FormProps) => {
   type FormSchemaType = z.infer<typeof formValidationSchema>;
   const formDefaultValues: { [key: string]: any } = {};
-  const url = formFunc(where);
+  const url = formFunc({where});
 
   formElements.map((formElement) => {
     const formInput = formElement.formInput;

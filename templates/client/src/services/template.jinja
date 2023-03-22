@@ -13,9 +13,19 @@ export const {{ func.id }} = (
   ) =>
   `${baseUrl}/{{ func.route }}`
   {% if func.requires_where %}
-  + `/${where}`
+  + `/${where ? where : ""}`
   {% endif %}
   {% if func.requires_search %}
-  + `?${search && Object.keys(search).map((key: string) => `${key}=${search[key]}`)}`;
+  + `?${search ? Object.keys(search).map((key: string) => `${key}=${search[key]}&`) : ""}`;
+  {% endif %}
+
+  {% if func.type == "findMany" or func.type == "findFirst" %}
+    export const {{ func.id }}Events = ( {% if func.requires_where %} { where } {% endif %} )
+      =>
+        `${baseUrl}/{{ func.route }}`
+        {% if func.requires_where %}
+        + `/${where ? where : ""}`
+        {% endif %}
+        + "/events"
   {% endif %}
 {% endfor %}

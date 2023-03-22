@@ -7,6 +7,7 @@ type FuncParameters = {
 
 type UseFetchType = {
   findFunc: (arg: FuncParameters) => string;
+  eventsFunc: () => string;
   where?: number;
   search?: { [x: string]: any };
   model?: string;
@@ -14,8 +15,9 @@ type UseFetchType = {
   accessToken?: string;
 };
 
-const useFetch = <T>({ findFunc, where, search, model, privateStream, accessToken }: UseFetchType) => {
+const useFetch = <T>({ findFunc, eventsFunc, where, search, model, privateStream, accessToken }: UseFetchType) => {
   const url = findFunc({where, search});
+  const eventsUrl = eventsFunc();
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -52,7 +54,7 @@ const useFetch = <T>({ findFunc, where, search, model, privateStream, accessToke
 
   useEffect(() => {
     const eventSource = new EventSource(
-      `${url}/events?accessToken=${accessToken}`,
+      `${eventsUrl}/events?accessToken=${accessToken}`,
     );
 
     setIsLoading(true);

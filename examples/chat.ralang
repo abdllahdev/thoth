@@ -54,7 +54,7 @@ query<FindMany> getUsers {
 }
 
 component<FindMany> MessagesComponent {
-	findQuery: getMessages as messages,
+	findQuery: getMessages() as messages,
 	onError: render(
 		<div>{ "An error occured" }</div>
 	),
@@ -90,7 +90,7 @@ component<FindMany> MessagesComponent {
 }
 
 component<FindMany> OnlineUsersComponent {
-	findQuery: getUsers as users,
+	findQuery: getUsers() as users,
 	onError: render(
 		<div>{ "An error occured" }</div>
 	),
@@ -124,7 +124,7 @@ component<Create> CreateMessageForm  {
 	globalStyle: {
 		form: "flex w-full"
 	},
-	actionQuery: createMessage,
+	actionQuery: createMessage(),
 	formInputs: {
 		content: {
 			style: "flex w-full",

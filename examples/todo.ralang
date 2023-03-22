@@ -55,7 +55,7 @@ query<Delete> deleteTaskById {
 }
 
 component<Create> TaskCreateForm {
-	actionQuery: createTask,
+	actionQuery: createTask(),
 	globalStyle: {
 		form: "flex mt-4"
 	},
@@ -84,7 +84,9 @@ component<Create> TaskCreateForm {
 }
 
 component<Delete> TaskDeleteButton(id: Int) {
-	actionQuery: deleteTaskById,
+	actionQuery: deleteTaskById({
+		where: id
+	}),
 	formButton: {
 		name: "Delete",
 		style: "rounded-md bg-red-500 text-white px-4 py-2"
@@ -101,7 +103,7 @@ component TaskComponent(task: Task) {
 }
 
 component<FindMany> TasksComponent {
-	findQuery: getTasks as tasks,
+	findQuery: getTasks() as tasks,
 	onError: render(
 		<div>{ "An error occured" }</div>
 	),

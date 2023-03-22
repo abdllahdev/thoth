@@ -744,16 +744,8 @@ let check_component global_env xra_env app_declaration loc id typ args body =
                       raise_type_error loc expected_arg_type
                         ~received_value:(string_of_literal value) ~received_type
                         ~id
-                | None ->
-                    failwith
-                      (Fmt.str
-                         "RequiredArgument: @(%s): expected argument 'search' \
-                          %s"
-                         (string_of_loc loc) id))
-        | None ->
-            failwith
-              (Fmt.str "RequiredArgument: @(%s): expected argument 'search'"
-                 (string_of_loc loc)))
+                | None -> ())
+        | None -> ())
     | None -> ()
   in
   let check_component_body body =

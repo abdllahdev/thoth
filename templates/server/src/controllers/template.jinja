@@ -97,11 +97,11 @@ async (
     {% endif %}
 
     {% if func.type == "create" %}
-    sse.send(result, `create{{ name }}{% if find_many_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
+    sse.send(result, `create{{ name }}{% if find_many_requires_owns_entry or find_unique_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
     {% elif func.type == "update" %}
-    sse.send(result, `update{{ name }}{% if find_unique_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
+    sse.send(result, `update{{ name }}{% if find_many_requires_owns_entry or find_unique_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
     {% elif func.type == "delete" %}
-    sse.send(item, `delete{{ name }}{% if find_unique_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
+    sse.send(item, `delete{{ name }}{% if find_many_requires_owns_entry or find_unique_requires_owns_entry %}${req.user.accessToken}{% endif %}`);
     {% endif %}
 
     res.status(
