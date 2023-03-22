@@ -26,7 +26,7 @@ export function isAuth(
       ? authorization.split(' ')[1]
       : (accessToken as string);
     const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET as string);
-    req.user = {accessToken: token, ...payload};
+    req.user = {accessToken: token, ...payload as jwt.JwtPayload};
     next();
   } catch (err) {
     const apiError = new ApiError({
