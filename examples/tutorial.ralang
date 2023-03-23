@@ -1,0 +1,149 @@
+app Todo {
+	title: "Tutorial"
+}
+
+
+model Task {
+	id        Int      @id
+	title     String
+	isDone    Boolean  @default(false)
+	createdAt DateTime @default(Now)
+	updatedAt DateTime @updatedAt
+}
+
+
+@model(Task)
+query<FindMany> getTasks {
+	search: [ title, isDone ]
+}
+
+
+@model(Task)
+query<Delete> deleteTaskById {
+	where: [ id ]
+}
+
+
+@model(Task)
+query<Create> createTask {
+	data: {
+		fields: [title]
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+component<Delete> TaskDeleteButton(id: Int) {
+	actionQuery: deleteTaskById({
+		where: id
+	}),
+	formButton: {
+		name: "Delete",
+		style: "rounded-md bg-red-500 text-white px-4 py-2"
+	}
+}
+
+component<Create> TaskCreateForm {
+	actionQuery: createTask(),
+	globalStyle: {
+		form: "flex mt-4"
+	},
+	formInputs: {
+		title: {
+			style: "flex w-full",
+			input: {
+				type: NumberInput,
+				placeholder: "Enter task title",
+				isVisible: true,
+				style: "shadow border rounded py-2 px-3 w-full mr-4 text-grey-darker"
+			}
+		}
+	},
+	formButton: {
+		name: "Create",
+		style: "rounded-md bg-teal-500 text-white px-4 py-2"
+	}
+}
+
+component<FindMany> TasksComponent {
+	findQuery: getTasks() as tasks,
+	onError: render(
+		<div>{ "An error occured" }</div>
+	),
+	onLoading: render(
+		<div>{ "Loading..." }</div>
+	),
+	onSuccess: render(
+		<>
+				[% for task in tasks %]
+          <div className="flex mb-4 items-center">
+            <div className="w-full text-gray-500 text-xl">{ task.title }</div>
+            <TaskDeleteButton id={task.id} />
+          </div>
+				[% endfor %]
+		</>
+	)
+}
+
+@route("/")
+page Tasks {
+	render(
+		<div className="flex h-screen items-center justify-center bg-slate-800">
+			<div className="space-y-2">
+				<div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+					<div className="mb-4">
+						<h1 className="text-grey-darkest text-xl font-bold mb-4">{"Todo List"}</h1>
+						<TaskCreateForm />
+					</div>
+					<TasksComponent />
+				</div>
+			</div>
+		</div>
+	)
+}
+
+// @permissions(IsAuth, OwnsEntry)
+
+// model User {
+// 	id        Int     @id
+// 	username  String  @unique
+// 	password  String
+// 	isOnline	 Boolean	 @default(false)
+// 	lastActive DateTime  @default(Now)
+// 	tasks 		Task[]
+// }
+
+// model Task {
+// 	id        Int      @id
+// 	title     String
+// 	isDone    Boolean  @default(false)
+// 	user 			User 		 @relation(userId, id)
+// 	userId		Int
+// 	createdAt DateTime @default(Now)
+// 	updatedAt DateTime @updatedAt
+// }

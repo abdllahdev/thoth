@@ -16,21 +16,23 @@ function useHeartbeat() {
 
   useEffect(() => {
     // Send a heartbeat to the server every minute
-    const interval = setInterval(async () => {
-      try {
-        await fetch("http://localhost:4000/auth/heartbeat", {
-          method:"POST",
-          headers: {
-            Authorization: `Bearer ${LoggedInUser.accessToken}`
-          }
-        })
-      } catch (error) {
-        console.log(error)
-      }
-    }, 1000);
+    if (LoggedInUser) {
+      const interval = setInterval(async () => {
+        try {
+          await fetch('http://localhost:{{ server_port }}/auth/heartbeat', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${LoggedInUser.accessToken}`,
+            },
+          });
+        } catch (error) {
+          console.log(error);
+        }
+      }, 1000);
 
-    // Clean up the interval when the component unmounts
-    return () => clearInterval(interval);
+      // Clean up the interval when the component unmounts
+      return () => clearInterval(interval);
+    }
   }, []);
 }
 {% endif %}

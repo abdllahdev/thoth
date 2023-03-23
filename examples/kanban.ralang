@@ -298,59 +298,72 @@ component<Custom> KanbanBoard {
 
 component<SignupForm> MySignupForm {
 	globalStyle: {
-		form: "space-y-2"
+		form: "bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4",
+		formInput: "appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+		formInputLabel: "block text-gray-700 font-bold mb-2"
 	},
 	formInputs: {
 		username: {
+			label: {
+				name: "Username"
+			},
 			input: {
 				type: TextInput,
-				isVisible: true,
 				placeholder: "Enter username"
 			}
 		},
 		password: {
+			label: {
+				name: "Password"
+			},
 			input: {
 				type: PasswordInput,
-				isVisible: true,
 				placeholder: "Enter password"
 			}
 		}
 	},
 	formButton: {
-		name: "Sign Up",
-		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+		name: "Signup",
+		style: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
 	}
 }
 
 component<LoginForm> MyLoginForm {
 	globalStyle: {
-		form: "space-y-2"
+		form: "bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4",
+		formInput: "appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+		formInputLabel: "block text-gray-700 font-bold mb-2"
 	},
 	formInputs: {
 		username: {
+			label: {
+				name: "Username"
+			},
 			input: {
 				type: TextInput,
-				isVisible: true,
 				placeholder: "Enter username"
 			}
 		},
 		password: {
+			label: {
+				name: "Password"
+			},
 			input: {
 				type: PasswordInput,
-				isVisible: true,
 				placeholder: "Enter password"
 			}
 		}
 	},
 	formButton: {
 		name: "Login",
-		style: "ml-2 py-2 px-3 text-white bg-green-500 rounded-md"
+		style: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
 	}
 }
 
 component<LogoutButton> MyLogoutButton {
 	formButton: {
-		name: "Logout"
+		name: "Logout",
+		style: "w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
 	}
 }
 
@@ -368,7 +381,10 @@ page LoginPage {
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Login form"}</span>
-				<MyLoginForm/>
+				<MyLoginForm />
+				<a className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="/signup">
+        	{ "Sign Up" }
+     		</a>
 			</div>
 		</div>
 	)
@@ -380,7 +396,10 @@ page SignupPage {
 		<div className="flex h-screen items-center justify-center bg-slate-800">
 			<div className="space-y-2">
 				<span className="text-xl text-white">{"Sign up form"}</span>
-				<MySignupForm/>
+				<MySignupForm />
+				<a className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="/signup">
+        	{ "Login" }
+     		</a>
 			</div>
 		</div>
 	)

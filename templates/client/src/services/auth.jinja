@@ -1,4 +1,4 @@
-const baseUrl = 'http://localhost:4000';
+const baseUrl = import.meta.env.VITE_PUBLIC_API_BASE_URL;
 
 export const signup = () => `${baseUrl}/auth/signup`
 

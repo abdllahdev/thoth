@@ -595,7 +595,7 @@ let generate_package_file output_dir client_deps =
   in
   write_file app_index_file app_index_code
 
-let generate_main_file output_dir auth_specs =
+let generate_main_file output_dir auth_specs server_port =
   let main_template =
     Fmt.str "%s/templates/client/src/main.jinja" (getcwd ())
   in
@@ -603,7 +603,11 @@ let generate_main_file output_dir auth_specs =
     match auth_specs with
     | Some _ ->
         Jg_template.from_file main_template
-          ~models:[ ("requires_auth", Jg_types.Tbool true) ]
+          ~models:
+            [
+              ("requires_auth", Jg_types.Tbool true);
+              ("server_port", Jg_types.Tint server_port);
+            ]
     | None ->
         Jg_template.from_file main_template
           ~models:[ ("requires_auth", Jg_types.Tbool false) ]
@@ -659,7 +663,7 @@ let generate_client client_specs output_dir server_port =
       generate_custom_component output_dir component);
   List.iter pages_specs ~f:(fun page -> generate_page output_dir page);
   generate_package_file output_dir client_deps;
-  generate_main_file output_dir auth_specs;
+  generate_main_file output_dir auth_specs server_port;
   generate_env_file output_dir server_port;
   generate_index_file output_dir app_title;
   generate_services output_dir services_specs;

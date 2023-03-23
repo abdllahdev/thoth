@@ -242,7 +242,7 @@
         },
         {
           "name": "unnamed",
-          "begin": "\\s*(findQuery|actionQuery)\\s*:\\s*([A-Za-z][\\w]*)(\\s+(as)\\s+([A-Za-z][\\w]*)\\s*)?",
+          "begin": "\\s*(findQuery|actionQuery)\\s*:\\s*([A-Za-z][\\w]*)\\s*\\(\\s*\\)\\s*(\\s+(as)\\s+([A-Za-z][\\w]*)\\s*)?",
           "beginCaptures": {
             "2": { "name": "entity.name.function.ralang" },
             "4": { "name": "keyword.operator.as.ralang" }
@@ -530,7 +530,7 @@
     },
     "form_input_type": {
       "name": "support.type.form_input_type.ralang",
-      "match": "\\b(TextInput|PasswordInput|EmailInput|DefaultInput)\\b"
+      "match": "\\b(TextInput|PasswordInput|EmailInput|DefaultInput|NumberInput)\\b"
     },
     "double_quoted_string": {
       "begin": "\"",
