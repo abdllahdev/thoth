@@ -366,13 +366,13 @@ let check_component global_env xra_env app_declaration loc id typ args body =
   let check_args loc args component_type =
     let args = match args with Some args -> args | None -> [] in
     match component_type with
-    | Component.General ->
+    | Component.General | Component.FindMany | Component.FindUnique ->
         List.iter args ~f:(fun arg ->
             let loc, id, typ = arg in
             let scalar_typ = get_scalar_type typ in
             (match scalar_typ with
             | String | Int | Boolean | DateTime -> ()
-            | Reference | Nil | Assoc | List | As | ConnectWith ->
+            | Reference | Nil | Assoc | List | As | ConnectWith | Tuple ->
                 raise_argument_type_error loc
                   (ComponentFormatter.string_of_component_type component_type)
                   (Scalar scalar_typ)
@@ -763,6 +763,7 @@ let check_component global_env xra_env app_declaration loc id typ args body =
           then Query.FindMany
           else Query.FindUnique
         in
+        check_args loc args typ;
         check_query query expected_query_type;
         let _, query_id, _, _ = query in
         let query_return_type =

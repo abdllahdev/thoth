@@ -10,9 +10,11 @@ datasource db {
 {% for model in models %}
 
 model {{ model.id }} {
-  {% for field in model.fields %}
-  {{ field.id }} {{ field.type }} {{ field.attrs }}
-  {% endfor %}
+  {%- autoescape false -%}
+    {% for field in model.fields %}
+    {{ field.id }} {{ field.type }} {{ field.attrs }}
+    {% endfor %}
+  {% endautoescape -%}
 }
 
 {% endfor %}

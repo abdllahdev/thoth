@@ -130,6 +130,8 @@ obj_field_value:
     { ConnectWithObjField ($startpos, (value1, value2)) }
   | CONNECT; value1 = ID; WITH; left = ID; DOT; right = ID
     { ConnectWithObjField ($startpos, (value1, left ^ "." ^ right)) }
+  | LEFT_PARAN; value1 = STRING; COMMA; value2 = STRING; RIGHT_PARAN
+    { TupleObjField ($startpos, (value1, value2)) }
   | value = TYPESCRIPT
     { TsObjField ($startpos, value) }
   | query_application = query_application

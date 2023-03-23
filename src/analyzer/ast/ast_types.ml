@@ -12,6 +12,7 @@ type scalar_type =
   | ConnectWith
   | As
   | Nil
+  | Tuple
   | Assoc
   | CustomType of string
 
@@ -102,6 +103,7 @@ type obj_field =
   | QueryAppObjField of loc * id * obj_field option
   | TsObjField of loc * string
   | ConnectWithObjField of loc * (id * id)
+  | TupleObjField of loc * (string * string)
 
 module Component = struct
   type arg = loc * id * typ
@@ -220,6 +222,8 @@ type app_config =
   | Title of string
   | NotFound of string
   | Auth of (string * string) list
+  | ClientDep of (string * string) list
+  | ServerDep of (string * string) list
 
 type auth_config = {
   user_model : string;

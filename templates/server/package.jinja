@@ -42,7 +42,10 @@
     "x-xss-protection": "^2.0.0",
     "xss-clean": "^0.1.1",
     "node-cron": "^3.0.2",
-    "zod": "^3.20.6"
+    "zod": "^3.20.6"{% if deps or deps.length > 0 %},{% endif %}
+    {% for dep in deps %}
+    "{{ dep.id }}": "{{ dep.version }}"{% if loop.revindex0 != 0 %},{% endif %}
+    {% endfor %}
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",

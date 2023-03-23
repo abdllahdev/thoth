@@ -63,6 +63,7 @@ type server_specs = {
   routes_specs : (string, route_specs list) Hashtbl.t;
   validators_specs : (string, validator_specs list) Hashtbl.t;
   auth_specs : auth_config option;
+  server_deps : (string * string) list option;
 }
 
 let convert_type typ =
@@ -485,4 +486,5 @@ let generate_server_specs global_env app_declaration query_declarations =
     | None -> ());
     validators_hashtbl
   in
-  { controllers_specs; routes_specs; validators_specs; auth_specs }
+  let server_deps = get_server_deps app_declaration in
+  { controllers_specs; routes_specs; server_deps; validators_specs; auth_specs }

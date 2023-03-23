@@ -16,7 +16,10 @@
     "react-router-dom": "^6.8.1",
     "zod": "^3.20.6",
     "@hookform/resolvers": "^2.9.11",
-    "react-hook-form": "^7.43.5"
+    "react-hook-form": "^7.43.5"{% if deps or deps.length > 0 %},{% endif %}
+    {% for dep in deps %}
+    "{{ dep.id }}": "{{ dep.version }}"{% if loop.revindex0 != 0 %},{% endif %}
+    {% endfor %}
   },
   "devDependencies": {
     "@types/react": "^18.0.27",

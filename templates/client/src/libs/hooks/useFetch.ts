@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
 type FuncParameters = {
-  where?: number,
-  search?: { [x: string]: any }
-}
+  where?: number;
+  search?: { [x: string]: any };
+};
 
 type UseFetchType = {
   findFunc: (arg: FuncParameters) => string;
@@ -16,7 +16,7 @@ type UseFetchType = {
 };
 
 const useFetch = <T>({ findFunc, eventsFunc, where, search, model, privateStream, accessToken }: UseFetchType) => {
-  const url = findFunc({where, search});
+  const url = findFunc({ where, search });
   const eventsUrl = eventsFunc();
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string | undefined>();
@@ -53,42 +53,52 @@ const useFetch = <T>({ findFunc, eventsFunc, where, search, model, privateStream
   };
 
   useEffect(() => {
-    const eventSource = new EventSource(
-      `${eventsUrl}/events?accessToken=${accessToken}`,
-    );
+    const eventSource = new EventSource(`${eventsUrl}/events?accessToken=${accessToken}`);
 
     setIsLoading(true);
 
     fetcher();
 
-    let createStream = `create${model}`
-    if (privateStream) createStream += accessToken
+    let createStream = `create${model}`;
+    if (privateStream) createStream += accessToken;
     eventSource.addEventListener(createStream, (event) => {
       setData((prevData: T) => {
-        return Array.isArray(prevData)
-          ? [...prevData, JSON.parse(event.data)]
-          : JSON.parse(event.data);
+        return Array.isArray(prevData) ? [...prevData, JSON.parse(event.data)] : JSON.parse(event.data);
       });
     });
 
-    let updateStream = `update${model}`
-    if (privateStream) updateStream += accessToken
+    let updateStream = `update${model}`;
+    if (privateStream) updateStream += accessToken;
     eventSource.addEventListener(updateStream, (event) => {
       setData((prevData: T) => {
-        if (!Array.isArray(prevData)) return JSON.parse(event.data);
-        const updatedItem = JSON.parse(event.data);
-        const updatedIndex = prevData.findIndex(
-          (item) => item.id === updatedItem.id,
-        );
-        if (updatedIndex === -1) return prevData;
-        const newData = [...prevData];
-        newData[updatedIndex] = updatedItem;
-        return newData;
+        const eventData = JSON.parse(event.data);
+        if (!Array.isArray(eventData)) {
+          // Handle single object update
+          if (!Array.isArray(prevData)) {
+            // Handle single object initial case
+            return eventData;
+          } else {
+            // Handle single object update in array
+            const updatedItem = eventData;
+            const updatedIndex = prevData.findIndex((item) => item.id === updatedItem.id);
+            if (updatedIndex === -1) return prevData;
+            const newData = [...prevData];
+            newData[updatedIndex] = updatedItem;
+            return newData;
+          }
+        } else {
+          // Handle array update
+          const newData = prevData.map((item) => {
+            const updatedItem = eventData.find((e) => e.id === item.id);
+            return updatedItem ? updatedItem : item;
+          });
+          return newData;
+        }
       });
     });
 
-    let deleteStream = `delete${model}`
-    if (privateStream) deleteStream += accessToken
+    let deleteStream = `delete${model}`;
+    if (privateStream) deleteStream += accessToken;
     eventSource.addEventListener(deleteStream, (event) => {
       setData((prevData: T) => {
         if (!Array.isArray(prevData)) return undefined;

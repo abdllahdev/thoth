@@ -14,6 +14,7 @@ let string_of_scalar_type scalar_type =
   | Reference -> "Reference"
   | Nil -> "Nil"
   | Assoc -> "Assoc"
+  | Tuple -> "Tuple"
   | List -> "List"
   | ConnectWith -> "ConnectWith"
   | As -> "As"
@@ -33,7 +34,7 @@ let string_of_type typ =
 
 let string_of_literal literal =
   match literal with
-  | StringLiteral (_, str) -> Fmt.str "'%s'" str
+  | StringLiteral (_, str) -> Fmt.str "\"%s\"" str
   | BooleanLiteral (_, boolean) -> Fmt.str "%b" boolean
   | IntLiteral (_, num) -> Fmt.str "%d" num
   | ReferenceLiteral (_, ref) -> ref

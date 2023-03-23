@@ -571,6 +571,30 @@ let generate_env_file output_dir server_port =
   let app_index_file = Fmt.str "%s/%s/client/.env" (getcwd ()) output_dir in
   write_file app_index_file app_index_code
 
+let generate_package_file output_dir client_deps =
+  let app_index_template = getcwd () ^ "/templates/client/package.jinja" in
+  let app_index_code =
+    Jg_template.from_file app_index_template
+      ~models:
+        [
+          ( "deps",
+            match client_deps with
+            | Some deps ->
+                Jg_types.Tlist
+                  (List.map deps ~f:(fun (id, version) ->
+                       Jg_types.Tobj
+                         [
+                           ("id", Jg_types.Tstr id);
+                           ("version", Jg_types.Tstr version);
+                         ]))
+            | None -> Jg_types.Tnull );
+        ]
+  in
+  let app_index_file =
+    Fmt.str "%s/%s/client/package.json" (getcwd ()) output_dir
+  in
+  write_file app_index_file app_index_code
+
 let generate_main_file output_dir auth_specs =
   let main_template =
     Fmt.str "%s/templates/client/src/main.jinja" (getcwd ())
@@ -592,6 +616,8 @@ let generate_main_file output_dir auth_specs =
 let setup_client_folder output_dir =
   system (Fmt.str "rm %s/%s/client/index.jinja" (getcwd ()) output_dir)
   |> ignore;
+  system (Fmt.str "rm %s/%s/client/src/main.jinja" (getcwd ()) output_dir)
+  |> ignore;
   system (Fmt.str "rm %s/%s/client/src/components/*" (getcwd ()) output_dir)
   |> ignore;
   system (Fmt.str "rm %s/%s/client/src/pages/*" (getcwd ()) output_dir)
@@ -600,7 +626,9 @@ let setup_client_folder output_dir =
   |> ignore;
   system (Fmt.str "rm %s/%s/client/src/types/*" (getcwd ()) output_dir)
   |> ignore;
-  system (Fmt.str "rm %s/%s/client/.env.jinja" (getcwd ()) output_dir) |> ignore
+  system (Fmt.str "rm %s/%s/client/.env.jinja" (getcwd ()) output_dir) |> ignore;
+  system (Fmt.str "rm %s/%s/client/package.jinja" (getcwd ()) output_dir)
+  |> ignore
 
 let generate_client client_specs output_dir server_port =
   setup_client_folder output_dir;
@@ -615,6 +643,7 @@ let generate_client client_specs output_dir server_port =
     types_specs;
     services_specs;
     auth_specs;
+    client_deps;
   } =
     client_specs
   in
@@ -629,6 +658,7 @@ let generate_client client_specs output_dir server_port =
   List.iter custom_components_specs ~f:(fun component ->
       generate_custom_component output_dir component);
   List.iter pages_specs ~f:(fun page -> generate_page output_dir page);
+  generate_package_file output_dir client_deps;
   generate_main_file output_dir auth_specs;
   generate_env_file output_dir server_port;
   generate_index_file output_dir app_title;

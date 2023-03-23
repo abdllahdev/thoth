@@ -117,6 +117,7 @@ type client_specs = {
   types_specs : (string, type_specs) Hashtbl.t;
   auth_specs : auth_specs option;
   services_specs : services_specs;
+  client_deps : (string * string) list option;
 }
 
 let convert_type typ =
@@ -845,6 +846,7 @@ let generate_client_specs global_env app_declaration component_declarations
     List.map page_declarations ~f:(fun declaration_page ->
         generate_page_specs global_env declaration_page auth_specs)
   in
+  let client_deps = get_client_deps app_declaration in
   {
     app_title;
     general_components_specs;
@@ -856,4 +858,5 @@ let generate_client_specs global_env app_declaration component_declarations
     types_specs;
     auth_specs;
     services_specs;
+    client_deps;
   }

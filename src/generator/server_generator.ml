@@ -364,6 +364,30 @@ let generate_server_file output_dir auth_specs =
   let output_file = Fmt.str "%s/%s/server/src/app.ts" (getcwd ()) output_dir in
   write_file output_file code
 
+let generate_package_file output_dir client_deps =
+  let app_index_template = getcwd () ^ "/templates/server/package.jinja" in
+  let app_index_code =
+    Jg_template.from_file app_index_template
+      ~models:
+        [
+          ( "deps",
+            match client_deps with
+            | Some deps ->
+                Jg_types.Tlist
+                  (List.map deps ~f:(fun (id, version) ->
+                       Jg_types.Tobj
+                         [
+                           ("id", Jg_types.Tstr id);
+                           ("version", Jg_types.Tstr version);
+                         ]))
+            | None -> Jg_types.Tnull );
+        ]
+  in
+  let app_index_file =
+    Fmt.str "%s/%s/server/package.json" (getcwd ()) output_dir
+  in
+  write_file app_index_file app_index_code
+
 let generate_env_file output_dir server_port db_name =
   let app_index_template = getcwd () ^ "/templates/server/.env.jinja" in
   let app_index_code =
@@ -388,13 +412,22 @@ let setup_server_folder output_dir =
   |> ignore;
   system (Fmt.str "rm %s/%s/server/src/app.jinja" (getcwd ()) output_dir)
   |> ignore;
-  system (Fmt.str "rm %s/%s/server/.env.jinja" (getcwd ()) output_dir) |> ignore
+  system (Fmt.str "rm %s/%s/server/.env.jinja" (getcwd ()) output_dir) |> ignore;
+  system (Fmt.str "rm %s/%s/server/package.jinja" (getcwd ()) output_dir)
+  |> ignore
 
 let generate_server server_specs output_dir server_port db_name =
   setup_server_folder output_dir;
-  let { controllers_specs; routes_specs; validators_specs; auth_specs } =
+  let {
+    controllers_specs;
+    routes_specs;
+    validators_specs;
+    auth_specs;
+    server_deps;
+  } =
     server_specs
   in
+  generate_package_file output_dir server_deps;
   generate_env_file output_dir server_port db_name;
   generate_server_file output_dir auth_specs;
   generate_controllers output_dir controllers_specs auth_specs;

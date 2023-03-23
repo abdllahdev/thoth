@@ -57,3 +57,17 @@ let get_auth_config app_declaration =
       | _ -> None)
   |> List.find ~f:(function Some _ -> true | None -> false)
   |> Option.value_or_thunk ~default:(fun () -> None)
+
+let get_client_deps app_declaration =
+  let _, _, app_configs = app_declaration in
+  List.map app_configs ~f:(fun config ->
+      match config with ClientDep client_deps -> Some client_deps | _ -> None)
+  |> List.find ~f:(function Some _ -> true | None -> false)
+  |> Option.value_or_thunk ~default:(fun () -> None)
+
+let get_server_deps app_declaration =
+  let _, _, app_configs = app_declaration in
+  List.map app_configs ~f:(fun config ->
+      match config with ServerDep server_deps -> Some server_deps | _ -> None)
+  |> List.find ~f:(function Some _ -> true | None -> false)
+  |> Option.value_or_thunk ~default:(fun () -> None)

@@ -63,12 +63,21 @@ let rec check_dup_exists loc keys =
 let rec parse_app_configs loc id body =
   let obj_keys = List.map body ~f:(fun (key, _) -> key) in
   check_dup_exists loc obj_keys;
+  let get_deps id deps_list =
+    match deps_list with
+    | ListObjField (loc, deps) ->
+        List.map deps ~f:(fun dep ->
+            match dep with
+            | TupleObjField (_, (value1, value2)) -> (value1, value2)
+            | _ -> raise_type_error loc (Scalar Tuple) ~id)
+    | _ -> raise_type_error loc (Scalar List) ~id
+  in
   List.map body ~f:(fun (key, value) ->
       match key with
       | "title" -> (
           match value with
           | StringObjField (_, value) -> Title value
-          | _ -> raise_type_error loc (Scalar String))
+          | _ -> raise_type_error loc (Scalar String) ~id:key)
       | "auth" -> (
           match value with
           | AssocObjField (loc, auth_obj) ->
@@ -83,13 +92,15 @@ let rec parse_app_configs loc id body =
                        -> (
                          match value with
                          | ReferenceObjField (_, value) -> (key, value)
-                         | _ -> raise_type_error loc (Scalar Reference))
+                         | _ -> raise_type_error loc (Scalar Reference) ~id:key)
                      | "onSuccessRedirectTo" | "onFailRedirectTo" -> (
                          match value with
                          | StringObjField (_, value) -> (key, value)
-                         | _ -> raise_type_error loc (Scalar String))
+                         | _ -> raise_type_error loc (Scalar String) ~id:key)
                      | entry -> raise_unexpected_entry_error loc id entry))
           | _ -> raise_type_error loc (Scalar Assoc))
+      | "clientDep" -> ClientDep (get_deps id value)
+      | "serverDep" -> ServerDep (get_deps id value)
       | entry -> raise_unexpected_entry_error loc id entry)
 
 and check_auth_config_entries loc id keys =
