@@ -413,7 +413,7 @@ let generate_find_component_specs global_env id args body types_specs =
     | Some permissions ->
         ( true,
           List.exists permissions ~f:(fun (_, permission) ->
-              if String.equal permission "OwnsEntry" then true else false) )
+              if String.equal permission "OwnsRecord" then true else false) )
     | None -> (false, false)
   in
   let model =

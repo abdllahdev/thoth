@@ -323,7 +323,7 @@ let find_many_requires_owns_entry controller_functions =
       match function_type with
       | "findMany" ->
           List.exists middlewares ~f:(fun middleware ->
-              match middleware with "OwnsEntry" -> true | _ -> false)
+              match middleware with "OwnsRecord" -> true | _ -> false)
       | _ -> false)
 
 let find_unique_requires_owns_entry controller_functions =
@@ -332,7 +332,7 @@ let find_unique_requires_owns_entry controller_functions =
       match function_type with
       | "findFirst" ->
           List.exists middlewares ~f:(fun middleware ->
-              match middleware with "OwnsEntry" -> true | _ -> false)
+              match middleware with "OwnsRecord" -> true | _ -> false)
       | _ -> false)
 
 let generate_routes_specs queries =

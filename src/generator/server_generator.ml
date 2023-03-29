@@ -49,10 +49,10 @@ let generate_controller output_dir name imports controller_functions
                              Jg_types.Tstr (Option.value_exn custom_fn) );
                          ]
                    | _ ->
-                       let ownsEntry =
+                       let ownsRecord =
                          match
                            List.filter middlewares ~f:(fun middleware ->
-                               if String.equal middleware "OwnsEntry" then true
+                               if String.equal middleware "OwnsRecord" then true
                                else false)
                            |> List.hd
                          with
@@ -66,7 +66,7 @@ let generate_controller output_dir name imports controller_functions
                          [
                            ("id", Jg_types.Tstr function_id);
                            ("type", Jg_types.Tstr function_type);
-                           ("owns_entry", Jg_types.Tbool ownsEntry);
+                           ("owns_entry", Jg_types.Tbool ownsRecord);
                            ( "includes",
                              Jg_types.Tlist
                                (match includes with

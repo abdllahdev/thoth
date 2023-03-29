@@ -526,7 +526,7 @@
     },
     "language_constants": {
       "name": "constant.language.boolean.ralang",
-      "match": "\\b(IsAuth|OwnsEntry|LoggedInUser|Now)\\b"
+      "match": "\\b(IsAuth|OwnsRecord|LoggedInUser|Now)\\b"
     },
     "form_input_type": {
       "name": "support.type.form_input_type.ralang",
