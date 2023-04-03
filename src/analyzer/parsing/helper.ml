@@ -37,9 +37,7 @@ let parse_type ?(list_modifier = false) ?(optional_modifier = false) typ =
     | "DateTime" -> DateTime
     | _ -> CustomType typ
   in
-  if list_modifier && optional_modifier then
-    Composite (OptionalList scalar_type)
-  else if list_modifier then Composite (List scalar_type)
+  if list_modifier then Composite (List scalar_type)
   else if optional_modifier then Composite (Optional scalar_type)
   else Scalar scalar_type
 

@@ -81,8 +81,6 @@ let convert_type typ =
     match composite_type with
     | List scalar_type -> convert_scalar_type scalar_type @ [ "array" ]
     | Optional scalar_type -> convert_scalar_type scalar_type @ [ "optional" ]
-    | OptionalList scalar_type ->
-        convert_scalar_type scalar_type @ [ "optional"; "array" ]
   in
 
   match typ with

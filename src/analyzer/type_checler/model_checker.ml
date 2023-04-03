@@ -233,12 +233,25 @@ let check_field global_env model_env model_id field =
       check_field_type global_env loc model_id id field_type field_attrs;
       check_field_attrs global_env model_env model_id id field_attrs
 
-let rec check_fields global_env model_env model_id fields =
+let rec check_fields global_env model_env loc model_id fields =
+  (* Check if model has more than one ID field *)
+  List.fold fields ~init:0 ~f:(fun count field ->
+      let field_id = match field with Model.Field (_, id, _, _) -> id in
+      let field_attrs =
+        (LocalEnvironment.lookup model_env ~key:field_id
+          : GlobalEnvironment.field_value)
+          .field_attrs_table |> Option.value_exn
+      in
+      if LocalEnvironment.contains field_attrs ~key:"@id" then
+        if equal count 0 then count + 1
+        else raise_multi_definitions_error loc "ID field"
+      else count)
+  |> ignore;
   match fields with
   | [] -> ()
   | field :: fields ->
       check_field global_env model_env model_id field;
-      check_fields global_env model_env model_id fields
+      check_fields global_env model_env loc model_id fields
 
-let check_model global_env model_table (_, model_id, fields) =
-  check_fields global_env model_table model_id fields
+let check_model global_env model_env (loc, model_id, fields) =
+  check_fields global_env model_env loc model_id fields

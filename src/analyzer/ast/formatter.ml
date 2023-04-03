@@ -24,8 +24,6 @@ let string_of_composite_type composite_type =
   match composite_type with
   | List scalar_type -> Fmt.str "%s[]" (string_of_scalar_type scalar_type)
   | Optional scalar_type -> Fmt.str "%s?" (string_of_scalar_type scalar_type)
-  | OptionalList scalar_type ->
-      Fmt.str "%s[]?" (string_of_scalar_type scalar_type)
 
 let string_of_type typ =
   match typ with

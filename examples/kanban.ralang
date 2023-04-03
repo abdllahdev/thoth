@@ -19,7 +19,7 @@ app KanbanBoard {
 model User {
 	id         Int       @id
 	username   String    @unique
-	password   String
+	password   String    @ignore
 	isOnline	 Boolean	 @default(false)
 	lastActive DateTime  @default(Now)
 	tasks      Task[]

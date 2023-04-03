@@ -134,8 +134,6 @@ let convert_type typ =
     match composite_type with
     | List scalar_type -> Fmt.str " %s[]" (convert_scalar_type scalar_type)
     | Optional scalar_type -> Fmt.str "? %s" (convert_scalar_type scalar_type)
-    | OptionalList scalar_type ->
-        Fmt.str "? %s[]" (convert_scalar_type scalar_type)
   in
   match typ with
   | Composite composite_type -> convert_composite_type composite_type

@@ -167,8 +167,6 @@ typ:
     { parse_type typ ~optional_modifier:true }
   | typ = ID; LIST_MODIFIER
     { parse_type typ ~list_modifier:true }
-  | typ = ID; LIST_MODIFIER; QUESTION_MARK
-    { parse_type typ ~list_modifier:true ~optional_modifier:true }
   | typ = ID
     { parse_type typ }
   ;
@@ -322,8 +320,6 @@ xra_conditional_expression:
 xra_basic_expressions:
   | xra_literal_expression = xra_literal_expression
     { xra_literal_expression }
-  | xra_conditional_expression = xra_conditional_expression
-    { xra_conditional_expression }
   | LEFT_PARAN; xra_expression = xra_expression; RIGHT_PARAN
     { xra_expression }
   ;

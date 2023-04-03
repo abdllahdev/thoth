@@ -16,11 +16,7 @@ type scalar_type =
   | Assoc
   | CustomType of string
 
-type composite_type =
-  | List of scalar_type
-  | Optional of scalar_type
-  | OptionalList of scalar_type
-
+type composite_type = List of scalar_type | Optional of scalar_type
 type typ = Scalar of scalar_type | Composite of composite_type
 
 type literal =

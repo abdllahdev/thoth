@@ -13,12 +13,12 @@ app Todo {
 }
 
 model User {
-	id        Int     @id
-	username  String  @unique
-	password  String
+	id         Int       @id
+	username   String    @unique
+	password   String    @ignore
 	isOnline	 Boolean	 @default(false)
 	lastActive DateTime  @default(Now)
-	tasks 		Task[]
+	tasks 		 Task[]
 }
 
 model Task {
