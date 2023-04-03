@@ -282,23 +282,7 @@ let generate_controllers_specs global_env queries =
           Some
             (Hashtbl.fold model_table ~init:[] ~f:(fun ~key ~data lst ->
                  match is_custom_type data.typ with
-                 | true -> (
-                     let field_attrs_table =
-                       data.field_attrs_table |> Option.value_exn
-                     in
-                     match
-                       LocalEnvironment.contains field_attrs_table
-                         ~key:"@relation"
-                     with
-                     | true -> lst @ [ key ]
-                     | false -> (
-                         match
-                           String.equal
-                             (QueryFormatter.string_of_query_type query_type)
-                             "findMany"
-                         with
-                         | true -> lst
-                         | false -> lst @ [ key ]))
+                 | true -> lst @ [ key ]
                  | false -> lst))
     in
     let controller_function =
