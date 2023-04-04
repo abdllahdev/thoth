@@ -5,8 +5,7 @@ open Ast.Helper
 open Environment
 open Error_handler.Handler
 
-let check_where_arg global_env loc id model fields =
-  let field = List.hd_exn fields in
+let check_where_arg global_env loc id model field =
   let _, model_id = model in
   let model_value =
     GlobalEnvironment.lookup global_env ~key:model_id
@@ -158,8 +157,8 @@ let check_args global_env loc typ id model args : unit =
       | Query.Where (loc, _) ->
           raise_query_argument_error loc id [ Query.DataArgument ]
             Query.WhereArgument
-      | Query.Data (loc, fields) ->
-          check_data_arg global_env loc id typ (Option.value_exn model) fields
+      | Query.Data (loc, field) ->
+          check_data_arg global_env loc id typ (Option.value_exn model) field
       | _ -> ())
   | Query.Update ->
       let args_length = List.length args in

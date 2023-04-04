@@ -4,18 +4,16 @@ import { z } from 'zod';
 export const {{ validator.id }}Validator = z.object({
   {% if validator.where %}
     where: z.object({
-      {% for field in validator.where %}
-        {{ field.id }}: z.string({
-          required_error: '`{{ field.id }}` is required',
-        })
+      {{ validator.where.id }}: z.string({
+        required_error: '`{{ validator.where.id }}` is required',
+      })
 
-        {% if field.type[0] == "number" %}
-        .regex(/^\d+$/)
-        .transform(({{ field.id }} : string) => parseInt({{ field.id }}, 10)),
-        {% else %}
-        ,
-        {% endif %}
-      {% endfor %}
+      {% if validator.where.type[0] == "number" %}
+      .regex(/^\d+$/)
+      .transform(({{ validator.where.id }} : string) => parseInt({{ validator.where.id }}, 10)),
+      {% else %}
+      ,
+      {% endif %}
     }).strict(),
   {% endif %}
 

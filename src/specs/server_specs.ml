@@ -9,7 +9,7 @@ type typed_variable = string * string list
 type field = Field of typed_variable | Object of (string * field)
 
 type query_args_specs = {
-  where : typed_variable list option;
+  where : typed_variable option;
   search : typed_variable list option;
   data : field list option;
   fn : string option;
@@ -96,13 +96,11 @@ let get_query_args ?model_id global_env query_type query_args =
       in
       let where =
         List.map query_args ~f:(function
-          | Query.Where (_, fields) ->
-              Some
-                (List.map fields ~f:(fun field ->
-                     let arg_type =
-                       (LocalEnvironment.lookup model_fields ~key:field).typ
-                     in
-                     (field, convert_type arg_type)))
+          | Query.Where (_, field) ->
+              let arg_type =
+                (LocalEnvironment.lookup model_fields ~key:field).typ
+              in
+              Some (field, convert_type arg_type)
           | _ -> None)
         |> List.find ~f:(function Some _ -> true | None -> false)
         |> Option.value_or_thunk ~default:(fun () -> None)
@@ -335,7 +333,7 @@ let generate_routes_specs queries =
       let route_param =
         match where with
         | Some where ->
-            let id, _ = List.hd_exn where in
+            let id, _ = where in
             Some id
         | None -> None
       in

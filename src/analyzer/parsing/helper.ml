@@ -304,15 +304,8 @@ and get_where loc id body =
   (match where with
   | Some where -> (
       match where with
-      | ListObjField (loc, where) ->
-          Some
-            (Query.Where
-               ( loc,
-                 List.map where ~f:(fun element ->
-                     match element with
-                     | ReferenceObjField (_, ref) -> ref
-                     | _ -> raise_type_error loc (Scalar Reference)) ))
-      | _ -> raise_type_error loc (Scalar List))
+      | ReferenceObjField (loc, ref) -> Some (Query.Where (loc, ref))
+      | _ -> raise_type_error loc (Scalar Reference))
   | None -> raise_required_entry_error loc id "where")
   |> Option.value_or_thunk ~default:raise_compiler_error
 

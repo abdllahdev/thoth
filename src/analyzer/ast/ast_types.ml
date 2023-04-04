@@ -46,7 +46,7 @@ module Query = struct
   type data_args = (string * (string * string) option) list
 
   type body_arg =
-    | Where of loc * id list
+    | Where of loc * id
     | Search of loc * id list
     | Data of loc * data_args
     | Include of loc * id list

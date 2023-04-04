@@ -55,7 +55,7 @@ query<Create> createTask {
 @model(Task)
 @permissions(IsAuth)
 query<Update> updateTask {
-	where: [ id ],
+	where: id,
 	data: {
 		fields: [status]
 	}
@@ -64,7 +64,7 @@ query<Update> updateTask {
 @model(Task)
 @permissions(IsAuth)
 query<Delete> deleteTaskById {
-	where: [ id ]
+	where: id
 }
 
 component<Delete> TaskDeleteButton(id: Int) {

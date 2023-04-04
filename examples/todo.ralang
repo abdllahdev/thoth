@@ -51,7 +51,7 @@ query<Create> createTask {
 @model(Task)
 @permissions(IsAuth, OwnsRecord)
 query<Delete> deleteTaskById {
-	where: [ id ]
+	where: id
 }
 
 component<Create> TaskCreateForm {

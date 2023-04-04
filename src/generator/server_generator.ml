@@ -210,18 +210,16 @@ let generate_validator output_dir name validators =
                        ("id", Jg_types.Tstr validator_id);
                        ( "where",
                          match where with
-                         | Some fields ->
-                             Jg_types.Tlist
-                               (List.map fields ~f:(fun field ->
-                                    let id, types = field in
-                                    Jg_types.Tobj
-                                      [
-                                        ("id", Jg_types.Tstr id);
-                                        ( "type",
-                                          Jg_types.Tlist
-                                            (List.map types ~f:(fun typ ->
-                                                 Jg_types.Tstr typ)) );
-                                      ]))
+                         | Some field ->
+                             let id, types = field in
+                             Jg_types.Tobj
+                               [
+                                 ("id", Jg_types.Tstr id);
+                                 ( "type",
+                                   Jg_types.Tlist
+                                     (List.map types ~f:(fun typ ->
+                                          Jg_types.Tstr typ)) );
+                               ]
                          | None -> Jg_types.Tnull );
                        ( "search",
                          match search with

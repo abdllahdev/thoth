@@ -17,10 +17,9 @@ query<FindMany> getTasks {
 	search: [ title, isDone ]
 }
 
-
 @model(Task)
 query<Delete> deleteTaskById {
-	where: [ id ]
+	where: id
 }
 
 

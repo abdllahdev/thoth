@@ -670,13 +670,11 @@ let check_component global_env xra_env app_declaration loc id typ args body =
     in
     let expected_where =
       List.map query_value.body ~f:(function
-        | Query.Where (_, fields) ->
-            Some
-              (List.map fields ~f:(fun field ->
-                   let arg_type =
-                     (LocalEnvironment.lookup model_fields ~key:field).typ
-                   in
-                   (field, arg_type)))
+        | Query.Where (_, field) ->
+            let arg_type =
+              (LocalEnvironment.lookup model_fields ~key:field).typ
+            in
+            Some (field, arg_type)
         | _ -> None)
       |> List.find ~f:(function Some _ -> true | None -> false)
       |> Option.value_or_thunk ~default:(fun () -> None)
