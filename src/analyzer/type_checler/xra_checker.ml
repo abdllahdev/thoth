@@ -656,95 +656,191 @@ let check_component global_env xra_env app_declaration loc id typ args body =
         (GlobalEnvironment.infer_type query_value);
     let query_value = GlobalEnvironment.get_query_value query_value in
     (* check if query of the right type *)
-    if
-      not
-        (String.equal
-           (QueryFormatter.string_of_query_type query_value.typ)
-           (QueryFormatter.string_of_query_type expected_query_type))
-    then raise_query_type_error loc expected_query_type id query_value.typ;
-    (* check if query is taking the right arguments *)
-    let model_fields =
-      let _, model_id = Option.value_exn query_value.model in
-      GlobalEnvironment.lookup global_env ~key:model_id
-      |> GlobalEnvironment.get_model_value
-    in
-    let expected_where =
-      List.map query_value.body ~f:(function
-        | Query.Where (_, field) ->
-            let arg_type =
-              (LocalEnvironment.lookup model_fields ~key:field).typ
-            in
-            Some (field, arg_type)
-        | _ -> None)
-      |> List.find ~f:(function Some _ -> true | None -> false)
-      |> Option.value_or_thunk ~default:(fun () -> None)
-    in
-    let expected_search =
-      List.map query_value.body ~f:(function
-        | Query.Search (_, fields) ->
-            Some
-              (List.map fields ~f:(fun field ->
-                   let arg_type =
-                     (LocalEnvironment.lookup model_fields ~key:field).typ
-                   in
-                   (field, arg_type)))
-        | _ -> None)
-      |> List.find ~f:(function Some _ -> true | None -> false)
-      |> Option.value_or_thunk ~default:(fun () -> None)
-    in
-    let get_arg_type value =
-      match value with
-      | IntLiteral _ -> Scalar Int
-      | BooleanLiteral _ -> Scalar Boolean
-      | StringLiteral _ -> Scalar String
-      | ReferenceLiteral (loc, ref) -> XRAEnvironment.lookup xra_env loc ref
-    in
-    (match expected_where with
-    | Some _ -> (
-        match where with
-        | Some (loc, where) ->
-            let typ = get_arg_type where in
+    match
+      String.equal
+        (QueryFormatter.string_of_query_type query_value.typ)
+        (QueryFormatter.string_of_query_type Query.Custom)
+    with
+    | true -> (
+        let query_route = Option.value_exn query_value.route in
+        let _, query_method, _ = query_route in
+        match query_method with
+        | "get" -> (
             if
               not
-                (String.equal (string_of_type typ)
-                   (string_of_type (Scalar Int)))
+                (String.equal
+                   (ComponentFormatter.string_of_component_type
+                      Component.FindMany)
+                   (ComponentFormatter.string_of_component_type typ)
+                || not
+                     (String.equal
+                        (ComponentFormatter.string_of_component_type
+                           Component.FindUnique)
+                        (ComponentFormatter.string_of_component_type typ)))
             then
-              raise_type_error loc (Scalar Int)
-                ~received_value:(string_of_literal where) ~received_type:typ
-        | None ->
-            failwith
-              (Fmt.str "RequiredArgument: @(%s): expected argument 'where'"
-                 (string_of_loc loc)))
-    | None -> (
-        match where with
-        | Some _ ->
-            failwith
-              (Fmt.str "RequiredArgument: @(%s): unexpected argument 'where'"
-                 (string_of_loc loc))
-        | None -> ()));
-    match expected_search with
-    | Some expected_search -> (
-        match search with
-        | Some search ->
-            List.iter search ~f:(fun (loc, id, value) ->
-                let expected_arg_type =
-                  List.Assoc.find expected_search id ~equal:String.equal
+              failwith
+                (Fmt.str
+                   "QueryMethodError: @(%s) Expected a query with `get` http  \
+                    method"
+                   (string_of_loc loc));
+            let query_return = query_value.return_type in
+            match is_list_type query_return with
+            | true ->
+                if
+                  not
+                    (String.equal
+                       (ComponentFormatter.string_of_component_type
+                          Component.FindMany)
+                       (ComponentFormatter.string_of_component_type typ))
+                then
+                  failwith
+                    (Fmt.str
+                       "QueryReturnTypeError: @(%s) Expected a query with a \
+                        list return type but received a query with a list \
+                        scalar type"
+                       (string_of_loc loc))
+            | false ->
+                if
+                  not
+                    (String.equal
+                       (ComponentFormatter.string_of_component_type
+                          Component.FindUnique)
+                       (ComponentFormatter.string_of_component_type typ))
+                then
+                  failwith
+                    (Fmt.str
+                       "QueryReturnTypeError: @(%s) Expected a query with a \
+                        scalar return type but received a query with a list \
+                        return type"
+                       (string_of_loc loc)))
+        | "post" ->
+            if
+              not
+                (String.equal
+                   (ComponentFormatter.string_of_component_type Component.Create)
+                   (ComponentFormatter.string_of_component_type typ))
+            then
+              failwith
+                (Fmt.str
+                   "QueryMethodError: @(%s) Expected a query with `post` http  \
+                    method"
+                   (string_of_loc loc))
+        | "put" ->
+            if
+              not
+                (String.equal
+                   (ComponentFormatter.string_of_component_type Component.Update)
+                   (ComponentFormatter.string_of_component_type typ))
+            then
+              failwith
+                (Fmt.str
+                   "QueryMethodError: @(%s) Expected a query with `put` http  \
+                    method"
+                   (string_of_loc loc))
+        | "delete" ->
+            if
+              not
+                (String.equal
+                   (ComponentFormatter.string_of_component_type Component.Delete)
+                   (ComponentFormatter.string_of_component_type typ))
+            then
+              failwith
+                (Fmt.str
+                   "QueryMethodError: @(%s) Expected a query with `delete` \
+                    http  method"
+                   (string_of_loc loc))
+        | _ -> ())
+    | false -> (
+        if
+          not
+            (String.equal
+               (QueryFormatter.string_of_query_type query_value.typ)
+               (QueryFormatter.string_of_query_type expected_query_type))
+        then raise_query_type_error loc expected_query_type id query_value.typ;
+        (* check if query is taking the right arguments *)
+        let model_fields =
+          let _, model_id = Option.value_exn query_value.model in
+          GlobalEnvironment.lookup global_env ~key:model_id
+          |> GlobalEnvironment.get_model_value
+        in
+        let expected_where =
+          List.map query_value.body ~f:(function
+            | Query.Where (_, field) ->
+                let arg_type =
+                  (LocalEnvironment.lookup model_fields ~key:field).typ
                 in
-                match expected_arg_type with
-                | Some expected_arg_type ->
-                    let received_type = get_arg_type value in
-                    if
-                      not
-                        (String.equal
-                           (string_of_type expected_arg_type)
-                           (string_of_type received_type))
-                    then
-                      raise_type_error loc expected_arg_type
-                        ~received_value:(string_of_literal value) ~received_type
-                        ~id
-                | None -> ())
+                Some (field, arg_type)
+            | _ -> None)
+          |> List.find ~f:(function Some _ -> true | None -> false)
+          |> Option.value_or_thunk ~default:(fun () -> None)
+        in
+        let expected_search =
+          List.map query_value.body ~f:(function
+            | Query.Search (_, fields) ->
+                Some
+                  (List.map fields ~f:(fun field ->
+                       let arg_type =
+                         (LocalEnvironment.lookup model_fields ~key:field).typ
+                       in
+                       (field, arg_type)))
+            | _ -> None)
+          |> List.find ~f:(function Some _ -> true | None -> false)
+          |> Option.value_or_thunk ~default:(fun () -> None)
+        in
+        let get_arg_type value =
+          match value with
+          | IntLiteral _ -> Scalar Int
+          | BooleanLiteral _ -> Scalar Boolean
+          | StringLiteral _ -> Scalar String
+          | ReferenceLiteral (loc, ref) -> XRAEnvironment.lookup xra_env loc ref
+        in
+        (match expected_where with
+        | Some _ -> (
+            match where with
+            | Some (loc, where) ->
+                let typ = get_arg_type where in
+                if
+                  not
+                    (String.equal (string_of_type typ)
+                       (string_of_type (Scalar Int)))
+                then
+                  raise_type_error loc (Scalar Int)
+                    ~received_value:(string_of_literal where) ~received_type:typ
+            | None ->
+                failwith
+                  (Fmt.str "RequiredArgument: @(%s): expected argument 'where'"
+                     (string_of_loc loc)))
+        | None -> (
+            match where with
+            | Some _ ->
+                failwith
+                  (Fmt.str
+                     "RequiredArgument: @(%s): unexpected argument 'where'"
+                     (string_of_loc loc))
+            | None -> ()));
+        match expected_search with
+        | Some expected_search -> (
+            match search with
+            | Some search ->
+                List.iter search ~f:(fun (loc, id, value) ->
+                    let expected_arg_type =
+                      List.Assoc.find expected_search id ~equal:String.equal
+                    in
+                    match expected_arg_type with
+                    | Some expected_arg_type ->
+                        let received_type = get_arg_type value in
+                        if
+                          not
+                            (String.equal
+                               (string_of_type expected_arg_type)
+                               (string_of_type received_type))
+                        then
+                          raise_type_error loc expected_arg_type
+                            ~received_value:(string_of_literal value)
+                            ~received_type ~id
+                    | None -> ())
+            | None -> ())
         | None -> ())
-    | None -> ()
   in
   let check_component_body body =
     match body with
