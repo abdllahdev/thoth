@@ -44,11 +44,11 @@ type FormProps = {
   httpMethod: string;
   where?: number;
   accessToken?: string;
-  formStyle?: string;
-  formElementStyle?: string;
-  formInputStyle?: string;
-  formInputErrorStyle?: string;
-  formInputLabelStyle?: string;
+  formContainerStyle?: string;
+  inputContainerStyle?: string;
+  inputStyle?: string;
+  inputErrorStyle?: string;
+  inputLabelStyle?: string;
   formElements: FormElement[];
   formButton: FormButton;
   formValidationSchema: z.AnyZodObject;
@@ -63,11 +63,11 @@ const Form = ({
   formElements,
   formButton,
   formValidationSchema,
-  formStyle,
-  formElementStyle,
-  formInputStyle,
-  formInputErrorStyle,
-  formInputLabelStyle,
+  formContainerStyle,
+  inputContainerStyle,
+  inputStyle,
+  inputErrorStyle,
+  inputLabelStyle,
   handleResponse,
 }: FormProps) => {
   type FormSchemaType = z.infer<typeof formValidationSchema>;
@@ -118,7 +118,7 @@ const Form = ({
   };
 
   return (
-    <form className={formStyle} onSubmit={handleSubmit(onSubmit)} autoComplete="off">
+    <form className={formContainerStyle} onSubmit={handleSubmit(onSubmit)} autoComplete="off">
       {formElements.map((formElement, idx) => {
         const formInput = formElement.formInput;
         const formLabel = formElement?.formInputLabel;
@@ -128,14 +128,14 @@ const Form = ({
               hidden={!formInput.isVisible}
               key={idx}
               className={
-                formElement.style ? formElement.style : formElementStyle
+                formElement.style ? formElement.style : inputContainerStyle
               }
             >
               {formLabel && (
                 <label
                   htmlFor={formInput.name}
                   className={
-                    formLabel.style ? formLabel.style : formInputLabelStyle
+                    formLabel.style ? formLabel.style : inputLabelStyle
                   }
                 >
                   {formLabel.name}
@@ -144,7 +144,7 @@ const Form = ({
               <input
                 id={formInput.name}
                 type={formInput.type}
-                className={formInput.style ? formInput.style : formInputStyle}
+                className={formInput.style ? formInput.style : inputStyle}
                 placeholder={formInput.placeholder}
                 {...register(formInput.name)}
               />
@@ -153,7 +153,7 @@ const Form = ({
                   className={
                     formInput.errorStyle
                       ? formInput.errorStyle
-                      : formInputErrorStyle
+                      : inputErrorStyle
                   }
                 >
                   {errors[formInput.name]?.message?.toString()}

@@ -427,13 +427,13 @@ let rec parse_component loc id typ args body =
         let query : Component.query_application =
           get_action_query loc id body
         in
-        let global_style = get_global_style loc body in
+        let global_style = get_global_style loc id body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
         Component.CreateBody (query, global_style, form_inputs, form_button)
     | Component.Update ->
         let query = get_action_query loc id body in
-        let global_style = get_global_style loc body in
+        let global_style = get_global_style loc id body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
         Component.UpdateBody (query, global_style, form_inputs, form_button)
@@ -442,12 +442,12 @@ let rec parse_component loc id typ args body =
         let form_button = get_form_button loc id body in
         Component.DeleteBody (query, form_button)
     | Component.SignupForm ->
-        let global_style = get_global_style loc body in
+        let global_style = get_global_style loc id body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
         Component.SignupFormBody (global_style, form_inputs, form_button)
     | Component.LoginForm ->
-        let global_style = get_global_style loc body in
+        let global_style = get_global_style loc id body in
         let form_inputs = get_form_inputs loc id body in
         let form_button = get_form_button loc id body in
         Component.LoginFormBody (global_style, form_inputs, form_button)
@@ -683,12 +683,24 @@ and get_form_button loc id body =
       | _ -> raise_type_error loc (Scalar Assoc))
   | None -> raise_required_entry_error loc id "formButton"
 
-and get_global_style loc body =
+and get_global_style loc id body =
   let global_style = List.Assoc.find body "globalStyle" ~equal:String.equal in
   match global_style with
   | Some global_style -> (
       match global_style with
       | AssocObjField (_, global_style) ->
+          let obj_keys = List.map global_style ~f:(fun (key, _) -> key) in
+          check_dup_exists loc obj_keys;
+          let expected_keys =
+            [
+              "formContainer";
+              "inputContainer";
+              "input";
+              "inputError";
+              "inputLabel";
+            ]
+          in
+          unexpected_keys_exists loc id obj_keys expected_keys;
           Some
             (List.map global_style ~f:(fun style ->
                  let id, style = style in

@@ -57,7 +57,7 @@ query<Delete> deleteTaskById {
 component<Create> TaskCreateForm {
 	actionQuery: createTask(),
 	globalStyle: {
-		form: "flex mt-4"
+    formContainer: "flex mt-4"
 	},
 	formInputs: {
 		title: {
@@ -113,9 +113,7 @@ component<FindMany> TasksComponent {
 	onSuccess: render(
 		<>
 				[% for task in tasks %]
-					<div>
-						<TaskComponent task={ task } />
-					</div>
+					<TaskComponent task={ task } />
 				[% endfor %]
 		</>
 	)
@@ -123,9 +121,9 @@ component<FindMany> TasksComponent {
 
 component<SignupForm> MySignupForm {
 	globalStyle: {
-		form: "bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4",
-		formInput: "appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
-		formInputLabel: "block text-gray-700 font-bold mb-2"
+		formContainer: "bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4",
+		input: "appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+		inputLabel: "block text-gray-700 font-bold mb-2"
 	},
 	formInputs: {
 		username: {
@@ -155,9 +153,9 @@ component<SignupForm> MySignupForm {
 
 component<LoginForm> MyLoginForm {
 	globalStyle: {
-		form: "bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4",
-		formInput: "appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
-		formInputLabel: "block text-gray-700 font-bold mb-2"
+		formContainer: "bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4",
+		input: "appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+		inputLabel: "block text-gray-700 font-bold mb-2"
 	},
 	formInputs: {
 		username: {
