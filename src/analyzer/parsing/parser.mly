@@ -248,7 +248,8 @@ xra_attribute:
 
 xra_opening_element:
   | LT; id = ID; attributes = option(list(xra_attribute)); GT
-    { (id, attributes) }
+    { parse_xra_element_id $startpos id;
+      (id, attributes) }
   ;
 
 xra_closing_element:
@@ -258,7 +259,8 @@ xra_closing_element:
 
 xra_self_closing_element:
   | LT; id = ID; attributes = option(list(xra_attribute)); SLASH; GT
-    { (id, attributes) }
+    { parse_xra_element_id $startpos id;
+      (id, attributes) }
   ;
 
 xra_element:
@@ -268,8 +270,8 @@ xra_element:
     { let (opening_id, attributes) = xra_opening_element in
       parse_xra_element $startpos opening_id closing_id attributes children }
   | xra_self_closing_element = xra_self_closing_element
-    { let (id, attributes) = xra_self_closing_element
-      in XRA.Element ($startpos, id, attributes, None) }
+    { let (id, attributes) = xra_self_closing_element in
+      XRA.Element ($startpos, id, attributes, None) }
   ;
 
 xra_element_or_fragment:

@@ -118,6 +118,130 @@ and check_auth_config_entries loc id keys =
       if not (List.exists keys ~f:(fun key -> String.equal key entry)) then
         raise_required_entry_error loc id entry)
 
+let parse_xra_element_id loc id =
+  let html_tags =
+    [
+      "a";
+      "abbr";
+      "address";
+      "area";
+      "article";
+      "aside";
+      "audio";
+      "b";
+      "base";
+      "bdi";
+      "bdo";
+      "blockquote";
+      "body";
+      "br";
+      "button";
+      "canvas";
+      "caption";
+      "cite";
+      "code";
+      "col";
+      "colgroup";
+      "data";
+      "datalist";
+      "dd";
+      "del";
+      "details";
+      "dfn";
+      "dialog";
+      "div";
+      "dl";
+      "dt";
+      "em";
+      "embed";
+      "fieldset";
+      "figcaption";
+      "figure";
+      "footer";
+      "form";
+      "h1";
+      "h2";
+      "h3";
+      "h4";
+      "h5";
+      "h6";
+      "head";
+      "header";
+      "hr";
+      "html";
+      "i";
+      "iframe";
+      "img";
+      "input";
+      "ins";
+      "kbd";
+      "label";
+      "legend";
+      "li";
+      "link";
+      "main";
+      "map";
+      "mark";
+      "meta";
+      "meter";
+      "nav";
+      "noscript";
+      "object";
+      "ol";
+      "optgroup";
+      "option";
+      "output";
+      "p";
+      "param";
+      "picture";
+      "pre";
+      "progress";
+      "q";
+      "rb";
+      "rp";
+      "rt";
+      "rtc";
+      "ruby";
+      "s";
+      "samp";
+      "script";
+      "section";
+      "select";
+      "slot";
+      "small";
+      "source";
+      "span";
+      "strong";
+      "style";
+      "sub";
+      "summary";
+      "sup";
+      "svg";
+      "table";
+      "tbody";
+      "td";
+      "template";
+      "textarea";
+      "tfoot";
+      "th";
+      "thead";
+      "time";
+      "title";
+      "tr";
+      "track";
+      "u";
+      "ul";
+      "var";
+      "video";
+      "wbr";
+    ]
+  in
+  let first_char = String.nget id 0 in
+  if
+    (not (List.mem html_tags id ~equal:String.equal))
+    && not (Char.is_uppercase first_char)
+  then raise_undefined_error loc "HTMLTag" id
+
 let parse_xra_element loc opening_id closing_id attributes children =
   if not (String.equal opening_id closing_id) then
     raise_syntax_error loc closing_id
