@@ -1,7 +1,7 @@
 {
-  "name": "ralang-syntax-highlighting",
-  "displayName": "RaLang",
-  "description": "RaLang Syntax Highlighting for VSCode",
+  "name": "thoth-syntax-highlighting",
+  "displayName": "Thoth",
+  "description": "Thoth Syntax Highlighting for VSCode",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.76.0"
@@ -12,22 +12,22 @@
   "contributes": {
     "languages": [
       {
-        "id": "ralang",
+        "id": "thoth",
         "aliases": [
-          "RaLang",
-          "ralang"
+          "Thoth",
+          "thoth"
         ],
         "extensions": [
-          ".ralang"
+          ".thoth"
         ],
         "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
-        "language": "ralang",
-        "scopeName": "source.ralang",
-        "path": "./syntaxes/ralang.tmLanguage.json"
+        "language": "thoth",
+        "scopeName": "source.thoth",
+        "path": "./syntaxes/thoth.tmLanguage.json"
       }
     ]
   }

@@ -1,6 +1,6 @@
-# ralang README
+# thoth README
 
-This is the README for your extension "ralang". After writing up a brief description, we recommend including the following sections.
+This is the README for your extension "thoth". After writing up a brief description, we recommend including the following sections.
 
 ## Features
 

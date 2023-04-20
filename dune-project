@@ -1,11 +1,11 @@
 (lang dune 3.4)
 
-(name ralang)
+(name thoth)
 
 (generate_opam_files true)
 
 (source
- (github onlyabdullah/ralang))
+ (github onlyabdullah/thoth))
 
 (authors "Abdullah Elsayed")
 
@@ -16,7 +16,7 @@
 (using menhir 2.1)
 
 (package
- (name ralang)
+ (name thoth)
  (synopsis "Multitier web language")
  (description
   "Multitier web language that compiles to human-readable code in ExpressJS and ReactJS")

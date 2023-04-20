@@ -1,4 +1,4 @@
 (executable
  (name main)
- (public_name ralang)
+ (public_name thoth)
  (libraries core fmt src cmdliner))

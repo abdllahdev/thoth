@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "scopeName": "source.ralang",
-  "name": "RaLang",
+  "scopeName": "source.thoth",
+  "name": "Thoth",
   "patterns": [
     {
       "include": "#double_quoted_string"
@@ -43,12 +43,12 @@
       "name": "unnamed",
       "begin": "\\s*(userModel)\\s*:\\s*([A-Za-z][\\w]*)",
       "beginCaptures": {
-        "2": { "name": "support.type.ralang" }
+        "2": { "name": "support.type.thoth" }
       },
       "end": ",",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       }
     },
@@ -60,41 +60,41 @@
     "connect_with": {
       "patterns": [
         {
-          "name": "keyword.control.connect.ralang",
+          "name": "keyword.control.connect.thoth",
           "match": "\\b(connect)\\b"
         },
         {
-          "name": "keyword.control.with.ralang",
+          "name": "keyword.control.with.thoth",
           "match": "\\b(with)\\b"
         }
       ]
     },
     "app_declaration": {
-      "name": "source.ralang.embedded.source",
+      "name": "source.thoth.embedded.source",
       "match": "\\s*(app)\\s+([A-Za-z][\\w]*)\\s*\\{",
       "captures": {
-        "1": { "name": "storage.type.app.ralang" },
-        "2": { "name": "entity.name.type.app.ralang" }
+        "1": { "name": "storage.type.app.thoth" },
+        "2": { "name": "entity.name.type.app.thoth" }
       }
     },
     "type_declaration": {
-      "name": "source.ralang.embedded.source",
+      "name": "source.thoth.embedded.source",
       "begin": "^\\s*(type)\\s+([A-Za-z][\\w]*)\\s*({)",
       "beginCaptures": {
         "1": {
-          "name": "storage.type.type.ralang"
+          "name": "storage.type.type.thoth"
         },
         "2": {
-          "name": "entity.name.type.type.ralang"
+          "name": "entity.name.type.type.thoth"
         },
         "3": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       },
       "end": "\\s*\\}",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       },
       "patterns": [
@@ -111,25 +111,25 @@
               "match": "^\\s*(\\w+)(\\s*:)?\\s+((?!(?:Int|String|DateTime|Boolean)\\b)\\b\\w+)?(Int|String|DateTime|Boolean)?(\\[\\])?(\\?)?(\\!)?",
               "captures": {
                 "1": {
-                  "name": "variable.other.assignment.ralang"
+                  "name": "variable.other.assignment.thoth"
                 },
                 "2": {
-                  "name": "invalid.illegal.colon.ralang"
+                  "name": "invalid.illegal.colon.thoth"
                 },
                 "3": {
-                  "name": "variable.language.relations.ralang"
+                  "name": "variable.language.relations.thoth"
                 },
                 "4": {
-                  "name": "support.type.ralang"
+                  "name": "support.type.thoth"
                 },
                 "5": {
-                  "name": "keyword.operator.list_type.ralang"
+                  "name": "keyword.operator.list_type.thoth"
                 },
                 "6": {
-                  "name": "keyword.operator.optional_type.ralang"
+                  "name": "keyword.operator.optional_type.thoth"
                 },
                 "7": {
-                  "name": "invalid.illegal.required_type.ralang"
+                  "name": "invalid.illegal.required_type.thoth"
                 }
               }
             }
@@ -138,23 +138,23 @@
       ]
     },
     "model_declaration": {
-      "name": "source.ralang.embedded.source",
+      "name": "source.thoth.embedded.source",
       "begin": "^\\s*(model)\\s+([A-Za-z][\\w]*)\\s*({)",
       "beginCaptures": {
         "1": {
-          "name": "storage.type.model.ralang"
+          "name": "storage.type.model.thoth"
         },
         "2": {
-          "name": "entity.name.type.model.ralang"
+          "name": "entity.name.type.model.thoth"
         },
         "3": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       },
       "end": "\\s*\\}",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       },
       "patterns": [
@@ -176,25 +176,25 @@
           "match": "^\\s*(\\w+)(\\s*:)?\\s+((?!(?:Int|String|DateTime|Boolean)\\b)\\b\\w+)?(Int|String|DateTime|Boolean)?(\\[\\])?(\\?)?(\\!)?",
           "captures": {
             "1": {
-              "name": "variable.other.assignment.ralang"
+              "name": "variable.other.assignment.thoth"
             },
             "2": {
-              "name": "invalid.illegal.colon.ralang"
+              "name": "invalid.illegal.colon.thoth"
             },
             "3": {
-              "name": "variable.language.relations.ralang"
+              "name": "variable.language.relations.thoth"
             },
             "4": {
-              "name": "support.type.ralang"
+              "name": "support.type.thoth"
             },
             "5": {
-              "name": "keyword.operator.list_type.ralang"
+              "name": "keyword.operator.list_type.thoth"
             },
             "6": {
-              "name": "keyword.operator.optional_type.ralang"
+              "name": "keyword.operator.optional_type.thoth"
             },
             "7": {
-              "name": "invalid.illegal.required_type.ralang"
+              "name": "invalid.illegal.required_type.thoth"
             }
           }
         },
@@ -207,30 +207,30 @@
       ]
     },
     "query_declaration": {
-      "name": "source.ralang.embedded.source",
+      "name": "source.thoth.embedded.source",
       "match": "\\s*(query)\\s*<\\s*(Create|FindMany|FindUnique|Delete|Update|Custom)\\s*>\\s*([A-Za-z][\\w]*)\\s*((\\:)\\s*([A-Za-z][\\w]*)(\\[\\])?)?\\s*\\{",
       "captures": {
-        "1": { "name": "storage.type.query.ralang" },
-        "2": { "name": "support.type.query_type.ralang" },
-        "3": { "name": "entity.name.type.ralang" },
-        "5": { "name": "punctuation.definition.tag.ralang" },
-        "6": { "name": "support.type.query_type.ralang" }
+        "1": { "name": "storage.type.query.thoth" },
+        "2": { "name": "support.type.query_type.thoth" },
+        "3": { "name": "entity.name.type.thoth" },
+        "5": { "name": "punctuation.definition.tag.thoth" },
+        "6": { "name": "support.type.query_type.thoth" }
       }
     },
     "component_declaration": {
-      "name": "source.ralang.embedded.source",
+      "name": "source.thoth.embedded.source",
       "begin": "\\s*(component)\\s*(<\\s*(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton|Custom)\\s*>)?\\s*([A-Za-z][\\w]*)\\s*(\\(\\s*(?:([A-Za-z][\\w]*)\\s*:\\s*([A-Za-z][\\w]*)(\\[\\])?(?:\\s*,\\s*)?)*\\s*\\))?\\s*\\{",
       "beginCaptures": {
-        "1": { "name": "storage.type.component.ralang" },
-        "3": { "name": "support.type.component_type.ralang" },
-        "4": { "name": "entity.name.type.ralang" },
-        "6": { "name": "variable.other.ralang" },
-        "7": { "name": "support.type.parameter_type.ralang" }
+        "1": { "name": "storage.type.component.thoth" },
+        "3": { "name": "support.type.component_type.thoth" },
+        "4": { "name": "entity.name.type.thoth" },
+        "6": { "name": "variable.other.thoth" },
+        "7": { "name": "support.type.parameter_type.thoth" }
       },
       "end": "(\\s*\\})(?=(\\s*\\}\\s*(,|\\n)?)*$)",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       },
       "patterns": [
@@ -244,12 +244,12 @@
           "name": "unnamed",
           "begin": "\\s*(findQuery|actionQuery)\\s*:\\s*([A-Za-z][\\w]*)\\s*\\(\\s*\\)\\s*(\\s+(as)\\s+([A-Za-z][\\w]*)\\s*)?",
           "beginCaptures": {
-            "2": { "name": "entity.name.function.ralang" },
-            "4": { "name": "keyword.operator.as.ralang" }
+            "2": { "name": "entity.name.function.thoth" },
+            "4": { "name": "keyword.operator.as.thoth" }
           },
           "end": ",",
           "endCaptures": {
-            "0": { "name": "punctuation.definition.tag.ralang" }
+            "0": { "name": "punctuation.definition.tag.thoth" }
           }
         },
         {
@@ -283,16 +283,16 @@
       ]
     },
     "page_declaration": {
-      "name": "source.ralang.embedded.source",
+      "name": "source.thoth.embedded.source",
       "begin": "\\s*(page)\\s+([A-Za-z][\\w]*)\\s*\\{",
       "beginCaptures": {
-        "1": { "name": "storage.type.page.ralang" },
-        "2": { "name": "entity.name.type.ralang" }
+        "1": { "name": "storage.type.page.thoth" },
+        "2": { "name": "entity.name.type.thoth" }
       },
       "end": "\\s*\\}",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       },
       "patterns": [
@@ -302,14 +302,14 @@
       ]
     },
     "attribute_with_arguments": {
-      "name": "source.ralang.attribute_with_arguments",
+      "name": "source.thoth.attribute_with_arguments",
       "begin": "(@[\\w\\.]+)(\\()",
       "beginCaptures": {
         "1": {
-          "name": "entity.name.function.attribute.ralang"
+          "name": "entity.name.function.attribute.thoth"
         },
         "2": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       },
       "patterns": [
@@ -320,28 +320,28 @@
       "end": "\\)",
       "endCaptures": {
         "0": {
-          "name": "punctuation.definition.tag.ralang"
+          "name": "punctuation.definition.tag.thoth"
         }
       }
     },
     "attribute": {
-      "name": "source.ralang.attribute",
+      "name": "source.thoth.attribute",
       "match": "(@[\\w\\.]+)",
       "captures": {
         "1": {
-          "name": "entity.name.function.attribute.ralang"
+          "name": "entity.name.function.attribute.thoth"
         }
       }
     },
     "render_expression": {
-      "name": "source.ralang.embedded.ralang",
+      "name": "source.thoth.embedded.thoth",
       "begin": "\\b(render)\\(",
       "beginCaptures": {
-        "1": { "name": "support.function.render.ralang" }
+        "1": { "name": "support.function.render.thoth" }
       },
       "end": "\\s*(\\))",
       "endCaptures": {
-        "1": { "name": "punctuation.definition.tag.ralang" }
+        "1": { "name": "punctuation.definition.tag.thoth" }
       },
       "patterns": [
         {
@@ -376,13 +376,13 @@
       "name": "meta.xra.if_expression",
       "begin": "\\[%\\s*(if)\\s*",
       "beginCaptures": {
-        "0": { "name": "punctuation.definition.keyword.ralang" },
-        "1": { "name": "keyword.control.ralang" }
+        "0": { "name": "punctuation.definition.keyword.thoth" },
+        "1": { "name": "keyword.control.thoth" }
       },
       "end": "\\s*(endif)\\s*%\\]",
       "endCaptures": {
-        "0": { "name": "punctuation.definition.keyword.ralang" },
-        "1": { "name": "keyword.control.ralang" }
+        "0": { "name": "punctuation.definition.keyword.thoth" },
+        "1": { "name": "keyword.control.thoth" }
       },
       "patterns": [
         {
@@ -409,11 +409,11 @@
       "name": "meta.xra.for_expression",
       "begin": "\\[%\\s*(for)\\s+([A-Za-z][\\w]*)s+(in)s+([A-Za-z][\\w]*)s*%\\]",
       "beginCaptures": {
-        "0": { "name": "punctuation.definition.keyword.ralang" }
+        "0": { "name": "punctuation.definition.keyword.thoth" }
       },
       "end": "\\[%\\s*(endfor)\\s*%\\]",
       "endCaptures": {
-        "0": { "name": "punctuation.definition.keyword.ralang" }
+        "0": { "name": "punctuation.definition.keyword.thoth" }
       }
     },
     "xra_literal_expression": {
@@ -443,10 +443,10 @@
           "end": "/?>",
           "captures": {
             "0": {
-              "name": "punctuation.definition.tag.ralang"
+              "name": "punctuation.definition.tag.thoth"
             }
           },
-          "contentName": "entity.name.tag.ralang",
+          "contentName": "entity.name.tag.thoth",
           "patterns": [
             {
               "include": "#xra_tag_attribute"
@@ -471,33 +471,33 @@
       ]
     },
     "declaration_keywords": {
-      "name": "keyword.declaration.ralang",
+      "name": "keyword.declaration.thoth",
       "match": "\\b(app|model|query|component|page)\\b"
     },
     "declaration_type_keywords": {
-      "name": "support.type.declaration_type.ralang",
+      "name": "support.type.declaration_type.thoth",
       "match": "\\b(Create|FindMany|FindUnique|Delete|Update|SignupForm|LoginForm|LogoutButton)\\b"
     },
     "builtin_types": {
-      "name": "support.type.ralang",
+      "name": "support.type.thoth",
       "match": "\\b(Int|String|DateTime|Boolean)\\b"
     },
     "control_keywords": {
-      "name": "keyword.control.ralang",
+      "name": "keyword.control.thoth",
       "match": "\\b(if|then|else|endif|for|endfor|in|and|or|not)\\b"
     },
     "line_comment": {
       "begin": "//",
       "end": "$\\n?",
-      "name": "comment.line.ralang"
+      "name": "comment.line.thoth"
     },
     "block_comment": {
       "begin": "\\/\\*",
       "end": "\\*\\/",
-      "name": "comment.block.ralang"
+      "name": "comment.block.thoth"
     },
     "literal": {
-      "name": "source.ralang.literal",
+      "name": "source.thoth.literal",
       "patterns": [
         {
           "include": "#boolean"
@@ -517,19 +517,19 @@
       ]
     },
     "boolean": {
-      "name": "constant.language.boolean.ralang",
+      "name": "constant.language.boolean.thoth",
       "match": "\\b(true|false)\\b"
     },
     "number": {
-      "name": "constant.numeric.ralang",
+      "name": "constant.numeric.thoth",
       "match": "((0(x|X)[0-9a-fA-F]*)|(\\+|-)?\\b(([0-9]+\\.?[0-9]*)|(\\.[0-9]+))((e|E)(\\+|-)?[0-9]+)?)([LlFfUuDdg]|UL|ul)?\\b"
     },
     "language_constants": {
-      "name": "constant.language.boolean.ralang",
+      "name": "constant.language.boolean.thoth",
       "match": "\\b(IsAuth|OwnsRecord|LoggedInUser|Now)\\b"
     },
     "form_input_type": {
-      "name": "support.type.form_input_type.ralang",
+      "name": "support.type.form_input_type.thoth",
       "match": "\\b(TextInput|PasswordInput|EmailInput|DefaultInput|NumberInput)\\b"
     },
     "double_quoted_string": {

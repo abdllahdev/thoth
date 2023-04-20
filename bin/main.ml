@@ -44,10 +44,10 @@ let main input_file db_name output_dir server_port =
   | Error error -> Core.Error.to_string_hum error |> print_string
 
 let cmd =
-  let doc = "raLang" in
+  let doc = "thoth" in
   let man = [ `S "DESCRIPTION"; `P "Multitier web language" ] in
   Cmd.v
-    (Cmd.info "RaLang" ~version:"1.0" ~doc ~man)
+    (Cmd.info "Thoth" ~version:"1.0" ~doc ~man)
     Term.(const main $ input_file $ db_name $ output_dir $ server_port)
 
 let () = exit (Cmd.eval cmd)
