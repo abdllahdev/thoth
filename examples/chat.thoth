@@ -15,7 +15,7 @@ app ChatRoom {
 model User {
 	id         Int       @id
 	username   String    @unique
-	password   String    @ignore
+	password   String
 	isOnline	 Boolean	 @default(false)
 	lastActive DateTime  @default(Now)
 	messages   Message[]
