@@ -14,22 +14,7 @@
     "kind": "opam",
     "switch": "default"
   },
-  "cSpell.enableFiletypes": [
-    "ocaml.menhir"
-  ],
-  "cSpell.enabledLanguageIds": [
-    "javascript",
-    "javascriptreact",
-    "markdown",
-    "typescript",
-    "typescriptreact",
-    "json",
-    "ocaml"
-],
   "files.associations": {
     "*.jinja": "jinja",
-  },
-  "cSpell.words": [
-    "Stdlib"
-  ]
+  }
 }

@@ -5,11 +5,13 @@
 (generate_opam_files true)
 
 (source
- (github onlyabdullah/thoth))
+ (github algorizr/thoth))
 
-(authors "Abdullah Elsayed")
+(authors "Abdullah Elsayed <hi@algorizr.com>")
 
-(license LICENSE)
+(maintainers "Abdullah Elsayed <hi@algorizr.com>")
+
+(license MIT)
 
 (documentation https://url/to/documentation)
 
@@ -19,9 +21,9 @@
  (name thoth)
  (synopsis "Multitier web language")
  (description
-  "Multitier web language that compiles to human-readable code in ExpressJS and ReactJS")
- (depends ocaml dune core core_unix fmt str fileutils jingoo cmdliner)
+  "Multitier web language that compiles to ReactJS client and Node.js server in human-readable Typescript code")
+ (depends ocaml dune core core_unix fmt fileutils jingoo cmdliner)
  (tags
-  (topics "to describe" your project)))
+  (dsl fullstack multitier web typescript "human-readable" reactjs "node.js")))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

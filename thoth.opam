@@ -2,20 +2,20 @@
 opam-version: "2.0"
 synopsis: "Multitier web language"
 description:
-  "Multitier web language that compiles to human-readable code in ExpressJS and ReactJS"
-authors: ["Abdullah Elsayed"]
-license: "LICENSE"
-tags: ["topics" "to describe" "your" "project"]
-homepage: "https://github.com/onlyabdullah/thoth"
+  "Multitier web language that compiles to ReactJS client and Node.js server in human-readable Typescript code"
+maintainer: ["Abdullah Elsayed <hi@algorizr.com>"]
+authors: ["Abdullah Elsayed <hi@algorizr.com>"]
+license: "MIT"
+tags: ["dsl" "fullstack" "multitier" "web" "reactjs" "node.js"]
+homepage: "https://github.com/algorizr/thoth"
 doc: "https://url/to/documentation"
-bug-reports: "https://github.com/onlyabdullah/thoth/issues"
+bug-reports: "https://github.com/algorizr/thoth/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.4"}
   "core"
   "core_unix"
   "fmt"
-  "str"
   "fileutils"
   "jingoo"
   "cmdliner"
@@ -35,4 +35,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/onlyabdullah/thoth.git"
+dev-repo: "git+https://github.com/algorizr/thoth.git"
