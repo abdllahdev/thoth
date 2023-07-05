@@ -1,7 +1,7 @@
 # Thoth: A Domain-Specific Language for Multitier Web Development
 
 > DISCLAIMER
-> This is just a proof-of-concept it wasn't built to be used for real-world applications and the code in this repository is not production-ready. USE ON YOUR OWN RISK.
+> This is just a proof-of-concept. The DSL was never intended to be used in production. USE ON YOUR OWN RISK.
 
 Thoth is a powerful multitier domain-specific language (DSL) that revolutionizes the way developers build web applications. By combining the functionality of the database, server, and client tiers into a single, mono-linguistic program, Thoth eliminates the need for excessive boilerplate code and simplifies the entire development process.
 
