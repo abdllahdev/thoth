@@ -45,7 +45,7 @@ Thoth takes web application development a step further by compiling applications
 
 ## Exploring Thoth's Features
 
-To know more about Thoth you read the full dissertation found [here](https://github.com/algorizr/thoth-dissertation/blob/main/output/dissertation.pdf "A DSL for Multitier web development").
+To know more about Thoth you read the full dissertation found [here](https://github.com/abdllahdev/thoth-dissertation/blob/main/output/dissertation.pdf "A DSL for Multitier web development").
 
 ## Getting Started
 
