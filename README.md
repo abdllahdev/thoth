@@ -14,7 +14,7 @@ Thoth is a multitier statically typed domain-specific language (DSL) that introd
   - [Leveraging the JavaScript Ecosystem and Customization](#leveraging-the-javascript-ecosystem-and-customization)
   - [Real-Time Applications by Default](#real-time-applications-by-default)
   - [Exploring Thoth's Features](#exploring-thoths-features)
-  - [Getting Started](#getting-started)
+  - [Get Started](#get-started)
     - [Prerequisites](#prerequisites)
     - [Building](#building)
     - [Compiling an Application](#compiling-an-application)
@@ -48,7 +48,7 @@ Thoth takes web application development a step further by compiling applications
 
 To know more about Thoth you can read the full dissertation found [here](https://github.com/abdllahdev/thoth-dissertation/blob/main/output/dissertation.pdf "A DSL for Multitier web development").
 
-## Getting Started
+## Get Started
 
 ### Prerequisites
 
