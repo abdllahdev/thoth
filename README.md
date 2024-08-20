@@ -4,6 +4,10 @@
 > 
 > This project is just a proof-of-concept, it was never intended to be used in production and it is unmaintained. USE ON YOUR OWN RISK.
 
+```
+GENERATED WITH GPT-3.5
+```
+
 Thoth is a multitier statically typed domain-specific language (DSL) that introduces a new way for developers to build web applications. By combining the functionality of the database, server, and client tiers into a single, mono-linguistic program, Thoth eliminates the need for excessive boilerplate code and simplifies the entire development process. It was created as part of my master's dissertation under <a href="https://www.birmingham.ac.uk/staff/profiles/computer-science/academic-staff/rahli-vincent.aspx">Dr. Vincent Rahli's</a> supervision.
 
 - [Thoth: A Domain-Specific Language for Multitier Web Development](#thoth-a-domain-specific-language-for-multitier-web-development)
